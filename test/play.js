@@ -8,7 +8,7 @@ const path = require('path');
   await pg.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">` + html);
   await pg.waitForTimeout(500);
   await pg.screenshot({ path: process.argv[2] + '/title.png' });
-  await pg.click('[data-a="new"]'); await pg.click('[data-a="story-next"]');
+  await pg.click('[data-a="new"]'); await pg.click('[data-a="create-done"]'); await pg.click('[data-a="story-next"]');
   await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="story-next"]');
   await pg.click('[data-a="patrol"]'); await pg.waitForTimeout(700);
   await pg.click('[data-a="attack"]'); await pg.waitForTimeout(1500);

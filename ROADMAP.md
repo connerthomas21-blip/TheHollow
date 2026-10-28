@@ -21,6 +21,13 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Two-phase final boss and an ending
 - Autosave and save codes
 
+## Session 1.5 — Art pass (done)
+- All sprites redrawn as outlined, cel-shaded angular vector art (art kit: `P`, `L`, `limb`, `drawKnight`, `drawEnemy`)
+- Hero look follows equipped gear: 6 armour sets, 6 weapons, 6 accessories each have a distinct look
+- Character creator at new game (name, headgear, skin, hair, hair colour, eyes, beard, face mark), editable from Status
+- Head portrait in the HUD
+- `node test/gallery.js <dir>` renders every gear set, head option and enemy for review
+
 ## Session 2 — Companion & quests
 - Ally knight joins after world 2 (two-member party, target selection)
 - Multi-enemy encounters (1–3 foes)

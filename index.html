@@ -136,6 +136,23 @@ p { margin: 0; }
 textarea { width: 100%; min-height: 80px; background: #0b0a1c; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-family: ui-monospace, monospace; font-size: 0.75rem; resize: vertical; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--gold); color: var(--gold-ink);
   font-family: var(--display); font-weight: 600; padding: 8px 16px; border-radius: 8px; z-index: 20; max-width: calc(100% - 32px); }
+/* Character creator */
+.creator { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
+.preview { position: relative; }
+#createCanvas { width: 100%; max-width: 240px; height: auto; aspect-ratio: 4 / 5; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.portrait-big { position: absolute; right: 8px; top: 8px; width: 64px; height: 64px; border-radius: 8px; border: 1px solid var(--line); }
+.opts { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.opt { display: flex; flex-direction: column; gap: 6px; }
+.opt .note { font-size: 0.8rem; }
+.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+.swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; padding: 0; }
+.swatch[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 2px var(--void), 0 0 0 4px var(--gold); }
+.swatch:focus-visible, .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+input#heroName { background: #0b0a1c; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; font-family: var(--display); max-width: 280px; }
+input#heroName:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+.hud .who { display: flex; align-items: center; gap: 10px; }
+.portrait { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--line); flex: none; }
+@media (max-width: 600px) { .creator { grid-template-columns: minmax(0, 1fr); } .preview { max-width: 240px; margin: 0 auto; width: 100%; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -146,7 +163,7 @@ textarea { width: 100%; min-height: 80px; background: #0b0a1c; color: var(--text
 'use strict';
 /* ============================== DATA ============================== */
 
-const HERO = 'Kael';
+const heroName = () => (S && S.name) || 'Kael';
 
 // Skills: rank 1–5. Each level of rank adds ~15% power. `lv` is the hero level required to learn it.
 const SKILLS = {
@@ -203,7 +220,7 @@ const PLANETS = [
     foes: [
       { name: 'Scrap Drone',   kind: 'drone',   col: ['#9aa3ad', '#ff6b4a'], hp: 28, atk: 9,  def: 2, agi: 6, xp: 12, cr: 14,  moves: [{ n: 'Zap', c: 0.3, m: 1.3 }] },
       { name: 'Dust Crawler',  kind: 'crawler', col: ['#a8865a', '#e6d36a'], hp: 36, atk: 8,  def: 4, agi: 3, xp: 13, cr: 11,  moves: [{ n: 'Venom Bite', c: 0.3, m: 1, fx: 'poison' }] },
-      { name: 'Rogue Trooper', kind: 'humanoid',col: ['#5a6a4a', '#d84a3a'], hp: 42, atk: 11, def: 4, agi: 5, xp: 16, cr: 24, weapon: 'gun', moves: [{ n: 'Burst Fire', c: 0.35, m: 0.65, hits: 2 }] },
+      { name: 'Rogue Trooper', kind: 'humanoid',col: ['#5a6a4a', '#d84a3a'], hp: 42, atk: 11, def: 4, agi: 5, xp: 16, cr: 24, armor: { base: '#5a6a4a', trim: '#d84a3a', pauldron: 'pad' }, look: { gear: 'visor', eyes: '#ff5a3a' }, weapon: 'gun', moves: [{ n: 'Burst Fire', c: 0.35, m: 0.65, hits: 2 }] },
     ],
     boss: { name: 'Warden Mk-II', kind: 'mech', col: ['#7d8590', '#ffb02e'], hp: 140, atk: 14, def: 7, agi: 4, xp: 70, cr: 224,
       moves: [{ n: 'Rocket Salvo', c: 0.3, m: 0.6, hits: 3 }, { n: 'Lockdown Beam', c: 0.15, m: 0.8, fx: 'stun' }, { n: 'Self-Repair', c: 0.12, heal: 0.15 }] } },
@@ -225,9 +242,9 @@ const PLANETS = [
     foes: [
       { name: 'Sentinel Unit',  kind: 'drone',    col: ['#c8d0e0', '#4ad0ff'], hp: 150, atk: 38, def: 18, agi: 12, xp: 70, cr: 88, moves: [{ n: 'Laser Grid', c: 0.35, m: 0.8, hits: 2 }] },
       { name: 'Void Wraith',    kind: 'wraith',   col: ['#3a2a6a', '#c46aff'], hp: 125, atk: 43, def: 10, agi: 18, xp: 75, cr: 80, moves: [{ n: 'Soul Drain', c: 0.35, m: 1.2, drain: true }] },
-      { name: 'Merc Captain',   kind: 'humanoid', col: ['#3a3a4a', '#ffcf4a'], hp: 180, atk: 40, def: 16, agi: 12, xp: 85, cr: 144, weapon: 'gun', moves: [{ n: 'Flashbang', c: 0.18, m: 0.6, fx: 'stun' }, { n: 'Headshot', c: 0.2, m: 1.8 }] },
+      { name: 'Merc Captain',   kind: 'humanoid', col: ['#3a3a4a', '#ffcf4a'], hp: 180, atk: 40, def: 16, agi: 12, xp: 85, cr: 144, armor: { base: '#3e3e4e', trim: '#ffcf4a', pauldron: 'plate', cape: '#5a4a2a' }, look: { gear: 'knight', skin: 2, hair: 'short', hairCol: 0, eyes: 1, beard: 'full', mark: 'scar' }, weapon: 'gun', moves: [{ n: 'Flashbang', c: 0.18, m: 0.6, fx: 'stun' }, { n: 'Headshot', c: 0.2, m: 1.8 }] },
     ],
-    boss: { name: 'Admiral Vex', kind: 'humanoid', big: true, col: ['#e6e6f0', '#3a6aff'], hp: 600, atk: 40, def: 22, agi: 14, xp: 600, cr: 1760, weapon: 'sword', cape: '#2a3a8a',
+    boss: { name: 'Admiral Vex', kind: 'humanoid', big: true, col: ['#e6e6f0', '#3a6aff'], hp: 600, atk: 40, def: 22, agi: 14, xp: 600, cr: 1760, armor: { base: '#d6dbe6', trim: '#3a6aff', pauldron: 'layered', cape: '#2a3a8a', rivet: '#e8c25a' }, look: { gear: 'crest', skin: 0, hair: 'short', hairCol: 4, eyes: 0, beard: 'full', mark: 'none' }, weapon: 'sword', cape: '#2a3a8a',
       moves: [{ n: 'Fleet Barrage', c: 0.25, m: 0.5, hits: 4 }, { n: 'Command Shield', c: 0.15, shield: 140 }, { n: 'Execution', c: 0.15, m: 2.0 }] } },
   { name: 'Cinder Moon', sub: 'Volcanic forge world', lv: '12–16', globe: ['#ff6a3a', '#5a1a0a'], glow: '#ff6a3a66',
     sky: ['#1a0808', '#8a2a14'], hills: '#3a1010', ground: '#2a0c08',
@@ -236,7 +253,7 @@ const PLANETS = [
     foes: [
       { name: 'Magma Golem', kind: 'golem',    col: ['#4a3a3a', '#ff7a2a'], hp: 300, atk: 58, def: 30, agi: 6,  xp: 140, cr: 152,  moves: [{ n: 'Lava Fist', c: 0.35, m: 1.3, fx: 'burn' }] },
       { name: 'Fire Imp',    kind: 'imp',      col: ['#c43a1a', '#ffd04a'], hp: 185, atk: 62, def: 18, agi: 26, xp: 130, cr: 144,  moves: [{ n: 'Fireball', c: 0.3, m: 1.2, fx: 'burn' }, { n: 'Claw Flurry', c: 0.25, m: 0.5, hits: 3 }] },
-      { name: 'Ash Knight',  kind: 'humanoid', col: ['#3a3434', '#ff5a2a'], hp: 265, atk: 65, def: 28, agi: 16, xp: 155, cr: 192, weapon: 'axe', moves: [{ n: 'Cinder Cleave', c: 0.3, m: 1.6 }, { n: 'Sunder', c: 0.15, m: 0.8, fx: 'weaken' }] },
+      { name: 'Ash Knight',  kind: 'humanoid', col: ['#3a3434', '#ff5a2a'], hp: 265, atk: 65, def: 28, agi: 16, xp: 155, cr: 192, armor: { base: '#3a3434', trim: '#ff5a2a', glow: '#ff5a2a', seams: true, pauldron: 'spiky', cape: '#2a1010' }, look: { gear: 'horned', eyes: '#ff5a2a' }, weapon: 'axe', moves: [{ n: 'Cinder Cleave', c: 0.3, m: 1.6 }, { n: 'Sunder', c: 0.15, m: 0.8, fx: 'weaken' }] },
     ],
     boss: { name: 'Pyrelord Skarn', kind: 'golem', big: true, col: ['#2a1a1a', '#ffb02a'], hp: 860, atk: 52, def: 34, agi: 14, xp: 1300, cr: 3840,
       moves: [{ n: 'Eruption', c: 0.25, m: 0.6, hits: 3, fx: 'burn' }, { n: 'Magma Armour', c: 0.12, shield: 180 }, { n: 'Meteor Fall', c: 0.15, m: 2.2 }] } },
@@ -246,7 +263,7 @@ const PLANETS = [
     outro: '',
     foes: [
       { name: 'Abyss Spawn', kind: 'wraith',   col: ['#1a0a2a', '#ff3a8a'], hp: 380, atk: 87, def: 36, agi: 24, xp: 240, cr: 256, moves: [{ n: 'Hungering Touch', c: 0.35, m: 1.3, drain: true }] },
-      { name: 'Shade Knight',kind: 'humanoid', col: ['#1a1a2a', '#9a6aff'], hp: 420, atk: 84, def: 44, agi: 22, xp: 260, cr: 288, weapon: 'sword', cape: '#1a0a2a', moves: [{ n: 'Dark Slash', c: 0.3, m: 1.5 }, { n: 'Hex of Ruin', c: 0.18, m: 0.6, fx: 'weaken' }] },
+      { name: 'Shade Knight',kind: 'humanoid', col: ['#1a1a2a', '#9a6aff'], hp: 420, atk: 84, def: 44, agi: 22, xp: 260, cr: 288, armor: { base: '#24203a', trim: '#9a6aff', glow: '#9a6aff', stars: true, pauldron: 'layered', cape: '#140a24', capeLong: true, blade: '#3a2a5a' }, look: { gear: 'hood', skin: 5, eyes: '#c49aff', beard: 'none', mark: 'none' }, weapon: 'sword', cape: '#1a0a2a', moves: [{ n: 'Dark Slash', c: 0.3, m: 1.5 }, { n: 'Hex of Ruin', c: 0.18, m: 0.6, fx: 'weaken' }] },
       { name: 'Null Horror', kind: 'eye',      col: ['#2a1a3a', '#ff4a4a'], hp: 400, atk: 90, def: 38, agi: 20, xp: 280, cr: 304, moves: [{ n: 'Paralysing Gaze', c: 0.18, m: 0.7, fx: 'stun' }, { n: 'Mind Rend', c: 0.25, m: 1.6 }] },
     ],
     boss: { name: 'The Hollow Dark', kind: 'eye', big: true, col: ['#120820', '#c46aff'], hp: 1500, atk: 70, def: 36, agi: 24, xp: 0, cr: 0, phase2: true,
@@ -271,7 +288,7 @@ const STORY_END = [
 
 const SAVE_KEY = 'starbreaker-save-v1';
 const fresh = () => ({
-  v: 1, lvl: 1, xp: 0, cr: 96, pts: 0, sp: 0,
+  v: 1, name: 'Kael', look: { ...DEFAULT_LOOK }, lvl: 1, xp: 0, cr: 96, pts: 0, sp: 0,
   base: { str: 5, def: 5, agi: 5, tec: 5, vit: 5 },
   hp: null, en: null,
   equip: { weapon: 'w_rust', armor: 'a_vest', acc: null },
@@ -334,7 +351,7 @@ function trueDamage(t, n) { applyDamage(t, n, false); return `deals ${n} damage`
 
 function heroUnit() {
   const st = stats();
-  return { side: 'p', name: HERO, hp: S.hp, maxHp: st.maxHp, en: S.en, maxEn: st.maxEn, atk: st.atk, mag: st.mag, def: st.armor, agi: st.agi, crit: st.crit, fx: {} };
+  return { side: 'p', name: heroName(), hp: S.hp, maxHp: st.maxHp, en: S.en, maxEn: st.maxEn, atk: st.atk, mag: st.mag, def: st.armor, agi: st.agi, crit: st.crit, fx: {} };
 }
 function enemyUnit(d) {
   return { side: 'e', ...clone(d), maxHp: d.hp, mag: d.atk, crit: 5 + d.agi * 0.3, fx: {} };
@@ -573,131 +590,603 @@ function drawBackdrop(c, w, t) {
 
 function shadow(c, x, rx) { c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(x, GROUND + 4, rx, 7, 0, 0, Math.PI * 2); c.fill(); }
 
-// Humanoid knight / soldier. Faces right unless flipped.
-function drawHumanoid(c, x, y, s, o, t) {
+/* ---------- Art kit: outlined, cel-shaded vector sprites ---------- */
+const INK = '#0b0918';
+function shade(col, amt) {
+  let r, g, b;
+  if (col[0] === '#') { const n = parseInt(col.slice(1), 16); r = n >> 16; g = (n >> 8) & 255; b = n & 255; }
+  else [r, g, b] = col.match(/\d+/g).map(Number);
+  const f = v => clamp(Math.round(v + amt), 0, 255);
+  return `rgb(${f(r)},${f(g)},${f(b)})`;
+}
+// Filled, ink-outlined polygon from a flat [x,y,...] list. Pass fill=null to only outline, lw=0 to skip the outline.
+function P(c, pts, fill, lw = 1.3) {
+  c.beginPath(); c.moveTo(pts[0], pts[1]);
+  for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]);
+  c.closePath();
+  if (fill) { c.fillStyle = fill; c.fill(); }
+  if (lw) { c.lineWidth = lw; c.strokeStyle = INK; c.stroke(); }
+}
+function L(c, pts, color, lw) {
+  c.beginPath(); c.moveTo(pts[0], pts[1]);
+  for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]);
+  c.strokeStyle = color; c.lineWidth = lw; c.stroke();
+}
+const glowOn = (c, col, blur) => { c.shadowColor = col; c.shadowBlur = window.__fast ? 0 : blur; };
+const glowOff = c => { c.shadowBlur = 0; };
+// Tapered segment between two joints, with a lit edge.
+function limb(c, x1, y1, x2, y2, w1, w2, fill, hi) {
+  const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+  P(c, [x1 + nx * w1, y1 + ny * w1, x2 + nx * w2, y2 + ny * w2, x2 - nx * w2, y2 - ny * w2, x1 - nx * w1, y1 - ny * w1], fill);
+  if (hi) P(c, [x1 + nx * w1 * 0.85, y1 + ny * w1 * 0.85, x2 + nx * w2 * 0.85, y2 + ny * w2 * 0.85, x2 + nx * w2 * 0.25, y2 + ny * w2 * 0.25, x1 + nx * w1 * 0.25, y1 + ny * w1 * 0.25], hi, 0);
+}
+
+/* ---------- Hero appearance ---------- */
+const SKIN = ['#f3cfae', '#dfa57c', '#b97a52', '#8a5638', '#5a3624', '#8fb7d0', '#9cc48a'];
+const HAIR = ['#1c1714', '#5a3a22', '#a8692e', '#e3c46e', '#cfd0d8', '#b8323a', '#3f62c8'];
+const EYES = ['#5ad1e6', '#f2b544', '#6fdc8c', '#ff5a6a', '#c46aff', '#f4f4ff'];
+const LOOK_OPTS = {
+  gear: [['visor', 'Visor helm'], ['knight', 'Open helm'], ['horned', 'Horned helm'], ['crest', 'Plumed helm'], ['hood', 'Hood'], ['none', 'Bare head']],
+  hair: [['short', 'Short'], ['long', 'Long'], ['mohawk', 'Mohawk'], ['tail', 'Ponytail'], ['shaved', 'Shaved']],
+  beard: [['none', 'None'], ['stubble', 'Stubble'], ['full', 'Full']],
+  mark: [['none', 'None'], ['scar', 'Scar'], ['paint', 'War paint']],
+};
+const DEFAULT_LOOK = { gear: 'knight', skin: 1, hair: 'short', hairCol: 1, eyes: 0, beard: 'stubble', mark: 'scar' };
+const pal = (v, list) => typeof v === 'number' ? list[v % list.length] : v;
+
+// How each armour piece looks on the body. Enemy knights pass their own objects in the same shape.
+const ARMOR_LOOK = {
+  a_vest:  { base: '#8a6a48', trim: '#3a2a1e', pauldron: 'pad', cloth: true, scarf: '#9a3a2a' },
+  a_alloy: { base: '#8a93a3', trim: '#4a505c', pauldron: 'plate', cape: '#7a2a34' },
+  a_cara:  { base: '#4f6a3e', trim: '#c9b46a', pauldron: 'spiky', cape: '#5a4a2a', spike: '#d8cfa8' },
+  a_aegis: { base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'layered', cape: '#2a3a8a', rivet: '#e8c25a' },
+  a_magma: { base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'spiky', cape: '#4a1a12', spike: '#5a4440' },
+  a_void:  { base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'layered', cape: '#1a1030', capeLong: true },
+};
+function armorStyle(a) { return { dark: shade(a.base, -38), light: shade(a.base, 42), ...a }; }
+
+function headPath(c) {
+  c.beginPath(); c.moveTo(-7, -3);
+  c.quadraticCurveTo(-8, -11.5, 0, -11.5); c.quadraticCurveTo(7, -11.5, 8.5, -5);
+  c.lineTo(8.7, -2.6); c.lineTo(10.6, 1); c.lineTo(8.7, 2); c.lineTo(9.1, 3.9); c.lineTo(8.1, 5.1); c.lineTo(8.4, 7);
+  c.quadraticCurveTo(7.2, 9.6, 3, 9.6); c.lineTo(-2, 6.6); c.quadraticCurveTo(-6, 4, -7, -3); c.closePath();
+}
+
+// Head in local space: centre (0,0), facing right, about 22 units tall.
+function drawHead(c, look, A, acc, t) {
+  look = { ...DEFAULT_LOOK, ...look };
+  const skin = pal(look.skin, SKIN), hair = pal(look.hairCol, HAIR), eye = pal(look.eyes, EYES);
+  const g = look.gear, closed = g === 'visor' || g === 'horned', open = g === 'knight' || g === 'crest';
+  const sw = Math.sin(t * 0.004) * 1.2;
+  if ((g === 'none' || open) && look.hair === 'long') P(c, [-6, -8, -9.6, 0, -9.4, 10, -6.6, 14.5, -3.2, 13, -4.2, 6, -3, -2], shade(hair, -18));
+  if ((g === 'none' || open) && look.hair === 'tail') {
+    P(c, [-7, -7, -11, -4.5, -15 + sw, 4, -13.6 + sw, 12, -11 + sw, 6, -9, -1, -6, -4], shade(hair, -12));
+    P(c, [-9.8, -5.6, -7.6, -6.8, -7, -4.4, -9.2, -3.4], A.trim, 0.9);
+  }
+  if (g === 'crest') {
+    P(c, [-3, -13, 3, -14.6, -1, -20 + sw * 0.3, -9, -19.6, -17 + sw, -12, -16 + sw, -3.6, -12, -8.6], hair);
+    L(c, [-1, -17.5, -9, -16.5, -14 + sw, -9], shade(hair, 40), 0.8);
+  }
+  P(c, [-3, 5, 3, 6, 3.5, 13, -3.5, 13], shade(skin, -30), 1);
+  if (g === 'horned') P(c, [-3, -11, -9, -15, -14, -23, -15.5, -31, -10.6, -22, -6, -17, 0, -13.4], '#d9cdb0');
+
+  if (closed) {
+    const helm = [-8.8, -1, -8.8, -9.6, -3.4, -13.8, 4.4, -13.4, 9.8, -7, 10.8, 0, 9.8, 6.6, 5.4, 10.6, -2, 10.4, -6.4, 7];
+    P(c, helm, A.base);
+    c.save(); P(c, helm, null, 0); c.clip(); c.fillStyle = A.dark; c.fillRect(-10, -15, 7, 28); c.restore();
+    P(c, [-1.6, -13, 4.4, -12.8, 9.2, -7.2, 6, -7, 1.6, -10.4], A.light, 0);
+    L(c, [-8.8, -1, -6.4, 7, -2, 10.4], A.trim, 1.2);
+    P(c, helm, null);
+    glowOn(c, eye, 8); P(c, [2.6, -3.8, 10.6, -2.8, 10.6, -0.8, 2.6, -1.2], eye, 0); glowOff(c);
+    for (const gx of [5.6, 7.2, 8.8]) L(c, [gx, 2, gx, 6.4], A.dark, 0.8);
+    if (g === 'horned') P(c, [4, -11.5, 7, -17, 7.6, -24.5, 10, -17, 8.4, -11], '#e8dcc4');
+    if (acc === 'x_scope') { glowOn(c, '#ff4a4a', 6); P(c, [5, -5, 8.6, -5, 8.6, -1.4, 5, -1.4], 'rgba(255,70,70,0.5)', 0.8); glowOff(c); }
+    return;
+  }
+
+  // face
+  headPath(c); c.fillStyle = skin; c.fill();
+  c.save(); headPath(c); c.clip();
+  c.fillStyle = shade(skin, -26); c.beginPath(); c.moveTo(-9, -14); c.lineTo(0.5, -14); c.lineTo(-1.5, 12); c.lineTo(-9, 12); c.fill();
+  P(c, [6, -6, 8.4, -5, 8.6, -2.6, 6.2, -3], shade(skin, 18), 0);
+  c.restore();
+  headPath(c); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+  P(c, [-1.4, -2.6, -4, -3, -4.6, 1.6, -2, 2.6], shade(skin, -14), 0.9);
+  P(c, [4, -2.6, 7.4, -2.6, 6.9, -1, 4.4, -1.2], '#f4efe8', 0.7);
+  c.fillStyle = eye; c.fillRect(5.5, -2.5, 1.6, 1.4); c.fillStyle = INK; c.fillRect(6.2, -2.3, 0.7, 1);
+  P(c, [3.6, -4.6, 8.4, -4.9, 8.2, -3.7, 3.8, -3.5], shade(hair, -20), 0);
+  L(c, [7.2, 4.4, 8.8, 4.2], shade(skin, -55), 0.8);
+  if (look.mark === 'scar') { L(c, [4.2, -6.6, 7.4, 1.6], shade(skin, -40), 1.1); L(c, [4.4, -6.4, 7.6, 1.4], shade(skin, 35), 0.5); }
+  if (look.mark === 'paint') { P(c, [4.4, 0, 8.2, 0.2, 8, 1.1, 4.6, 0.9], '#c43a3a', 0); P(c, [4, 2, 7.6, 2.3, 7.4, 3.1, 4.2, 2.9], '#c43a3a', 0); }
+  if (look.beard !== 'none') {
+    c.save(); if (look.beard === 'stubble') c.globalAlpha = 0.42;
+    P(c, [8.8, 3.4, 9.1, 7.4, 7, 10.6, 3, 11.4, -1.6, 7.6, -2, 5, 1, 6.4, 4, 6.8, 6.4, 5.6, 7.4, 5.4], shade(hair, -6), look.beard === 'full' ? 1 : 0);
+    c.restore();
+  }
+  if (acc === 'x_scope') { L(c, [4.5, -2, -3, -4], '#2a2a33', 0.8); glowOn(c, '#ff4a4a', 6); P(c, [4.3, -3.6, 7.8, -3.6, 7.8, -0.3, 4.3, -0.3], 'rgba(255,70,70,0.45)', 0.8); glowOff(c); }
+
+  if (g === 'none') {
+    if (look.hair === 'mohawk' || look.hair === 'shaved') {
+      c.save(); headPath(c); c.clip(); c.globalAlpha = 0.3; c.fillStyle = hair; c.fillRect(-9, -14, 18, 9); c.fillRect(-9, -14, 5, 16); c.restore();
+    }
+    if (look.hair === 'mohawk') P(c, [-6.6, -8, -9.4, -14, -4.2, -12, -3.2, -18.4, 0, -13, 2.6, -18, 4.2, -12.4, 8.4, -15, 7.6, -9, 4, -10, 0, -10.6, -4, -9.6], hair);
+    else if (look.hair !== 'shaved') {
+      P(c, [-7.6, -2, -8.4, -9, -3.4, -13, 3.5, -12.8, 8.9, -7.4, 7.4, -5.6, 5.6, -7.4, 3.6, -5.8, 1.6, -7.8, -1.2, -6, -3.6, -4.2, -5, -1], hair);
+      L(c, [-4, -11.4, 2, -11.6, 6, -9], shade(hair, 45), 0.8);
+    }
+  } else if (open) {
+    const helm = [-8.6, 7, -8.9, -8, -3.4, -13.6, 4.6, -13.2, 9.6, -6.6, 9.4, -4.2, 4.2, -4.6, 3, -3, 3.6, 5, 1, 9.8, -3.6, 9.4];
+    P(c, helm, A.base);
+    c.save(); P(c, helm, null, 0); c.clip(); c.fillStyle = A.dark; c.fillRect(-10, -15, 6.5, 26); c.restore();
+    P(c, [-2, -12.6, 4.5, -12.4, 8.8, -6.8, 6, -6.6, 2, -10], A.light, 0);
+    L(c, [9.4, -4.4, 4.2, -4.8, 3, -3, 3.6, 5], A.trim, 1.2);
+    P(c, helm, null);
+    P(c, [7.6, -4.8, 8.9, -4.8, 9.4, 1.4, 8.3, 1.6], A.light, 0.9);
+    c.fillStyle = A.rivet || A.light; c.fillRect(-5.5, -6, 1.4, 1.4); c.fillRect(-5.5, 2, 1.4, 1.4);
+  } else if (g === 'hood') {
+    c.save(); headPath(c); c.clip(); c.fillStyle = 'rgba(5,3,12,0.45)'; c.fillRect(-10, -14, 22, 26); c.restore();
+    const hc = A.cape || A.dark;
+    P(c, [-9.6, 11, -10.6, -5, -4.6, -14.6, 4.6, -13.8, 10.6, -7, 10.2, -4, 5, -6.4, 3, -2.4, 3.4, 6, 0.6, 11.4], hc);
+    P(c, [-4.6, -14.6, 4.6, -13.8, 10.6, -7, 7, -8, 1, -11], shade(hc, 28), 0);
+    glowOn(c, eye, 8); c.fillStyle = eye; c.fillRect(5.4, -2.6, 2, 1.5); glowOff(c);
+  }
+}
+
+function pauldron(c, x, y, A, back) {
+  const f = back ? A.dark : A.base, li = back ? A.base : A.light;
+  const kind = A.pauldron;
+  if (kind === 'pad') {
+    P(c, [x - 6, y - 3, x + 5, y - 4.5, x + 8.4, y + 3, x + 5, y + 8, x - 5, y + 7, x - 8, y + 2], f);
+    L(c, [x - 5, y + 2, x + 6, y + 1.5], shade(f, -30), 0.7);
+    return;
+  }
+  if (kind === 'layered') {
+    for (let i = 2; i >= 0; i--) {
+      const o = i * 4;
+      P(c, [x - 8, y - 2 + o, x - 2, y - 7 + o, x + 8, y - 6 + o, x + 11, y + 1 + o, x + 7, y + 5 + o, x - 7, y + 4 + o], i ? f : li);
+      L(c, [x - 7, y + 4 + o, x + 7, y + 5 + o, x + 11, y + 1 + o], A.glow || A.trim, 1);
+    }
+    if (A.rivet) { c.fillStyle = A.rivet; c.fillRect(x - 4, y - 3, 1.6, 1.6); c.fillRect(x + 5, y - 3, 1.6, 1.6); }
+    return;
+  }
+  if (kind === 'spiky') {
+    const sp = A.spike || li;
+    P(c, [x - 5, y - 4, x - 4, y - 15, x, y - 5], sp);
+    P(c, [x + 1, y - 6, x + 5, y - 17, x + 6.4, y - 5], sp);
+  }
+  P(c, [x - 8, y - 1, x - 3, y - 6.4, x + 6, y - 6.6, x + 10.4, y + 1, x + 9, y + 9, x - 6, y + 8], f);
+  P(c, [x - 3, y - 5.6, x + 6, y - 5.8, x + 9.4, y + 1, x + 2, y], li, 0);
+  L(c, [x - 6, y + 8, x + 9, y + 9], A.glow || A.trim, 1.2);
+}
+
+// Weapons are drawn around the grip, blade pointing up (-y). The caller rotates.
+function drawWeapon(c, id, A, t) {
+  switch (id) {
+    case 'w_ion':
+      P(c, [-1.8, -4, 1.8, -4, 1.8, 6, -1.8, 6], '#3a3f4a');
+      for (const y of [-1, 1.5, 4]) L(c, [-1.8, y, 1.8, y], '#8a93a3', 0.6);
+      P(c, [-2.8, -7, 2.8, -7, 2.2, -4, -2.2, -4], '#9aa3b3');
+      glowOn(c, '#5ad1e6', 14);
+      P(c, [-1.9, -7.5, 1.9, -7.5, 1.9, -50, 0, -54, -1.9, -50], '#5ad1e6', 0);
+      glowOff(c);
+      P(c, [-0.7, -7.5, 0.7, -7.5, 0.7, -50, 0, -52, -0.7, -50], '#effcff', 0);
+      break;
+    case 'w_lance':
+      P(c, [-1.3, 24, 1.3, 24, 1.3, -56, -1.3, -56], '#3e434e');
+      for (const y of [-6, -2, 2, 6]) L(c, [-1.3, y, 1.3, y - 1.4], '#c9a24a', 0.8);
+      P(c, [-3.2, -56, 3.2, -56, 2.2, -61, -2.2, -61], '#c9a24a');
+      P(c, [-2.4, -61, -7, -67, -5.4, -59], '#d4dbe6', 1); P(c, [2.4, -61, 7, -67, 5.4, -59], '#d4dbe6', 1);
+      P(c, [0, -82, 4.6, -69, 2.4, -61, -2.4, -61, -4.6, -69], '#dfe6f0');
+      P(c, [0, -82, 4.6, -69, 2.4, -61, 0, -62], '#ffffff', 0);
+      glowOn(c, '#fff27a', 10);
+      for (let i = 0; i < 3; i++) {
+        const a0 = Math.random() * Math.PI * 2;
+        L(c, [0, -72, Math.cos(a0) * 6, -72 + Math.sin(a0) * 6, Math.cos(a0 + 0.6) * 11, -72 + Math.sin(a0 + 0.6) * 11], '#fff27a', 0.9);
+      }
+      glowOff(c);
+      break;
+    case 'w_grav':
+      P(c, [-1.6, -2, 1.6, -2, 1.6, 8, -1.6, 8], '#2a2a33');
+      P(c, [-4.4, -4.6, 4.4, -4.6, 4.4, -1, -4.4, -1], '#5a5a6a');
+      P(c, [-3, -4.6, 10, -6.6, 13.6, -44, 4, -51, -3.4, -46], '#555b70');
+      P(c, [10, -6.6, 13.6, -44, 11.2, -44.4, 7.8, -7.4], '#c0c8e0', 0);
+      L(c, [-1, -8, 0, -44], '#3a3f52', 1);
+      glowOn(c, '#b48cff', 10);
+      for (const y of [-14, -25, -36]) P(c, [4, y - 3, 6.4, y, 4, y + 3, 1.6, y], '#c9a8ff', 0);
+      glowOff(c);
+      break;
+    case 'w_nova': {
+      P(c, [-1.6, -3, 1.6, -3, 1.6, 8, -1.6, 8], '#2a1a1a');
+      for (const y of [-1, 2, 5]) L(c, [-1.6, y, 1.6, y + 2], '#c9a24a', 0.6);
+      P(c, [-3.6, -4.4, 0, -6, 3.6, -4.4, 0, -2.8], '#c9a24a');
+      const g = c.createLinearGradient(0, -5, 0, -54); g.addColorStop(0, '#ff6a2a'); g.addColorStop(0.6, '#ffc46a'); g.addColorStop(1, '#ffffff');
+      glowOn(c, '#ff9a3a', 14);
+      c.beginPath(); c.moveTo(-1.8, -5); c.quadraticCurveTo(-2.4, -32, 7, -55); c.lineTo(5, -49); c.quadraticCurveTo(1.6, -30, 1.8, -5); c.closePath();
+      c.fillStyle = g; c.fill(); glowOff(c); c.lineWidth = 1; c.strokeStyle = INK; c.stroke();
+      break;
+    }
+    case 'w_star':
+      P(c, [-1.8, -3, 1.8, -3, 1.8, 10, -1.8, 10], '#26264a');
+      P(c, [-2.6, 10, 2.6, 10, 0, 14], '#3a8aff', 1);
+      P(c, [-11, -6.6, -4, -3.6, 4, -3.6, 11, -6.6, 8.6, -1, 0, -2, -8.6, -1], '#e8c25a');
+      P(c, [-11, -6.6, -14, -11, -7, -5.4], '#e8c25a', 1); P(c, [11, -6.6, 14, -11, 7, -5.4], '#e8c25a', 1);
+      P(c, [-3.4, -4, 3.4, -4, 3.8, -54, 0, -64, -3.8, -54], '#dfe6f2');
+      P(c, [0, -4, 3.4, -4, 3.8, -54, 0, -64], '#ffffff', 0);
+      glowOn(c, '#9ad8ff', 12); P(c, [-0.9, -9, 0.9, -9, 0.9, -50, -0.9, -50], '#9ad8ff', 0); glowOff(c);
+      P(c, [0, -6, 1.8, -4, 0, -2, -1.8, -4], '#3a8aff', 0.8);
+      break;
+    case 'gun':
+      P(c, [-3, 4, 3, 4, 3.6, 13, -2.6, 12], '#2a2d34');
+      P(c, [-2.8, 6, 2.8, 6, 2.8, -22, -2.8, -22], '#3a3e48');
+      P(c, [-2.8, 6, -1, 6, -1, -22, -2.8, -22], '#5a606e', 0);
+      P(c, [2.8, -10, 7.4, -8, 7, -2, 2.8, -3], '#22252c');
+      P(c, [-1.1, -22, 1.1, -22, 1.1, -36, -1.1, -36], '#1e2026');
+      P(c, [-6.4, -16, -2.8, -16, -2.8, -6, -6.4, -6], '#22252c');
+      glowOn(c, A.trim, 6); c.fillStyle = A.trim; c.fillRect(-5.8, -14.6, 2.4, 2); glowOff(c);
+      break;
+    case 'axe':
+      P(c, [-1.4, 16, 1.4, 16, 1.4, -46, -1.4, -46], '#4a3424');
+      P(c, [-1, -41, -7, -38, -1, -35], '#5a5a62');
+      P(c, [1, -46, 8, -52, 15.6, -45, 16.6, -34, 9, -28, 1, -32], '#4a4a52');
+      P(c, [8, -50, 14.6, -44.6, 15.4, -35, 12, -36, 10, -46], '#7a7a86', 0);
+      glowOn(c, A.glow || '#d8d8e0', 10); L(c, [8, -52, 15.6, -45, 16.6, -34, 9, -28], A.glow || '#d8d8e0', 1.6); glowOff(c);
+      break;
+    case 'sword': {
+      const bl = A.blade || '#c9ccd6';
+      P(c, [-1.6, -3, 1.6, -3, 1.6, 7, -1.6, 7], '#2a2a33');
+      P(c, [-7, -4.6, 7, -4.6, 6, -2, -6, -2], A.trim);
+      P(c, [-2.6, -4.6, 2.6, -4.6, 2.8, -48, 0, -55, -2.8, -48], bl);
+      P(c, [0, -4.6, 2.6, -4.6, 2.8, -48, 0, -55], shade(bl, 30), 0);
+      if (A.glow) { glowOn(c, A.glow, 10); L(c, [0, -8, 0, -46], A.glow, 1); glowOff(c); }
+      break;
+    }
+    default: // w_rust
+      P(c, [-1.6, 5, 1.6, 5, 2.2, 7.6, 0, 9, -2.2, 7.6], '#6a5a3a', 1);
+      P(c, [-1.4, -2, 1.4, -2, 1.4, 5, -1.4, 5], '#4a3424', 1);
+      P(c, [-6, -3.6, 6, -3.6, 5, -1.6, -5, -1.6], '#7a6a5a', 1);
+      P(c, [-1.9, -3.6, 1.9, -3.6, 2.1, -36, 0, -41, -2.1, -36], '#958a7f', 1.2);
+      P(c, [0, -4, 1.9, -4, 2.1, -36, 0, -41], '#b9aea0', 0);
+      P(c, [-1.9, -14, 0, -15, 0.5, -11, -1.9, -10], '#8a4a24', 0);
+      P(c, [0.5, -26, 2, -27, 2, -23, 1, -23], '#8a4a24', 0);
+      P(c, [2.2, -20, 0.6, -19, 2.2, -18], INK, 0);
+  }
+}
+
+// Full knight. Origin at the feet, facing right, about 110 units tall. o: { armor, weapon, look, acc, flip, swing }
+function drawKnight(c, x, y, s, o, t) {
+  const A = o.armor, look = o.look || DEFAULT_LOOK, wpn = o.weapon;
   c.save(); c.translate(x, y); c.scale(o.flip ? -s : s, s);
-  const bob = Math.sin(t * 0.004) * 1.5;
-  const body = o.col[0], glow = o.col[1];
-  if (o.cape) { c.fillStyle = o.cape; c.beginPath(); c.moveTo(-8, -62 + bob); c.quadraticCurveTo(-26, -30, -22 + Math.sin(t * 0.003) * 3, 0); c.lineTo(-4, -2); c.closePath(); c.fill(); }
-  c.fillStyle = shade(body, -25);
-  c.fillRect(-10, -26, 8, 26); c.fillRect(3, -26, 8, 26); // legs
-  c.fillStyle = shade(body, -40); c.fillRect(-12, -4, 11, 5); c.fillRect(2, -4, 11, 5); // boots
-  c.fillStyle = body; // torso
-  c.beginPath(); c.moveTo(-14, -64 + bob); c.lineTo(14, -64 + bob); c.lineTo(10, -26); c.lineTo(-10, -26); c.closePath(); c.fill();
-  c.fillStyle = shade(body, 20); c.fillRect(-16, -66 + bob, 9, 8); c.fillRect(8, -66 + bob, 9, 8); // pauldrons
-  c.fillStyle = glow; c.fillRect(-2, -54 + bob, 4, 14); // chest core
-  c.fillStyle = shade(body, 10); c.beginPath(); c.arc(0, -76 + bob, 11, 0, Math.PI * 2); c.fill(); // helm
-  if (o.horns) { c.fillStyle = shade(body, -30); c.beginPath(); c.moveTo(-8, -84 + bob); c.lineTo(-14, -98 + bob); c.lineTo(-3, -86 + bob); c.fill(); c.beginPath(); c.moveTo(8, -84 + bob); c.lineTo(14, -98 + bob); c.lineTo(3, -86 + bob); c.fill(); }
-  c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 8; c.fillRect(1, -79 + bob, 10, 3); c.shadowBlur = 0; // visor
-  // arm + weapon
-  c.fillStyle = shade(body, -10); c.fillRect(10, -60 + bob, 7, 22);
-  if (o.weapon === 'gun') { c.fillStyle = '#2a2a33'; c.fillRect(10, -44 + bob, 26, 7); c.fillStyle = glow; c.fillRect(34, -43 + bob, 4, 5); }
-  else if (o.weapon === 'axe') { c.fillStyle = '#555'; c.fillRect(14, -76 + bob, 4, 42); c.fillStyle = glow; c.beginPath(); c.moveTo(18, -76 + bob); c.quadraticCurveTo(36, -68 + bob, 18, -56 + bob); c.fill(); }
-  else if (o.weapon === 'claws') { c.strokeStyle = glow; c.lineWidth = 2; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(16, -40 + i * 3 + bob); c.lineTo(26, -44 + i * 4 + bob); c.stroke(); } }
-  else { c.fillStyle = '#c9c9d6'; c.fillRect(14, -92 + bob, 4, 52); c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 10; c.fillRect(15, -92 + bob, 2, 50); c.shadowBlur = 0; c.fillStyle = '#6a5a3a'; c.fillRect(10, -42 + bob, 12, 4); }
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  const br = Math.sin(t * 0.004) * 1.1, wv = Math.sin(t * 0.003) * 3;
+  const sw = o.swing || 0, swingRot = sw > 0 ? Math.sin((1 - sw) * Math.PI) * 1.5 : 0;
+
+  if (A.cape) {
+    const end = A.capeLong ? -1 : -16;
+    P(c, [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3, end - 2, -18 + wv, end + 3, -24 + wv, end - 2, -30 + wv * 1.2, end + 2, -28 + wv, -40, -19, -70], A.cape);
+    L(c, [-13, -72, -21 + wv * 0.7, end + 1], shade(A.cape, -28), 1.2);
+    L(c, [-6, -74, -12 + wv * 0.4, end], shade(A.cape, 22), 0.9);
+  }
+  if (A.scarf) P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
+  if (o.acc === 'x_boots') {
+    glowOn(c, '#5ad1e6', 10);
+    for (const fx of [-18, 10]) { const f = 6 + Math.random() * 5; P(c, [fx - 2, -2, fx + 3, -2, fx, f], '#9fefff', 0); }
+    glowOff(c);
+  }
+
+  // back arm and leg (in shadow)
+  limb(c, -9, -77 + br, -15, -62 + br, 4.2, 3.6, A.dark);
+  limb(c, -15, -62 + br, -11, -50 + br, 3.6, 3.2, A.dark);
+  P(c, [-14, -53 + br, -8, -53 + br, -7.6, -47 + br, -13, -46.4 + br], shade(A.dark, -10));
+  pauldron(c, -10, -80 + br, A, true);
+  limb(c, -4, -46, -11, -25, 6, 5, A.dark);
+  limb(c, -11, -25, -15, -5, 5, 3.8, A.dark);
+  P(c, [-14, -29, -9, -29, -8, -22, -13, -21], A.base, 1);
+  P(c, [-20, -6, -11, -6, -7, 0, -21, 0], shade(A.dark, -12));
+
+  // torso
+  const chest = [-12, -83 + br, 13, -84 + br, 17, -71 + br, 12, -52, -9, -52, -14, -69 + br];
+  P(c, chest, A.base);
+  P(c, [-12, -83 + br, -2, -83.6 + br, -3, -52, -9, -52, -14, -69 + br], A.dark, 0);
+  P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -66 + br], A.light, 0);
+  P(c, chest, null);
+  if (A.cloth) {
+    for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
+    P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
+  } else {
+    L(c, [3, -82 + br, 2, -56], A.dark, 1);
+    L(c, [-10, -58, 12, -58], A.trim, 1.1);
+  }
+  if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
+  if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
+  if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
+  if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
+
+  // waist, belt and tassets
+  P(c, [-9, -53, 12, -53, 11, -46, -8, -46], A.dark);
+  P(c, [-9.6, -48.4, 12.6, -48.4, 12.6, -44.4, -9.6, -44.4], A.trim);
+  if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
+  else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
+  P(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base);
+  P(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+
+  // front leg
+  limb(c, 5, -46, 11, -25, 6.4, 5.2, A.base, A.light);
+  limb(c, 11, -25, 13, -5, 5.2, 4, A.base, A.light);
+  P(c, [7.6, -29.6, 14.4, -28.6, 15.4, -21.6, 8.6, -20.6], A.light);
+  if (A.seams) { glowOn(c, A.glow, 8); L(c, [9, -42, 11, -34, 9, -30], A.glow, 1.1); glowOff(c); }
+  P(c, [8.6, -6.4, 16.6, -6.4, 23.4, -1.4, 23.4, 0, 8.6, 0], A.base);
+  P(c, [10, -6, 16, -6, 20, -3, 10, -3], A.light, 0);
+
+  // head
+  c.save(); c.translate(2, -96.5 + br); drawHead(c, look, A, o.acc, t); c.restore();
+
+  // weapon arm and front pauldron
+  const gun = wpn === 'gun', lance = wpn === 'w_lance';
+  const hx = gun ? 26 : 27, hy = (gun ? -60 : -55) + br;
+  const base = gun ? Math.PI / 2 : lance ? 0.9 : 0.35;
+  c.save(); c.translate(hx, hy); c.rotate(base + (gun ? -swingRot * 0.15 : swingRot)); drawWeapon(c, wpn, A, t); c.restore();
+  limb(c, 13, -77 + br, 20, -63 + br, 4.4, 3.8, A.base, A.light);
+  limb(c, 20, -63 + br, hx, hy, 3.8, 3.4, A.base, A.light);
+  P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
+  pauldron(c, 12, -80 + br, A, false);
+  if (o.acc === 'x_lens') {
+    const oy = -104 + Math.sin(t * 0.003) * 3;
+    glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
+    P(c, [-22, oy - 5, -18.6, oy, -22, oy], '#e8f8ff', 0);
+  }
   c.restore();
 }
 
-function shade(hex, amt) {
-  const n = parseInt(hex.slice(1), 16);
-  const f = v => clamp(v + amt, 0, 255);
-  return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+function heroLook() {
+  const s = S || {};
+  const eq = s.equip || { weapon: 'w_rust', armor: 'a_vest', acc: null };
+  return { armor: armorStyle(ARMOR_LOOK[eq.armor] || ARMOR_LOOK.a_vest), weapon: eq.weapon, acc: eq.acc, look: s.look || DEFAULT_LOOK };
 }
 
-function drawEnemy(c, e, x, s, t) {
-  const [a, b] = e.col, k = e.kind, bob = Math.sin(t * 0.004) * 3;
-  c.save();
+/* ---------- Enemies (all face left, toward the hero) ---------- */
+function drawEnemy(c, e, x, s, t, swing) {
+  const [a, b] = e.col || ['#666666', '#ffffff'], k = e.kind, bob = Math.sin(t * 0.004) * 3;
+  if (k === 'humanoid') { drawKnight(c, x, GROUND, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, swing }, t); return; }
+  c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
   switch (k) {
-    case 'humanoid': drawHumanoid(c, x, GROUND, s * 1.05, { col: e.col, flip: true, weapon: e.weapon, cape: e.cape }, t); break;
-    case 'imp': drawHumanoid(c, x, GROUND, s * 0.8, { col: e.col, flip: true, weapon: 'claws', horns: true }, t); break;
     case 'drone': {
-      const y = GROUND - 80 * s + bob * 2;
-      c.translate(x, y); c.scale(s, s);
-      c.strokeStyle = shade(a, -30); c.lineWidth = 3;
-      const sp = Math.sin(t * 0.05) * 18;
-      c.beginPath(); c.moveTo(-34, -22); c.lineTo(-34 + sp, -24); c.moveTo(34, -22); c.lineTo(34 - sp, -24); c.stroke();
-      c.fillStyle = shade(a, -20); c.fillRect(-36, -22, 6, 10); c.fillRect(30, -22, 6, 10);
-      c.fillStyle = a; c.beginPath(); c.arc(0, 0, 24, 0, Math.PI * 2); c.fill();
-      c.fillStyle = shade(a, -40); c.beginPath(); c.arc(0, 0, 14, 0, Math.PI * 2); c.fill();
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 14; c.beginPath(); c.arc(-4, 0, 7, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      c.translate(x, GROUND - 92 * s + bob * 2); c.scale(s, s);
+      const fl = 12 + Math.random() * 5, g = c.createLinearGradient(0, 10, 0, 10 + fl * 2);
+      g.addColorStop(0, b); g.addColorStop(1, 'rgba(0,0,0,0)');
+      P(c, [-6, 10, 6, 10, 2, 10 + fl * 2, -2, 10 + fl * 2], g, 0);
+      for (const sx of [-1, 1]) {
+        P(c, [sx * 10, -12, sx * 28, -20, sx * 30, -16, sx * 12, -6], shade(a, -30));
+        const sp = Math.sin(t * 0.06 + sx);
+        P(c, [sx * 29 - 15 * sp, -24, sx * 29 + 15 * sp, -22, sx * 29 + 15 * sp, -20.6, sx * 29 - 15 * sp, -22.6], 'rgba(220,230,240,0.5)', 0);
+        P(c, [sx * 29 - 2.4, -27, sx * 29 + 2.4, -27, sx * 29 + 2.4, -18, sx * 29 - 2.4, -18], shade(a, -45));
+      }
+      const hull = [-24, -2, -16, -16, 6, -20, 22, -10, 22, 6, 8, 16, -12, 14];
+      P(c, hull, a);
+      P(c, [-16, -16, 6, -20, 22, -10, 10, -8, -8, -8], shade(a, 30), 0);
+      P(c, [-12, 14, 8, 16, 22, 6, 14, 4, -4, 8], shade(a, -35), 0);
+      P(c, hull, null);
+      L(c, [-8, -8, -5, 10], shade(a, -50), 1); L(c, [10, -8, 13, 8], shade(a, -50), 1);
+      P(c, [-20, 7, -35, 7, -35, 11, -20, 12], '#2a2d34');
+      P(c, [-22, -8, -16, -12.4, -9, -11, -6, -4, -10, 2, -18, 2], '#15151c');
+      glowOn(c, b, 14); P(c, [-19, -7, -15, -9, -11, -7, -11, -3, -15, -1, -19, -3], b, 0); glowOff(c);
+      P(c, [-15.5, -8, -14.6, -8, -14.6, -2, -15.5, -2], INK, 0);
+      L(c, [8, -19, 12, -32], shade(a, -30), 1.4);
+      if (Math.sin(t * 0.006) > 0) { glowOn(c, b, 8); c.fillStyle = b; c.fillRect(10.6, -34.6, 3, 3); glowOff(c); }
       break;
     }
     case 'crawler': case 'queen': {
-      const q = k === 'queen'; c.translate(x, GROUND); c.scale(-s * (q ? 1.5 : 1), s * (q ? 1.5 : 1));
-      c.strokeStyle = shade(a, -30); c.lineWidth = 3;
-      for (let i = 0; i < 3; i++) { const lx = -18 + i * 16, w = Math.sin(t * 0.012 + i) * 4; c.beginPath(); c.moveTo(lx, -18); c.lineTo(lx - 8 + w, -6); c.lineTo(lx - 12 + w, 0); c.stroke(); }
-      if (q) { c.fillStyle = shade(a, -15); c.beginPath(); c.ellipse(-40, -28, 30, 22, -0.2, 0, Math.PI * 2); c.fill(); c.fillStyle = b; c.globalAlpha = 0.5; for (let i = 0; i < 4; i++) c.fillRect(-58 + i * 10, -32, 5, 10); c.globalAlpha = 1; }
-      c.fillStyle = a;
-      c.beginPath(); c.ellipse(-16, -22, 16, 12, 0, 0, Math.PI * 2); c.fill();
-      c.beginPath(); c.ellipse(6, -24, 14, 13, 0, 0, Math.PI * 2); c.fill();
-      c.fillStyle = shade(a, 15); c.beginPath(); c.ellipse(24, -26 + bob * 0.4, 11, 10, 0, 0, Math.PI * 2); c.fill();
-      c.strokeStyle = shade(a, 30); c.beginPath(); c.moveTo(32, -22); c.lineTo(40, -14); c.moveTo(32, -30); c.lineTo(42, -28); c.stroke();
-      if (q) { c.fillStyle = b; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(16 + i * 6, -34); c.lineTo(19 + i * 6, -46); c.lineTo(22 + i * 6, -34); c.fill(); } }
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 8; c.beginPath(); c.arc(28, -28, 2.5, 0, Math.PI * 2); c.arc(26, -22, 2, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      const q = k === 'queen', sc = s * (q ? 1.5 : 1.05);
+      c.translate(x, GROUND); c.scale(sc, sc);
+      // Legs splay out: front pair reaches forward, back pair trails behind.
+      const reach = [-17, -3, 13];
+      const leg = (jx, jy, i, ph, col) => {
+        const w = Math.sin(t * 0.01 + ph) * 1.6, r = reach[i], kx = jx + r * 0.45, ky = jy - 9 + w * 0.5, fx = jx + r + w;
+        limb(c, jx, jy, kx, ky, 2.6, 2.1, col); limb(c, kx, ky, fx, 0, 2.1, 0.6, col);
+        P(c, [kx - 1.6, ky - 1.6, kx + 1.6, ky - 1.6, kx + 1.6, ky + 1.6, kx - 1.6, ky + 1.6], shade(col, 20), 0.8);
+      };
+      for (let i = 0; i < 3; i++) leg(-4 + i * 9, -15, i, i, shade(a, -45));
+      if (q) {
+        c.save(); c.globalAlpha = 0.4 + 0.1 * Math.sin(t * 0.02);
+        P(c, [4, -30, 30, -64, 48, -60, 20, -28], '#d8e8ff', 1); P(c, [10, -28, 46, -46, 52, -36, 18, -24], '#d8e8ff', 1);
+        c.restore();
+      }
+      const abd = [4, -20, 14, -33, 32, -34, 44, -24, 42, -12, 30, -6, 10, -8];
+      P(c, abd, shade(a, -10));
+      P(c, [14, -33, 32, -34, 40, -28, 20, -28], shade(a, 22), 0);
+      for (let i = 0; i < 3; i++) L(c, [18 + i * 8, -33.6, 15 + i * 8, -7], shade(a, -45), 1.1);
+      P(c, abd, null);
+      P(c, [22, -33.6, 25, -41, 28, -33.8], shade(a, 30)); P(c, [32, -33, 36, -39, 38, -29], shade(a, 30));
+      if (q) { glowOn(c, b, 10); for (const [ex, ey] of [[20, -18], [28, -16], [36, -20], [26, -24]]) P(c, [ex - 2.4, ey, ex, ey - 2.4, ex + 2.4, ey, ex, ey + 2.4], b, 0); glowOff(c); }
+      P(c, [-10, -16, -4, -30, 8, -31, 12, -20, 6, -10, -6, -10], a);
+      P(c, [-4, -30, 8, -31, 9, -25, -2, -24], shade(a, 30), 0);
+      P(c, [-28, -20, -22, -31, -10, -30, -6, -18, -14, -12, -25, -14], shade(a, 10));
+      P(c, [-22, -31, -10, -30, -9, -25, -20, -25], shade(a, 36), 0);
+      const m = Math.sin(t * 0.008) * 1.5;
+      P(c, [-26, -16, -36, -14 + m, -40, -8 + m, -34, -10 + m, -27, -12], '#e6dcc4', 1);
+      P(c, [-27, -22, -38, -24 - m, -42, -18 - m, -35, -19 - m, -28, -19], '#b8ae96', 1);
+      glowOn(c, b, 8);
+      for (const [ex, ey] of [[-20, -26], [-15.6, -27], [-23, -22]]) P(c, [ex - 1.6, ey, ex, ey - 1.6, ex + 1.6, ey, ex, ey + 1.6], b, 0);
+      glowOff(c);
+      if (q) for (let i = 0; i < 3; i++) P(c, [-23 + i * 5, -30.5, -21 + i * 5, -41 + (i === 1 ? -4 : 0), -19 + i * 5, -30.5], b, 1);
+      for (let i = 0; i < 3; i++) leg(-2 + i * 9, -12, i, i + 1.5, shade(a, -15));
       break;
     }
     case 'wyrm': {
       c.translate(x, GROUND); c.scale(s, s);
-      for (let i = 6; i >= 0; i--) {
-        const px = 40 - i * 13, py = -20 - Math.sin(t * 0.004 + i * 0.7) * 10 - (6 - i) * 9;
-        c.fillStyle = i % 2 ? a : shade(a, -15); c.beginPath(); c.arc(px, py, 16 - i * 0.6, 0, Math.PI * 2); c.fill();
+      P(c, [-20, 0, -8, -10, 24, -16, 52, -8, 64, 0], shade(a, -40), 1.2);
+      const pts = [];
+      for (let i = 0; i <= 10; i++) { const u = i / 10; pts.push([34 - u * 56 + Math.sin(t * 0.003 + u * 4) * 4, -4 - u * 92 - Math.sin(u * Math.PI) * 8]); }
+      for (let i = 0; i < 10; i++) {
+        const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], w1 = 15 - i * 0.8, w2 = 15 - (i + 1) * 0.8;
+        const dx = x2 - x1, dy = y2 - y1, ln = Math.hypot(dx, dy), nx = -dy / ln, ny = dx / ln;
+        P(c, [x1 + nx * w1, y1 + ny * w1, (x1 + x2) / 2 + nx * (w1 + 9), (y1 + y2) / 2 + ny * (w1 + 9), x2 + nx * w2, y2 + ny * w2], shade(b, -25), 1);
+        limb(c, x1, y1, x2, y2, w1, w2, i % 2 ? a : shade(a, -12), shade(a, 26));
+        L(c, [x1 - nx * w1 * 0.6, y1 - ny * w1 * 0.6, x2 - nx * w2 * 0.6, y2 - ny * w2 * 0.6], shade(a, 45), 1.4);
       }
-      const hx = -40, hy = -20 - Math.sin(t * 0.004) * 10 - 54;
-      c.fillStyle = shade(a, 10); c.beginPath(); c.ellipse(hx, hy, 22, 15, 0.3, 0, Math.PI * 2); c.fill();
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 10; c.beginPath(); c.arc(hx - 8, hy - 4, 4, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
-      c.fillStyle = '#eee'; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(hx - 18 + i * 6, hy + 6); c.lineTo(hx - 16 + i * 6, hy + 13); c.lineTo(hx - 14 + i * 6, hy + 6); c.fill(); }
+      P(c, [-14, 0, -4, -6, 14, -8, 30, -4, 40, 0], shade(a, -25), 1.2);
+      const [hx, hy] = pts[10]; c.translate(hx, hy);
+      const jo = 3 + Math.sin(t * 0.004) * 2;
+      P(c, [2, -9, 15, -21, 8, -7], shade(b, -15)); P(c, [-4, -11, 4, -23, 2, -10], shade(b, -5));
+      P(c, [-26, -1, -8, 0, -8, 3 + jo, -24, 4 + jo * 1.5], '#2a0a0a', 0);
+      P(c, [6, 4, -8, 2 + jo, -27, 4 + jo * 1.6, -12, 10 + jo, 6, 10], shade(a, -15));
+      for (let i = 0; i < 4; i++) P(c, [-25 + i * 4.4, 3.4 + jo * 1.2, -23.4 + i * 4.4, -0.6 + jo, -21.6 + i * 4.4, 3.4 + jo * 1.1], '#f1ead8', 0.7);
+      P(c, [8, -6, -4, -12, -24, -8, -31, -2, -10, 0, 8, 4], shade(a, 8));
+      P(c, [-4, -12, -24, -8, -26, -5, -4, -8], shade(a, 34), 0);
+      for (let i = 0; i < 5; i++) P(c, [-29 + i * 4.4, -1.6, -27.4 + i * 4.4, 3.6, -25.6 + i * 4.4, -1.4], '#f1ead8', 0.7);
+      glowOn(c, b, 10); P(c, [-13, -8, -8, -10, -5.6, -7, -10, -5.6], b, 0); glowOff(c);
       break;
     }
     case 'mech': {
       c.translate(x, GROUND); c.scale(s, s);
-      c.fillStyle = shade(a, -30); c.fillRect(-28, -46, 14, 46); c.fillRect(14, -46, 14, 46);
-      c.fillStyle = a; c.fillRect(-36, -110 + bob, 72, 66);
-      c.fillStyle = shade(a, -20); c.fillRect(-58, -112 + bob, 22, 30); c.fillRect(36, -112 + bob, 22, 30);
-      c.fillStyle = '#222'; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(-47, -104 + i * 9 + bob, 3, 0, Math.PI * 2); c.fill(); }
-      c.fillStyle = shade(a, -45); c.fillRect(-24, -100 + bob, 48, 18);
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 14; c.fillRect(-20 + Math.sin(t * 0.003) * 10, -95 + bob, 18, 8); c.shadowBlur = 0;
-      c.fillStyle = shade(a, -10); c.fillRect(-62, -82 + bob, 14, 40);
+      const leg = (ox, col) => {
+        limb(c, ox, -58, ox + 14, -34, 7, 6, col); limb(c, ox + 14, -34, ox + 4, -6, 6, 5, col);
+        P(c, [ox - 9, -7, ox + 14, -7, ox + 18, 0, ox - 13, 0], shade(col, -20));
+        P(c, [ox + 9, -39, ox + 19, -39, ox + 20, -30, ox + 10, -29], shade(col, 25));
+      };
+      leg(8, shade(a, -40));
+      P(c, [-18, -66, 20, -66, 16, -54, -14, -54], shade(a, -28));
+      const hull = [-34, -112 + bob, 22, -118 + bob, 38, -98 + bob, 30, -64 + bob, -26, -62 + bob, -40, -84 + bob];
+      P(c, hull, a);
+      P(c, [-30, -108 + bob, 20, -114 + bob, 32, -100 + bob, -20, -97 + bob], shade(a, 30), 0);
+      P(c, [-26, -62 + bob, 30, -64 + bob, 34, -76 + bob, -34, -74 + bob], shade(a, -30), 0);
+      P(c, hull, null);
+      const plate = [14, -92 + bob, 30, -92 + bob, 29, -76 + bob, 13, -76 + bob];
+      c.save(); P(c, plate, null, 0); c.clip();
+      for (let i = -2; i < 6; i++) P(c, [12 + i * 6, -76 + bob, 16 + i * 6, -76 + bob, 22 + i * 6, -92 + bob, 18 + i * 6, -92 + bob], i % 2 ? b : INK, 0);
+      c.restore(); P(c, plate, null);
+      P(c, [-38, -98 + bob, -22, -104 + bob, -6, -102 + bob, -8, -90 + bob, -30, -86 + bob], '#14161c');
+      glowOn(c, b, 12); P(c, [-34, -96 + bob, -22, -100 + bob, -10, -99 + bob, -11, -94 + bob, -30, -91 + bob], b, 0); glowOff(c);
+      const scan = -30 + ((t * 0.02) % 18); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(scan, -98 + bob, 2, 6);
+      P(c, [-8, -133 + bob, 22, -135 + bob, 24, -116 + bob, -6, -114 + bob], shade(a, -15));
+      for (let i = 0; i < 4; i++) { P(c, [-4 + i * 7, -130 + bob, 1 + i * 7, -130 + bob, 1 + i * 7, -123 + bob, -4 + i * 7, -123 + bob], '#1a1a20', 0.8); c.fillStyle = '#ff4a3a'; c.fillRect(-3 + i * 7, -128 + bob, 3, 2); }
+      limb(c, -10, -86 + bob, -24, -70 + bob, 6, 5, shade(a, -20));
+      P(c, [-22, -77 + bob, -64, -75 + bob, -64, -66 + bob, -22, -63 + bob], '#3a3d46');
+      for (const rx of [-34, -46, -56]) L(c, [rx, -76 + bob, rx, -65 + bob], '#22242a', 1.2);
+      glowOn(c, b, 10); c.fillStyle = b; c.fillRect(-67, -73 + bob, 3, 5); glowOff(c);
+      L(c, [16, -117 + bob, 24, -140 + bob], shade(a, -30), 1.4);
+      leg(-12, shade(a, -12));
       break;
     }
     case 'wraith': {
-      const y = GROUND - 40 + bob * 2; c.translate(x, y); c.scale(s, s);
-      const g = c.createLinearGradient(0, -90, 0, 30); g.addColorStop(0, a); g.addColorStop(1, 'rgba(0,0,0,0)');
-      c.fillStyle = g; c.beginPath(); c.moveTo(0, -95);
-      c.bezierCurveTo(38, -90, 34, -30, 30 + Math.sin(t * 0.006) * 8, 30);
-      for (let i = 0; i < 5; i++) c.lineTo(18 - i * 12, 10 + (i % 2) * 18 + Math.sin(t * 0.008 + i) * 4);
-      c.bezierCurveTo(-34, -30, -38, -90, 0, -95); c.fill();
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 16; c.beginPath(); c.ellipse(-10, -62, 5, 3, 0.2, 0, Math.PI * 2); c.ellipse(8, -62, 5, 3, -0.2, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      c.translate(x, GROUND - 46 + bob * 2); c.scale(s, s);
+      const g = c.createLinearGradient(0, -96, 0, 40); g.addColorStop(0, a); g.addColorStop(0.7, shade(a, -25)); g.addColorStop(1, 'rgba(0,0,0,0)');
+      const pts = [-4, -100, 10, -92, 18, -72, 24, -40, 28, 8];
+      for (let i = 1; i <= 6; i++) pts.push(28 - i * 9, (i % 2 ? 36 : 14) + Math.sin(t * 0.008 + i) * 5);
+      pts.push(-26, -30, -22, -66, -14, -88);
+      P(c, pts, g, 1.2);
+      L(c, [6, -70, 12, -20, 14, 20], shade(a, -40), 1); L(c, [-8, -60, -12, -10, -10, 24], shade(a, -40), 1);
+      P(c, [-14, -86, -6, -94, 4, -88, 2, -70, -8, -64, -16, -72], '#05030a', 0);
+      glowOn(c, b, 14); P(c, [-12.6, -79, -8, -81, -7, -77.6, -11.6, -76.6], b, 0); P(c, [-3, -80, 1.4, -81, 1, -77.4, -3, -76.4], b, 0); glowOff(c);
+      const r = Math.sin(t * 0.004) * 3;
+      for (const [oy, len] of [[0, 1], [16, 0.8]]) {
+        P(c, [-12, -64 + oy, -30, -56 + oy + r, -34, -47 + oy + r, -18, -48 + oy], shade(a, -12));
+        L(c, [-32, -52 + oy + r, -40 * len - 2, -56 + oy + r], '#d8d0c0', 1.8);
+        for (const [dx, dy] of [[-8, -6], [-10, 0], [-8, 5]]) L(c, [-40 * len - 2, -56 + oy + r, -40 * len - 2 + dx, -56 + oy + r + dy], '#e8e0d0', 1.1);
+      }
+      c.globalAlpha = 0.35;
+      for (let i = 0; i < 4; i++) { const yy = -((t * 0.04 + i * 30) % 120); L(c, [-10 + i * 8, yy, -14 + i * 8, yy - 10], b, 1); }
+      c.globalAlpha = 1;
       break;
     }
     case 'golem': {
       c.translate(x, GROUND); c.scale(s, s);
-      const rock = (rx, ry, rw, rh) => { c.fillStyle = a; c.fillRect(rx, ry, rw, rh); c.fillStyle = shade(a, 15); c.fillRect(rx, ry, rw, 4); };
-      rock(-28, -40, 20, 40); rock(8, -40, 20, 40);
-      rock(-40, -112 + bob, 80, 74);
-      rock(-62, -106 + bob, 22, 54); rock(40, -106 + bob, 22, 54);
-      rock(-16, -134 + bob, 32, 24);
-      c.strokeStyle = b; c.shadowColor = b; c.shadowBlur = 12; c.lineWidth = 3;
-      c.beginPath(); c.moveTo(-20, -100 + bob); c.lineTo(-5, -80 + bob); c.lineTo(-14, -60 + bob); c.moveTo(18, -96 + bob); c.lineTo(8, -70 + bob); c.stroke();
-      c.fillStyle = b; c.fillRect(-10, -126 + bob, 7, 5); c.fillRect(3, -126 + bob, 7, 5); c.shadowBlur = 0;
+      const rock = (pts, lit) => { P(c, pts, a); if (lit) P(c, lit, shade(a, 24), 0); P(c, pts, null); };
+      rock([44, -110 + bob, 62, -104 + bob, 66, -70 + bob, 58, -50 + bob, 42, -56 + bob]);
+      rock([-30, -46, -10, -48, -8, 0, -34, 0, -37, -22], [-30, -46, -10, -48, -11, -36, -28, -38]);
+      rock([6, -48, 26, -46, 30, -22, 28, 0, 4, 0], [6, -48, 26, -46, 25, -38, 8, -38]);
+      rock([-46, -104 + bob, -20, -128 + bob, 22, -126 + bob, 46, -100 + bob, 38, -50, -36, -46], [-20, -128 + bob, 22, -126 + bob, 40, -104 + bob, 0, -110 + bob]);
+      L(c, [-40, -78 + bob, 30, -84 + bob], shade(a, -30), 1);
+      rock([-16, -144 + bob, 4, -148 + bob, 14, -132 + bob, 6, -120 + bob, -14, -122 + bob], [-16, -144 + bob, 4, -148 + bob, 10, -138 + bob, -10, -136 + bob]);
+      glowOn(c, b, 12);
+      P(c, [-12, -135 + bob, -6, -136 + bob, -6, -133 + bob, -12, -132 + bob], b, 0); P(c, [-3, -136 + bob, 2, -136.4 + bob, 2, -133 + bob, -3, -133 + bob], b, 0);
+      L(c, [-28, -110 + bob, -16, -96 + bob, -22, -84 + bob, -8, -70 + bob], b, 2.2);
+      L(c, [14, -116 + bob, 6, -98 + bob, 18, -80 + bob], b, 2);
+      L(c, [-22, -40, -18, -24, -24, -10], b, 1.6); L(c, [16, -42, 20, -26], b, 1.6);
+      P(c, [-2, -100 + bob, 4, -94 + bob, -2, -88 + bob, -8, -94 + bob], b, 0);
+      glowOff(c);
+      rock([-66, -108 + bob, -44, -114 + bob, -38, -80 + bob, -48, -46 + bob, -70, -52 + bob, -74, -84 + bob], [-66, -108 + bob, -44, -114 + bob, -42, -96 + bob, -64, -94 + bob]);
+      glowOn(c, b, 10); L(c, [-62, -96 + bob, -52, -84 + bob, -58, -70 + bob], b, 1.8); glowOff(c);
+      c.fillStyle = b;
+      for (let i = 0; i < 5; i++) { const yy = (t * 0.03 + i * 37) % 80; c.globalAlpha = 1 - yy / 80; c.fillRect(-30 + i * 14, -112 - yy + bob, 2, 2); }
+      c.globalAlpha = 1;
+      break;
+    }
+    case 'imp': {
+      c.translate(x, GROUND); c.scale(s, s);
+      const fl = Math.sin(t * 0.012) * 6;
+      P(c, [6, -62, 30, -94 - fl, 34, -72 - fl, 44, -76 - fl, 37, -57 - fl * 0.5, 41, -50, 14, -50], shade(a, -32));
+      L(c, [10, -58, 30, -92 - fl], shade(a, -55), 1); L(c, [12, -54, 34, -72 - fl], shade(a, -55), 1);
+      L(c, [10, -32, 26, -26, 36, -18, 42, -32], shade(a, -20), 2.4);
+      P(c, [40, -32, 46, -38, 44, -28], shade(a, -20));
+      limb(c, 4, -34, 12, -20, 4, 3.4, shade(a, -25)); limb(c, 12, -20, 6, -1, 3.4, 2.4, shade(a, -25));
+      P(c, [0, -2, 9, -2, 10, 0, -2, 0], '#2a1a1a', 1);
+      limb(c, -6, -34, -14, -20, 4, 3.4, a, shade(a, 25)); limb(c, -14, -20, -10, -1, 3.4, 2.4, a, shade(a, 25));
+      P(c, [-16, -2, -7, -2, -6, 0, -18, 0], '#2a1a1a', 1);
+      const torso = [-10, -36, 10, -34, 12, -56, 0, -66, -14, -58];
+      P(c, torso, a);
+      P(c, [-10, -36, 2, -35, -2, -52, -12, -54], shade(a, 25), 0);
+      P(c, torso, null);
+      P(c, [-2, -72, 12, -80, 3, -65], shade(a, -10));
+      P(c, [-22, -66, -16, -77, -4, -77, 2, -66, -4, -58, -16, -58], shade(a, 8));
+      P(c, [-16, -77, -4, -77, -2, -70, -14, -70], shade(a, 30), 0);
+      P(c, [-14, -76, -19, -89, -10, -78], '#3a2020'); P(c, [-7, -77, -5, -91, -1, -77], '#3a2020');
+      L(c, [-21, -63, -10, -61], INK, 1);
+      for (let i = 0; i < 3; i++) P(c, [-19 + i * 3, -62.4, -17.6 + i * 3, -60, -16.4 + i * 3, -62], '#f1ead8', 0);
+      glowOn(c, b, 10); P(c, [-18, -71, -13, -72, -14, -69.4], b, 0); P(c, [-9, -72, -5, -72, -6, -69.6], b, 0); glowOff(c);
+      limb(c, -8, -56, -22, -46, 3, 2.6, a); limb(c, -22, -46, -30, -52, 2.6, 2, a);
+      for (const dy of [-4, 0, 4]) L(c, [-30, -52, -35, -52 + dy], '#f1ead8', 1);
+      glowOn(c, b, 14); const ff = Math.random() * 3;
+      P(c, [-36, -54, -32, -60 - ff, -30, -66 - ff * 2, -27, -58, -30, -52], b, 0); glowOff(c);
+      P(c, [-34, -55, -31, -60, -29, -56], '#fff6c0', 0);
       break;
     }
     case 'eye': {
-      const y = GROUND - 95 * s + bob * 2; c.translate(x, y); c.scale(s, s);
-      c.strokeStyle = shade(a, 20); c.lineWidth = 6;
-      for (let i = 0; i < 6; i++) {
-        const ang = Math.PI * 0.3 + i * 0.45;
-        c.beginPath(); c.moveTo(0, 0);
-        for (let j = 1; j <= 6; j++) { const r = 30 + j * 12; c.lineTo(Math.cos(ang + Math.sin(t * 0.003 + j + i) * 0.25) * r, Math.sin(ang + Math.sin(t * 0.003 + j + i) * 0.25) * r); }
-        c.stroke();
+      c.translate(x, GROUND - 100 * s + bob * 2); c.scale(s, s);
+      for (let i = 0; i < 7; i++) {
+        const ang = Math.PI * 0.12 + i * (Math.PI * 1.76 / 6); let px = Math.cos(ang) * 34, py = Math.sin(ang) * 34, w = 6.4;
+        for (let j = 1; j <= 4; j++) {
+          const a2 = ang + Math.sin(t * 0.003 + i + j * 0.8) * 0.32;
+          const nx = px + Math.cos(a2) * 13, ny = py + Math.sin(a2) * 13;
+          limb(c, px, py, nx, ny, w, w - 1.3, j % 2 ? shade(a, 12) : a, shade(a, 34));
+          px = nx; py = ny; w -= 1.3;
+        }
+        const a3 = ang + Math.sin(t * 0.003 + i + 4) * 0.32;
+        P(c, [px + Math.cos(a3 + 1.5) * 2, py + Math.sin(a3 + 1.5) * 2, px + Math.cos(a3) * 10, py + Math.sin(a3) * 10, px + Math.cos(a3 - 1.5) * 2, py + Math.sin(a3 - 1.5) * 2], b, 1);
       }
-      c.fillStyle = a; c.beginPath(); c.arc(0, 0, 44, 0, Math.PI * 2); c.fill();
-      c.fillStyle = '#e8dcea'; c.beginPath(); c.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); c.fill();
-      const lx = Math.sin(t * 0.0013) * 8 - 6;
-      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 18; c.beginPath(); c.arc(lx, 0, 14, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
-      c.fillStyle = '#000'; c.beginPath(); c.ellipse(lx, 0, 4, 11, 0, 0, Math.PI * 2); c.fill();
+      const oct = r => { const p = []; for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; p.push(Math.cos(an) * r, Math.sin(an) * r); } return p; };
+      for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4; P(c, [Math.cos(an - 0.2) * 44, Math.sin(an - 0.2) * 44, Math.cos(an) * 56, Math.sin(an) * 56, Math.cos(an + 0.2) * 44, Math.sin(an + 0.2) * 44], shade(a, 20), 1); }
+      P(c, oct(47), a);
+      P(c, [-30, -34, 0, -47, 30, -34, 0, -30], shade(a, 28), 0);
+      for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; L(c, [Math.cos(an) * 38, Math.sin(an) * 38, Math.cos(an) * 47, Math.sin(an) * 47], shade(a, -30), 1); }
+      P(c, oct(47), null);
+      const blink = (t % 5200) < 180 ? 1 : 0;
+      P(c, [-36, 0, -18, -21 + blink * 20, 18, -21 + blink * 20, 36, 0, 18, 21 - blink * 20, -18, 21 - blink * 20], '#e9dfe6', 1.4);
+      if (!blink) {
+        L(c, [-28, -4, -20, -8, -16, -6], '#c4506a', 0.8); L(c, [26, 6, 20, 10, 15, 8], '#c4506a', 0.8);
+        const lx = Math.sin(t * 0.0013) * 8 - 6;
+        glowOn(c, b, 16);
+        const ir = []; for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; ir.push(lx + Math.cos(an) * 14, Math.sin(an) * 14); }
+        P(c, ir, b, 0); glowOff(c);
+        P(c, [lx - 2, -11, lx + 2, -11, lx + 2.6, 0, lx + 2, 11, lx - 2, 11, lx - 2.6, 0], INK, 0);
+        P(c, [lx + 5, -8, lx + 9, -8, lx + 7, -4], 'rgba(255,255,255,0.8)', 0);
+      }
+      P(c, [-38, 0, -18, -24, 18, -24, 38, 0, 18, -19, -18, -19], shade(a, -15), 1.2);
+      P(c, [-38, 0, -18, 24, 18, 24, 38, 0, 18, 19, -18, 19], shade(a, -15), 1.2);
       break;
     }
   }
+  c.restore();
+}
+
+function drawPortrait(cv, hl = heroLook()) {
+  const c = cv.getContext('2d'), w = cv.width, h = cv.height;
+  c.clearRect(0, 0, w, h);
+  const g = c.createRadialGradient(w * 0.5, h * 0.4, 2, w * 0.5, h * 0.5, w * 0.7);
+  g.addColorStop(0, '#3a3670'); g.addColorStop(1, '#14122c');
+  c.fillStyle = g; c.fillRect(0, 0, w, h);
+  c.save(); c.translate(w * 0.46, h * 0.56); const k = w / 34; c.scale(k, k);
+  c.lineJoin = 'round'; c.lineCap = 'round';
+  drawHead(c, hl.look, hl.armor, hl.acc, performance.now());
   c.restore();
 }
 
@@ -717,7 +1206,7 @@ function loop(t) {
   shadow(c, px, 26);
   if (B.p.hp > 0 || B.over?.result !== 'lost') {
     if (a.pHit > 0.5) c.globalAlpha = 0.6;
-    drawHumanoid(c, px, GROUND, 1.4, { col: ['#5a6a9a', '#5ad1e6'], weapon: 'sword', cape: '#8a2a3a' }, t);
+    drawKnight(c, px, GROUND, 1.4, { ...heroLook(), swing: a.pLunge }, t);
     c.globalAlpha = 1;
   }
   if (B.p.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, GROUND - 70, 50, 80, 0, 0, Math.PI * 2); c.stroke(); }
@@ -728,7 +1217,7 @@ function loop(t) {
   shadow(c, ex, 34 * big);
   c.globalAlpha = a.eDie > 0 ? 1 - a.eDie : a.eHit > 0.5 ? 0.6 : 1;
   if (B.phase === 2) { c.save(); c.shadowColor = '#ff3a8a'; c.shadowBlur = 30; }
-  drawEnemy(c, B.e, ex, 1.25 * big, t);
+  drawEnemy(c, B.e, ex, 1.25 * big, t, a.eLunge);
   if (B.phase === 2) c.restore();
   c.globalAlpha = 1;
   if (B.e.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, GROUND - 80 * big, 64 * big, 95 * big, 0, 0, Math.PI * 2); c.stroke(); }
@@ -746,22 +1235,34 @@ function loop(t) {
   raf = requestAnimationFrame(loop);
 }
 
-let titleLoop = false;
-function drawTitle() {
-  titleLoop = false;
-  const cv = document.getElementById('titleCanvas'); if (!cv) return;
-  const c = cv.getContext('2d'), t = performance.now();
-  c.clearRect(0, 0, 420, 210);
-  const r = seeded(7);
-  c.fillStyle = '#fff';
-  for (let i = 0; i < 60; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + i)); c.fillRect(r() * 420, r() * 210, 1.5, 1.5); }
-  c.globalAlpha = 1;
-  const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, '#c46aff55'); g.addColorStop(1, 'transparent');
-  c.fillStyle = g; c.fillRect(0, 0, 420, 210);
-  c.save(); c.translate(0, -40);
-  drawHumanoid(c, 140, 245, 1.6, { col: ['#5a6a9a', '#5ad1e6'], weapon: 'sword', cape: '#8a2a3a' }, t);
-  c.restore();
-  if (U.screen === 'title' && !titleLoop) { titleLoop = true; requestAnimationFrame(drawTitle); }
+let ambient = false;
+function ambientLoop() {
+  ambient = false;
+  const t = performance.now();
+  const tc = document.getElementById('titleCanvas');
+  if (tc) {
+    const c = tc.getContext('2d'); c.clearRect(0, 0, 420, 210);
+    const r = seeded(7); c.fillStyle = '#fff';
+    for (let i = 0; i < 60; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + i)); c.fillRect(r() * 420, r() * 210, 1.5, 1.5); }
+    c.globalAlpha = 1;
+    const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, '#c46aff55'); g.addColorStop(1, 'transparent');
+    c.fillStyle = g; c.fillRect(0, 0, 420, 210);
+    if (!ambientLoop.saved) ambientLoop.saved = loadSaved() || {};
+    const sv = ambientLoop.saved;
+    const hl = sv.equip ? { armor: armorStyle(ARMOR_LOOK[sv.equip.armor] || ARMOR_LOOK.a_vest), weapon: sv.equip.weapon, acc: sv.equip.acc, look: sv.look || DEFAULT_LOOK } : heroLook();
+    drawKnight(c, 150, 200, 1.6, hl, t);
+  }
+  const cc = document.getElementById('createCanvas');
+  if (cc && U.draft) {
+    const c = cc.getContext('2d'), w = cc.width, h = cc.height;
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1d1a42'); g.addColorStop(1, '#0e0d22');
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(118, h - 16, 50, 8, 0, 0, Math.PI * 2); c.fill();
+    const hl = { ...heroLook(), look: U.draft };
+    drawKnight(c, 104, h - 18, 2.3, hl, t);
+    const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl);
+  }
+  if ((tc || cc) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 /* ============================== RENDERING: DOM ============================== */
@@ -778,7 +1279,7 @@ function hud() {
   const st = stats();
   const hp = B && !B.over ? B.p.hp : S.hp, en = B && !B.over ? B.p.en : S.en;
   return `<div class="hud">
-    <div class="who">${HERO}<small>LV ${S.lvl}</small></div>
+    <div class="who"><canvas class="portrait" data-portrait width="80" height="80" aria-hidden="true"></canvas><span>${esc(heroName())}<small>LV ${S.lvl}</small></span></div>
     <div class="bars">${bar('HP', hp, st.maxHp, 'var(--hp)')}${bar('EN', en, st.maxEn, 'var(--en)')}${bar('XP', S.xp, xpNext(S.lvl), 'var(--xp)')}</div>
     <div class="credits num">${S.cr.toLocaleString()} cr</div>
   </div>`;
@@ -798,6 +1299,36 @@ function screenTitle() {
     ${U.confirmNew ? `<div class="row" style="justify-content:center"><span class="dim">This replaces your saved game.</span><button class="btn small" data-a="new-yes">Start over</button><button class="btn small" data-a="new-no">Keep my save</button></div>` : ''}
     <details style="max-width:420px;width:100%;text-align:left"><summary class="dim" style="cursor:pointer">Load a save code</summary>
       <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><textarea id="importBox" placeholder="Paste a save code"></textarea><button class="btn small" data-a="import">Load save code</button></div></details>
+  </div>`;
+}
+
+function screenCreate() {
+  const d = U.draft, ed = U.editing;
+  const sw = (key, list, label) => `<div class="opt"><span class="label">${label}</span><div class="swatches">${list.map((col, i) =>
+    `<button class="swatch" data-a="look" data-k="${key}" data-v="${i}" aria-label="${label} ${i + 1}" aria-pressed="${d[key] === i}" style="background:${col}"></button>`).join('')}</div></div>`;
+  const opts = (key, label, note) => `<div class="opt"><span class="label">${label}</span><div class="tabs">${LOOK_OPTS[key].map(([v, l]) =>
+    `<button class="tab" data-a="look" data-k="${key}" data-v="${v}" aria-pressed="${d[key] === v}">${l}</button>`).join('')}</div>${note ? `<span class="dim note">${note}</span>` : ''}</div>`;
+  const hairNote = d.gear === 'none' ? '' : (d.gear === 'knight' || d.gear === 'crest') ? 'Long hair and ponytails show under an open helm.' : 'Hair is hidden under this headgear.';
+  return `<div class="panel">
+    <div class="row between"><h2>${ed ? 'Change appearance' : 'Create your knight'}</h2>${ed ? '<button class="btn small" data-a="back">← Back</button>' : ''}</div>
+    <div class="creator">
+      <div class="preview">
+        <canvas id="createCanvas" width="240" height="300" aria-label="Preview of your knight"></canvas>
+        <canvas id="createPortrait" class="portrait-big" width="120" height="120" aria-hidden="true"></canvas>
+      </div>
+      <div class="opts">
+        <div class="opt"><label class="label" for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" value="${esc(U.draftName)}"></div>
+        ${opts('gear', 'Headgear')}
+        ${sw('skin', SKIN, 'Skin')}
+        ${opts('hair', 'Hair', hairNote)}
+        ${sw('hairCol', HAIR, 'Hair colour')}
+        ${sw('eyes', EYES, 'Eyes and visor glow')}
+        ${opts('beard', 'Beard')}
+        ${opts('mark', 'Face mark')}
+      </div>
+    </div>
+    <p class="dim">Your armour, weapon and accessory change how you look as you buy new gear.</p>
+    <div class="row"><button class="btn primary" data-a="create-done">${ed ? 'Save appearance' : 'Begin'}</button><button class="btn" data-a="look-random">Randomise</button></div>
   </div>`;
 }
 
@@ -879,7 +1410,7 @@ function screenBattle() {
   }
   return `${hud()}<div class="panel" style="gap:10px">
     <div class="combatants">
-      <div class="cbox"><span class="nm">${HERO}</span>${bar('HP', p.hp, p.maxHp, 'var(--hp)')}<div class="fxrow">${fxl(p)}</div></div>
+      <div class="cbox"><span class="nm">${esc(heroName())}</span>${bar('HP', p.hp, p.maxHp, 'var(--hp)')}<div class="fxrow">${fxl(p)}</div></div>
       <div class="cbox"><span class="nm" style="text-align:right">${esc(e.name)}${B.boss ? ' · BOSS' : ''}</span>${bar('HP', e.hp, e.maxHp, 'var(--hp)')}<div class="fxrow" style="justify-content:flex-end">${fxl(e)}</div></div>
     </div>
     <canvas id="battleCanvas" width="${W}" height="${H}" aria-label="Battle scene"></canvas>
@@ -927,7 +1458,7 @@ function screenStatus() {
       <div class="row">${others.map(id => `<button class="btn small" data-a="equip" data-id="${id}">${GEAR[id].name}</button>`).join('')}</div></div>`;
   }).join('');
   return `${hud()}<div class="panel">
-    <div class="row between"><h2>Status</h2><button class="btn small" data-a="back">← Back</button></div>
+    <div class="row between"><h2>Status</h2><div class="row"><button class="btn small" data-a="edit-look">Change appearance</button><button class="btn small" data-a="back">← Back</button></div></div>
     <div class="row"><span class="label">Stat points</span><span class="num" style="color:var(--gold)">${S.pts}</span></div>
     <div class="list">${rows}</div>
     <div class="grid3">
@@ -971,13 +1502,15 @@ function screenSave() {
 let prevScreen = 'hub';
 function render() {
   const sc = U.screen;
-  const view = { title: screenTitle, story: screenStory, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
+  const view = { create: screenCreate, title: screenTitle, story: screenStory, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
   // Keep the battle canvas element alive across re-renders so the animation never blinks.
   const keep = sc === 'battle' ? document.getElementById('battleCanvas') : null;
   app.innerHTML = view();
   if (keep) { const fresh = document.getElementById('battleCanvas'); fresh.replaceWith(keep); }
   if (sc === 'battle' && !raf) raf = requestAnimationFrame(loop);
-  if (sc === 'title' && !titleLoop) { titleLoop = true; requestAnimationFrame(drawTitle); }
+  for (const cv of app.querySelectorAll('canvas[data-portrait]')) drawPortrait(cv);
+  if (sc === 'title') ambientLoop.saved = null;
+  if ((sc === 'title' || sc === 'create') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 function toast(msg) {
@@ -999,11 +1532,23 @@ function enterWorld(i) {
 app.addEventListener('click', ev => {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
   const a = el.dataset.a, id = el.dataset.id;
-  const go = s => { if (['status', 'skills'].includes(s) && !['status', 'skills'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); };
+  const go = s => { if (['status', 'skills', 'create'].includes(s) && !['status', 'skills', 'create'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); };
   switch (a) {
     case 'new': if (loadSaved() && !U.confirmNew) { U.confirmNew = true; render(); break; } // falls through when no save exists
-    case 'new-yes': U.confirmNew = false; S = fresh(); topUpCaps(); save();
+    case 'new-yes': U.confirmNew = false; S = null; U.draft = { ...DEFAULT_LOOK }; U.draftName = 'Kael'; U.editing = false; go('create'); break;
+    case 'look': U.draft[el.dataset.k] = el.dataset.k in { skin: 1, hairCol: 1, eyes: 1 } ? +el.dataset.v : el.dataset.v; render(); break;
+    case 'look-random': {
+      const pick = l => l[Math.floor(Math.random() * l.length)], n = l => Math.floor(Math.random() * l.length);
+      U.draft = { gear: pick(LOOK_OPTS.gear)[0], skin: n(SKIN), hair: pick(LOOK_OPTS.hair)[0], hairCol: n(HAIR), eyes: n(EYES), beard: pick(LOOK_OPTS.beard)[0], mark: pick(LOOK_OPTS.mark)[0] };
+      render(); break;
+    }
+    case 'edit-look': U.draft = { ...DEFAULT_LOOK, ...S.look }; U.draftName = S.name; U.editing = true; go('create'); break;
+    case 'create-done': {
+      const name = (U.draftName || '').trim().slice(0, 16) || 'Kael';
+      if (U.editing) { S.look = { ...U.draft }; S.name = name; save(); toast('Appearance saved'); go(prevScreen); break; }
+      S = fresh(); S.look = { ...U.draft }; S.name = name; topUpCaps(); save();
       showStory('Prologue', STORY_OPEN, () => { U.screen = 'map'; render(); }, 'Answer the beacon'); break;
+    }
     case 'new-no': U.confirmNew = false; render(); break;
     case 'continue': S = Object.assign(fresh(), loadSaved()); topUpCaps(); go('map'); break;
     case 'import': try { S = decodeSave(document.getElementById('importBox').value); topUpCaps(); save(); toast('Save loaded'); go('map'); } catch (e) { toast('That code didn’t work. Check it was copied in full.'); } break;
@@ -1052,6 +1597,8 @@ app.addEventListener('click', ev => {
     }
   }
 });
+
+app.addEventListener('input', ev => { if (ev.target.id === 'heroName') U.draftName = ev.target.value; });
 
 // Keyboard shortcuts in battle: 1 Attack, 2 Skills, 3 Items, 4 Defend, 5 Flee, Esc back.
 document.addEventListener('keydown', ev => {
