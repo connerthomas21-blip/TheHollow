@@ -749,12 +749,12 @@ function foot(c, ax, ay, col, lit) {
   if (lit) { P(c, [ax - 3, ay - 1, ax + 3, ay - 1, ax + 7, ay + 2, ax - 3, ay + 2], lit, 0); L(c, [ax + 2.6, ay - 1, ax + 3.6, ay + 5], shade(col, -40), 0.7); }
 }
 
-function torsoPath(c, f, br) {
+function torsoPath(c, f, br, k = 1) {
   c.beginPath();
   if (f) {
     c.moveTo(-11, -83 + br); c.lineTo(11, -84 + br);
     c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
-    c.quadraticCurveTo(25, -72.4 + br, 19.6, -64.6 + br);
+    c.quadraticCurveTo(25 + (k - 1) * 9, -72.4 + br, 19.6 + (k - 1) * 4, -64.6 + br);
     c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6);
     c.quadraticCurveTo(8.2, -56, 9.6, -52);
     c.lineTo(-7.4, -52); c.quadraticCurveTo(-9.8, -58, -11, -64 + br); c.lineTo(-12.6, -72 + br);
@@ -817,11 +817,11 @@ function drawKnight(c, x, y, s, o, t) {
 
   // torso
   upper(() => {
-    torsoPath(c, f, br); c.fillStyle = A.base; c.fill();
-    c.save(); torsoPath(c, f, br); c.clip();
+    torsoPath(c, f, br, look.bust || 1); c.fillStyle = A.base; c.fill();
+    c.save(); torsoPath(c, f, br, look.bust || 1); c.clip();
     P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
     if (f) {
-      const g = c.createRadialGradient(15.6, -71.4 + br, 1, 15.6, -71.4 + br, 10); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
+      const bk = look.bust || 1, g = c.createRadialGradient(15.6 + (bk - 1) * 5, -71.4 + br, 1, 15.6 + (bk - 1) * 5, -71.4 + br, 10 + (bk - 1) * 4); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = g; c.fillRect(2, -84 + br, 22, 24);
       L(c, [16, -76 + br, 19.6, -70.6 + br], 'rgba(255,255,255,0.7)', 0.9);
       c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, -63.6 + br); c.quadraticCurveTo(12.6, -59.6 + br, 19, -64.6 + br); c.stroke();
@@ -830,7 +830,7 @@ function drawKnight(c, x, y, s, o, t) {
       L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.6)', 0.8);
     }
     c.restore();
-    torsoPath(c, f, br); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+    torsoPath(c, f, br, look.bust || 1); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
     if (A.cloth) {
       for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
       P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
@@ -841,7 +841,8 @@ function drawKnight(c, x, y, s, o, t) {
     }
     if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
     if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
-    if (A.sigil) { const pts = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(0 + Math.cos(an) * r, -71 + br + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
+    // the Order's star sits on the chest, or on the belt buckle for the curvy build
+    if (A.sigil) { const pts = [], sy = f ? -55.5 : -71 + br; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(1 + Math.cos(an) * r, sy + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
     if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
     if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
 
@@ -892,11 +893,25 @@ function drawKnight(c, x, y, s, o, t) {
     }
     c.save(); c.translate(hx, hy); c.rotate(base + arm); drawWeapon(c, wpn, A, t); c.restore();
     limb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A.base, A.light);
+    if (f) {
+      // the near upper arm hangs at her side, so the curve of the chest sits in front of it
+      const bk = look.bust || 1, cup = () => { c.beginPath(); c.moveTo(6, -83 + br); c.lineTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
+        c.quadraticCurveTo(25 + (bk - 1) * 9, -72.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br); c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6); c.lineTo(5, -61); c.closePath(); };
+      cup(); c.fillStyle = A.base; c.fill();
+      c.save(); cup(); c.clip();
+      P(c, [12, -81 + br, 17 + (bk - 1) * 3, -78.5 + br, 22 + (bk - 1) * 7, -71 + br, 18.5 + (bk - 1) * 4, -72.4 + br, 14, -76.6 + br], A.light, 0);
+      P(c, [8, -64, 14, -62.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br, 14, -59, 8, -59], A.dark, 0);
+      c.restore();
+      c.beginPath(); c.moveTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br); c.quadraticCurveTo(25 + (bk - 1) * 9, -72.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br); c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6);
+      c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+      L(c, [16.6 + (bk - 1) * 3, -76 + br, 20.4 + (bk - 1) * 5, -70.6 + br], 'rgba(255,255,255,0.75)', 0.9);
+      L(c, [6, -77 + br, 12, -84 + br], A.trim, 0.9);
+    }
     limb(c, ex, ey, hx, hy, 3.8 * lw, 3.4 * lw, A.base, A.light);
     P(c, [ex - 2.8, ey - 2.6, ex + 1.2, ey - 4, ex + 3.4, ey + 1, ex - 0.6, ey + 3], A.light, 1);
     P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
     L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
-    c.save(); if (f) { c.translate(12, -80 + br); c.scale(0.9, 0.9); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
+    c.save(); if (f) { c.translate(10, -84 + br); c.scale(0.78, 0.78); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
     if (o.acc === 'x_lens') {
       const oy = -104 + Math.sin(t * 0.003) * 3;
       glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);

@@ -43,72 +43,92 @@ function runeBg(c, w, h, t, col = '#d4142e') {
 }
 
 const PINK = 'rgba(255,110,130,0.55)';
+// Faces are drawn in three-quarter view, turned toward the viewer's right: the ear and the near eye are on the left,
+// the far eye sits close to the right-hand contour, and nose, mouth and chin lie on a centre line around x = 166.
 function bustFace(c, sp) {
   const skin = sp.skin, sh = shade(skin, -28), f = sp.f;
-  fp(c, ['M', 126, 180, 'L', 122, 238, 'Q', 150, 250, 180, 238, 'L', 176, 186, 'Z'], skin, 2.4);
-  fp(c, ['M', 126, 182, 'L', 124, 216, 'Q', 152, 224, 176, 206, 'L', 176, 188, 'Z'], sh, 0);
+  fp(c, ['M', 128, 182, 'L', 124, 238, 'Q', 152, 250, 182, 238, 'L', 180, 186, 'Z'], skin, 2.4);
+  fp(c, ['M', 128, 184, 'L', 126, 216, 'Q', 154, 226, 180, 208, 'L', 180, 190, 'Z'], sh, 0);
   fp(c, ['M', 98, 116, 'Q', 78, 110, 82, 134, 'Q', 86, 154, 104, 150, 'Z'], skin, 2.2);
-  L(c, [90, 124, 94, 140], sh, 1.6);
+  L(c, [90, 124, 94, 140], sh, 1.6); L(c, [88, 130, 96, 128], shade(skin, -45), 1.2);
   const face = f
-    ? ['M', 94, 92, 'Q', 88, 138, 112, 170, 'L', 158, 202, 'Q', 174, 198, 188, 180, 'Q', 202, 156, 205, 128, 'L', 206, 100, 'Q', 198, 60, 150, 56, 'Q', 102, 58, 94, 92, 'Z']
-    : ['M', 92, 92, 'Q', 88, 146, 108, 180, 'L', 146, 210, 'L', 172, 207, 'Q', 192, 190, 202, 162, 'Q', 209, 134, 207, 100, 'Q', 198, 58, 150, 54, 'Q', 100, 56, 92, 92, 'Z'];
+    ? ['M', 96, 92, 'Q', 88, 142, 116, 178, 'Q', 140, 198, 166, 204, 'Q', 182, 198, 194, 178, 'Q', 206, 154, 208, 126, 'L', 207, 100, 'Q', 200, 60, 152, 56, 'Q', 104, 58, 96, 92, 'Z']
+    : ['M', 92, 92, 'Q', 86, 148, 110, 184, 'L', 150, 209, 'L', 176, 206, 'Q', 196, 188, 204, 160, 'Q', 210, 134, 207, 100, 'Q', 198, 58, 150, 54, 'Q', 100, 56, 92, 92, 'Z'];
+  const skull = ['M', 92, 104, 'Q', 82, 32, 150, 28, 'Q', 218, 32, 208, 104, 'Z'];
+  fp(c, skull, skin, 2.8);
+  if (['shaved', 'mohawk', 'topknot'].includes(sp.style)) { c.save(); path(c, skull); c.clip(); c.globalAlpha = 0.38; fp(c, ['M', 80, 20, 'L', 220, 20, 'L', 220, 76, 'Q', 150, 64, 84, 96, 'Z'], sp.hair, 0); c.restore(); }
   fp(c, face, skin, 2.8);
+  c.save(); path(c, [...skull.slice(0, -1), 'L', 207, 100, 'Z']); path(c, face); c.restore();
   c.save(); path(c, face); c.clip();
-  fp(c, ['M', 80, 40, 'L', 122, 40, 'Q', 108, 120, 128, 216, 'L', 80, 216, 'Z'], sh, 0);
-  if (f) for (const [x, y] of [[178, 160], [124, 156]]) for (let i = 0; i < 3; i++) L(c, [x + i * 5, y + 4, x + i * 5 + 4, y - 2], PINK, 1.6);
+  // the cheek turning away from us falls into shadow
+  fp(c, ['M', 220, 40, 'L', 198, 40, 'Q', 206, 128, 188, 182, 'L', 164, 216, 'L', 220, 216, 'Z'], sh, 0);
+  fp(c, ['M', 150, 196, 'Q', 166, 202, 182, 194, 'L', 182, 216, 'L', 150, 216, 'Z'], sh, 0);
+  if (f) { for (let i = 0; i < 3; i++) L(c, [110 + i * 6, 162, 115 + i * 6, 155], PINK, 1.8); for (let i = 0; i < 2; i++) L(c, [180 + i * 5, 160, 184 + i * 5, 154], PINK, 1.5); }
   c.restore();
-  L(c, [188, 144, 195, 160, 188, 162], shade(skin, -60), 1.8);
-  if (f) { L(c, [163, 183, 178, 181], shade(skin, -80), 2.2); L(c, [166, 189, 175, 189], shade(skin, -34), 1.4); }
-  else L(c, sp.expr === 'grim' ? [156, 189, 182, 188] : [158, 187, 182, 184], shade(skin, -80), 2.4);
+  // nose: a small wedge on the centre line, shadowed on the side away from the light
+  fp(c, ['M', 163, 147, 'L', 171, 160, 'L', 163, 162, 'Z'], shade(skin, -24), 0);
+  L(c, [163, 145, 171, 160, 164, 162], shade(skin, -62), 1.8);
+  if (f) { L(c, [154, 183, 171, 181], shade(skin, -82), 2.2); L(c, [157, 189, 167, 189], shade(skin, -34), 1.4); }
+  else L(c, sp.expr === 'grim' ? [150, 187, 176, 186] : [151, 186, 176, 183], shade(skin, -82), 2.4);
   return face;
 }
 
-function animeEye(c, cx, cy, w, h, col, sp, far) {
-  const f = sp.f;
-  const scl = ['M', cx - w / 2, cy, 'Q', cx - w * 0.1, cy - h * 0.62, cx + w / 2, cy - h * 0.28, 'Q', cx + w * 0.42, cy + h * 0.38, cx + w * 0.05, cy + h * 0.46, 'Q', cx - w * 0.36, cy + h * 0.4, cx - w / 2, cy, 'Z'];
+// One anime eye centred at (cx, cy). The outer corner is on the right unless `mirror` is set;
+// both irises look toward the viewer's right and the gloss always sits upper-left.
+function animeEye(c, cx, cy, w, h, col, sp, far, mirror) {
+  const f = sp.f, look = mirror ? -1 : 1;
+  c.save(); c.translate(cx, cy); if (mirror) c.scale(-1, 1);
+  const scl = ['M', -w / 2, 0, 'Q', -w * 0.1, -h * 0.62, w / 2, -h * 0.28, 'Q', w * 0.42, h * 0.38, w * 0.05, h * 0.46, 'Q', -w * 0.36, h * 0.4, -w / 2, 0, 'Z'];
   fp(c, scl, '#fbf8f4', 0);
   c.save(); path(c, scl); c.clip();
-  const ix = cx + w * 0.06, iy = cy + h * 0.06, rx = w * 0.3, ry = h * 0.46;
+  const ix = w * 0.1 * look, iy = h * 0.06, rx = w * 0.3, ry = h * 0.46;
   const g = c.createLinearGradient(0, iy - ry, 0, iy + ry); g.addColorStop(0, shade(col, -95)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, 70));
   c.fillStyle = g; c.beginPath(); c.ellipse(ix, iy, rx, ry, 0, 0, Math.PI * 2); c.fill();
   c.lineWidth = 1.4; c.strokeStyle = shade(col, -110); c.stroke();
   c.fillStyle = shade(col, -120); c.beginPath(); c.ellipse(ix, iy + ry * 0.05, rx * 0.42, ry * 0.5, 0, 0, Math.PI * 2); c.fill();
-  c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(cx - w, cy - h, w * 2, h * 0.58);
-  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(ix - rx * 0.35, iy - ry * 0.32, rx * 0.36, ry * 0.24, -0.4, 0, Math.PI * 2); c.fill();
-  c.beginPath(); c.arc(ix + rx * 0.42, iy + ry * 0.45, rx * 0.15, 0, Math.PI * 2); c.fill();
+  c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(-w, -h, w * 2, h * 0.58);
+  c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(ix - rx * 0.35 * look, iy - ry * 0.32, rx * 0.36, ry * 0.24, -0.4 * look, 0, Math.PI * 2); c.fill();
+  c.beginPath(); c.arc(ix + rx * 0.42 * look, iy + ry * 0.45, rx * 0.15, 0, Math.PI * 2); c.fill();
   c.restore();
   const lt = f ? 4.4 : 3.2;
-  fp(c, ['M', cx - w / 2 - 1, cy + 1, 'Q', cx - w * 0.1, cy - h * 0.66, cx + w / 2 + 3, cy - h * 0.32, 'L', cx + w / 2 + (f ? 10 : 5), cy - h * 0.44, 'L', cx + w / 2 + 2, cy - h * 0.16, 'Q', cx - w * 0.1, cy - h * 0.5 + lt, cx - w / 2 + 1, cy + 2, 'Z'], INK, 0);
-  if (f && !far) L(c, [cx + w * 0.34, cy - h * 0.4, cx + w * 0.48, cy - h * 0.64], INK, 1.8);
-  L(c, [cx + w * 0.42, cy + h * 0.3, cx + w * 0.05, cy + h * 0.46], INK, 1.3);
-  const by = cy - h * (sp.angry ? 0.66 : 0.8), bc = shade(sp.hair, -60);
-  if (sp.angry) fp(c, ['M', cx - w * 0.5, by - 7, 'L', cx + w * 0.58, by + 5, 'L', cx + w * 0.52, by + 9, 'L', cx - w * 0.5, by - 2, 'Z'], bc, 1);
-  else fp(c, ['M', cx - w * 0.45, by + 2, 'Q', cx, by - (f ? 7 : 4), cx + w * 0.55, by + 1, 'L', cx + w * 0.5, by + (f ? 3.5 : 6), 'Q', cx, by - (f ? 3 : 0), cx - w * 0.45, by + (f ? 5 : 7), 'Z'], bc, 1);
+  fp(c, ['M', -w / 2 - 1, 1, 'Q', -w * 0.1, -h * 0.66, w / 2 + 3, -h * 0.32, 'L', w / 2 + (f ? 10 : 5), -h * 0.44, 'L', w / 2 + 2, -h * 0.16, 'Q', -w * 0.1, -h * 0.5 + lt, -w / 2 + 1, 2, 'Z'], INK, 0);
+  if (f) L(c, [w * 0.34, -h * 0.4, w * 0.48, -h * (far ? 0.56 : 0.64)], INK, far ? 1.4 : 1.8);
+  L(c, [w * 0.42, h * 0.3, w * 0.05, h * 0.46], INK, 1.3);
+  // brow: inner end (toward the nose) is at -x
+  const by = -h * (sp.angry ? 0.66 : 0.8), bc = shade(sp.hair, -60);
+  if (sp.angry) fp(c, ['M', -w * 0.5, by + 6, 'L', w * 0.58, by - 6, 'L', w * 0.54, by - 2, 'L', -w * 0.5, by + 10, 'Z'], bc, 1);
+  else fp(c, ['M', -w * 0.45, by + 2, 'Q', 0, by - (f ? 7 : 4), w * 0.55, by + 1, 'L', w * 0.5, by + (f ? 3.5 : 6), 'Q', 0, by - (f ? 3 : 0), -w * 0.45, by + (f ? 5 : 7), 'Z'], bc, 1);
+  c.restore();
 }
 
 function bustEyes(c, sp) {
-  const f = sp.f, nw = f ? 34 : 30, nh = f ? 34 : 24, fw = f ? 24 : 22, fh = f ? 32 : 22;
+  const f = sp.f, nw = f ? 34 : 30, nh = f ? 34 : 24, fw = f ? 24 : 21, fh = f ? 31 : 22;
   if (sp.mark === 'patch') {
-    L(c, [150, 104, 96, 96], '#1a1418', 2.4); L(c, [196, 130, 214, 120], '#1a1418', 2.4);
-    fp(c, ['M', 158, 118, 'Q', 176, 108, 196, 116, 'Q', 198, 140, 176, 146, 'Q', 158, 140, 158, 118, 'Z'], '#1a1418', 2);
-  } else animeEye(c, 174, 130, nw, nh, sp.eyes, sp, false);
-  animeEye(c, 124, 128, fw, fh, sp.eyes, sp, true);
+    L(c, [114, 116, 92, 112], '#1a1418', 2.4); L(c, [146, 118, 204, 98], '#1a1418', 2.4);
+    fp(c, ['M', 112, 120, 'Q', 130, 110, 150, 118, 'Q', 150, 142, 130, 148, 'Q', 112, 142, 112, 120, 'Z'], '#1a1418', 2);
+  } else animeEye(c, 130, 130, nw, nh, sp.eyes, sp, false, true);
+  animeEye(c, 186, 129, fw, fh, sp.eyes, sp, true, false);
 }
 
 function bustMarks(c, sp) {
   const skin = sp.skin;
-  if (sp.mark === 'scar') { L(c, [166, 100, 190, 156], shade(skin, -60), 3); L(c, [168, 100, 192, 155], shade(skin, 30), 1.2); }
-  if (sp.mark === 'paint') { for (const y of [154, 164]) fp(c, ['M', 162, y, 'L', 200, y - 4, 'L', 200, y + 1, 'L', 164, y + 5, 'Z'], '#c4202e', 0); }
-  if (sp.mark === 'tattoo') { c.save(); glowOn(c, sp.eyes, 8); L(c, [200, 80, 196, 100, 204, 112, 200, 124], sp.eyes, 1.6); L(c, [188, 168, 196, 176, 196, 192], sp.eyes, 1.6); c.restore(); }
+  if (sp.mark === 'scar') { L(c, [118, 100, 144, 158], shade(skin, -60), 3); L(c, [120, 100, 146, 157], shade(skin, 30), 1.2); }
+  if (sp.mark === 'paint') { for (const y of [154, 164]) fp(c, ['M', 104, y, 'L', 142, y - 3, 'L', 142, y + 2, 'L', 106, y + 5, 'Z'], '#c4202e', 0); }
+  if (sp.mark === 'tattoo') { c.save(); glowOn(c, sp.eyes, 8); L(c, [102, 80, 106, 98, 98, 110, 102, 122], sp.eyes, 1.6); L(c, [118, 168, 128, 176, 128, 192], sp.eyes, 1.6); c.restore(); }
   const b = sp.beard, hc = shade(sp.hair, -10);
-  if (b === 'full' || b === 'stubble') {
-    c.save(); if (b === 'stubble') c.globalAlpha = 0.35;
-    fp(c, ['M', 104, 166, 'L', 146, 212, 'L', 174, 208, 'Q', 196, 188, 204, 158, 'L', 198, 182, 'L', 190, 176, 'Q', 172, 198, 156, 198, 'Q', 128, 194, 110, 168, 'Z'], hc, b === 'full' ? 2.2 : 0);
-    if (b === 'full') { L(c, [140, 200, 146, 212], shade(hc, -40), 1.4); L(c, [166, 202, 168, 210], shade(hc, -40), 1.4); }
-    c.restore();
+  const hd = shade(hc, -45);
+  if (b === 'stubble') { c.save(); c.globalAlpha = 0.32; fp(c, ['M', 100, 158, 'Q', 112, 192, 150, 210, 'L', 176, 207, 'Q', 196, 190, 204, 160, 'Q', 186, 196, 160, 196, 'Q', 130, 192, 100, 158, 'Z'], hc, 0); c.restore(); }
+  if (b === 'full') {
+    fp(c, ['M', 100, 156, 'Q', 104, 186, 128, 204, 'L', 136, 216, 'L', 148, 212, 'L', 158, 230, 'L', 166, 214, 'L', 178, 222, 'L', 180, 206, 'Q', 198, 188, 204, 160, 'L', 196, 174, 'Q', 182, 196, 164, 200, 'Q', 132, 198, 112, 170, 'Z'], hc, 2.2);
+    fp(c, ['M', 104, 166, 'Q', 112, 190, 130, 202, 'L', 136, 212, 'L', 132, 198, 'Q', 116, 186, 104, 166, 'Z'], hd, 0);
+    for (const [x0, y0, x1, y1] of [[140, 202, 144, 212], [164, 204, 162, 218], [184, 192, 182, 202]]) L(c, [x0, y0, x1, y1], hd, 1.4);
   }
-  if (b === 'goatee') fp(c, ['M', 150, 194, 'L', 176, 192, 'L', 172, 214, 'L', 160, 222, 'L', 152, 210, 'Z'], hc, 2);
-  if (b === 'full' || b === 'goatee' || b === 'moustache') fp(c, ['M', 156, 178, 'Q', 176, 168, 196, 174, 'L', 190, 181, 'Q', 174, 177, 160, 184, 'Z'], hc, 1.8);
+  if (b === 'goatee') { fp(c, ['M', 152, 194, 'L', 176, 192, 'L', 172, 212, 'L', 164, 224, 'L', 154, 210, 'Z'], hc, 2); L(c, [164, 198, 164, 216], hd, 1.2); }
+  if (b === 'full' || b === 'goatee' || b === 'moustache') {
+    fp(c, ['M', 163, 170, 'Q', 152, 172, 140, 186, 'L', 146, 186, 'Q', 154, 180, 163, 178, 'Z'], hc, 1.8);
+    fp(c, ['M', 165, 170, 'Q', 178, 171, 188, 184, 'L', 182, 185, 'Q', 174, 179, 165, 178, 'Z'], hc, 1.8);
+    L(c, [152, 189, 174, 188], shade(skin, -82), 2);
+  }
 }
 
 function bustHairBack(c, sp, t) {
@@ -125,14 +145,14 @@ function bustHairBack(c, sp, t) {
 function bustHairFront(c, sp, face) {
   const h = sp.hair, hl = shade(h, 50), hd = shade(h, -34), st = sp.style, f = sp.f;
   if (st === 'shaved' || st === 'mohawk' || st === 'topknot') {
-    c.save(); path(c, face); c.clip(); c.globalAlpha = 0.32; c.fillStyle = h; c.fillRect(70, 30, 160, 64); c.fillRect(70, 30, 40, 120); c.restore();
     if (st === 'mohawk') for (let i = 0; i < 6; i++) lock(c, 112 + i * 16, 64 - i * 1.5, 92 + i * 18, 6 + (i % 2) * 14, 9, 6, h);
     if (st === 'topknot') { fp(c, ['M', 122, 52, 'Q', 112, 18, 146, 12, 'Q', 180, 16, 172, 52, 'Z'], h, 2.4); fp(c, ['M', 120, 50, 'L', 174, 50, 'L', 172, 60, 'L', 122, 60, 'Z'], '#c9a24a', 2); }
     return;
   }
   if (st === 'swept') {
     fp(c, ['M', 98, 60, 'L', 52, 52, 'L', 76, 82, 'L', 44, 96, 'L', 80, 112, 'L', 58, 136, 'L', 92, 132, 'Z'], hd, 2.4);
-    fp(c, ['M', 86, 112, 'Q', 70, 30, 150, 26, 'Q', 230, 28, 214, 104, 'Q', 204, 76, 176, 70, 'L', 186, 86, 'Q', 160, 64, 130, 70, 'Q', 100, 76, 86, 112, 'Z'], h, 2.6);
+    fp(c, ['M', 86, 114, 'Q', 68, 28, 150, 24, 'Q', 232, 26, 214, 104, 'L', 206, 84, 'L', 198, 98, 'L', 188, 74, 'L', 178, 88, 'L', 166, 66, 'L', 158, 84, 'L', 144, 70, 'L', 132, 84, 'L', 120, 74, 'L', 110, 90, 'L', 100, 82, 'L', 96, 102, 'Z'], h, 2.6);
+    fp(c, ['M', 104, 50, 'Q', 150, 32, 198, 48, 'L', 192, 56, 'Q', 150, 44, 110, 58, 'Z'], hl, 0);
     for (const k of [0, 1, 2, 3]) L(c, [196 - k * 22, 70 - k * 2, 150 - k * 22, 40], k % 2 ? hl : hd, 1.4);
     lock(c, 180, 66, 198, 116, 4, 8, h);
     return;
@@ -250,13 +270,14 @@ function bustGear(c, sp, face, phase) {
   }
   if (g === 'circlet') {
     fp(c, ['M', 88, 96, 'Q', 150, 76, 214, 94, 'L', 214, 102, 'Q', 150, 86, 88, 104, 'Z'], '#e8c25a', 2.2);
-    c.save(); glowOn(c, eye, 12); fp(c, ['M', 184, 80, 'L', 192, 90, 'L', 184, 100, 'L', 176, 90, 'Z'], eye, 2); c.restore();
+    c.save(); glowOn(c, eye, 12); fp(c, ['M', 166, 79, 'L', 174, 89, 'L', 166, 99, 'L', 158, 89, 'Z'], eye, 2); c.restore();
   }
   if (g === 'mask') {
-    fp(c, ['M', 140, 160, 'L', 208, 150, 'L', 214, 186, 'Q', 192, 216, 154, 214, 'L', 132, 190, 'Z'], '#4a4e5a', 2.6);
-    for (const y of [168, 180, 192]) L(c, [150, y, 204, y - 4], '#22242a', 1.6);
-    fp(c, ['M', 200, 186, 'L', 226, 192, 'L', 224, 214, 'L', 200, 206, 'Z'], '#33363e', 2.2);
-    L(c, [140, 164, 98, 140], '#2a2a33', 3);
+    L(c, [128, 164, 96, 138], '#2a2a33', 3);
+    fp(c, ['M', 128, 160, 'L', 200, 150, 'L', 206, 186, 'Q', 186, 214, 152, 212, 'L', 122, 188, 'Z'], '#4a4e5a', 2.6);
+    fp(c, ['M', 128, 160, 'L', 200, 150, 'L', 202, 164, 'L', 130, 172, 'Z'], '#6a707e', 0);
+    for (const y of [176, 188]) L(c, [140, y, 198, y - 4], '#22242a', 1.6);
+    fp(c, ['M', 160, 200, 'L', 186, 196, 'L', 188, 222, 'L', 162, 226, 'Z'], '#33363e', 2.2);
   }
   if (g === 'hood') {
     c.save(); path(c, face); c.clip(); fp(c, ['M', 60, 30, 'L', 240, 30, 'L', 240, 112, 'Q', 160, 96, 60, 124, 'Z'], 'rgba(8,4,12,0.45)', 0); c.restore();
@@ -281,7 +302,7 @@ function drawBust(c, sp, t) {
     bustMarks(c, sp);
     if (sp.gear !== 'knight' && sp.gear !== 'crest' && sp.gear !== 'hood') bustHairFront(c, sp, face);
     bustGear(c, sp, face, 'front');
-    if (sp.gear === 'hood' && sp.glowEyes) { c.save(); glowOn(c, sp.eyes, 14); c.fillStyle = sp.eyes; c.fillRect(166, 126, 18, 4); c.fillRect(118, 124, 12, 4); c.restore(); }
+    if (sp.gear === 'hood' && sp.glowEyes) { c.save(); glowOn(c, sp.eyes, 14); c.fillStyle = sp.eyes; c.fillRect(120, 128, 20, 4); c.fillRect(180, 127, 12, 4); c.restore(); }
   }
   c.restore();
 }

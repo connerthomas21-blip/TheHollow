@@ -17,8 +17,9 @@ const CAST = {
   kol:        () => ({ armor: armorStyle(KOL_ARMOR), look: KOL_LOOK, weapon: 'sword' }),
   kolHood:    () => ({ armor: armorStyle({ ...KOL_ARMOR, cape: '#1a1420' }), look: { ...KOL_LOOK, gear: 'hood' }, weapon: 'sword' }),
   kolDark:    () => ({ armor: armorStyle(KOL_DARK_ARMOR), look: { ...KOL_LOOK, eyes: '#c46aff' }, weapon: 'sword' }),
-  lyra:       () => ({ armor: armorStyle({ ...SWEEPER_ARMOR, pauldron: 'plate' }), look: LYRA_LOOK, weapon: 'w_lance' }),
-  lyraHood:   () => ({ armor: armorStyle({ ...SWEEPER_ARMOR, pauldron: 'plate', cape: '#2a2a34' }), look: { ...LYRA_LOOK, gear: 'hood' }, weapon: 'w_lance' }),
+  // Lyra's cutscene figure is fuller than the player's curvy build.
+  lyra:       () => ({ armor: armorStyle({ ...SWEEPER_ARMOR, pauldron: 'plate' }), look: { ...LYRA_LOOK, bust: 1.5 }, weapon: 'w_lance' }),
+  lyraHood:   () => ({ armor: armorStyle({ ...SWEEPER_ARMOR, pauldron: 'plate', cape: '#2a2a34' }), look: { ...LYRA_LOOK, gear: 'hood', bust: 1.5 }, weapon: 'w_lance' }),
   gm:         () => ({ armor: armorStyle({ base: '#e6e0d0', trim: '#c9a24a', cloth: true, pauldron: 'layered', cape: '#8a1a24', rivet: '#e8c25a' }), look: GM_LOOK, weapon: 'staff' }),
   knight:     () => ({ armor: armorStyle(SWEEPER_ARMOR), look: { gear: 'visor', eyes: 0 }, weapon: 'sword' }),
   vex:        () => ({ enemy: PLANETS[2].boss }),
