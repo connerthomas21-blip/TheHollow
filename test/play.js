@@ -2,10 +2,10 @@
 const { chromium } = require('playwright');
 const path = require('path');
 (async () => {
-  const html = require('fs').readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
+  const server = await require('./serve')();
   const b = await chromium.launch(); const pg = await b.newPage({ viewport: { width: 800, height: 900 } });
   const errs = []; pg.on('pageerror', e => errs.push(e.message)); pg.on('console', m => m.type() === 'error' && errs.push(m.text()));
-  await pg.setContent(`<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">` + html);
+  await pg.goto(server.url);
   await pg.waitForTimeout(500);
   await pg.screenshot({ path: process.argv[2] + '/title.png' });
   await pg.click('[data-a="new"]'); await pg.click('[data-a="create-done"]'); await pg.click('[data-a="story-next"]');
@@ -70,5 +70,5 @@ const path = require('path');
   await pg.setViewportSize({ width: 390, height: 844 });
   await pg.screenshot({ path: process.argv[2] + '/hub-phone.png', fullPage: true });
   console.log('errors:', errs.length ? errs : 'none');
-  await b.close();
+  await b.close(); server.close();
 })();
