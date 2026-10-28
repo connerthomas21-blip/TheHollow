@@ -51,7 +51,7 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Interface palette moved to black and crimson.
 - `node test/portraits.js <dir>` renders every portrait, the title and a cutscene; `node test/faces.js <dir>` renders face close-ups.
 - Faces are a consistent three-quarter view turned to the viewer's right: ear and larger near eye on the left, far eye by the right contour, nose/mouth/chin on a centre line near x = 166.
-- Lyra's cutscene sprite uses `look.bust` (1.5) for a fuller figure; the curvy build's near arm hangs behind the chest and its shoulder plate is smaller. Battle sprites are unaffected.
+- Lyra uses a plain fitted breastplate (portrait) and a near-flat chest (sprite, `look.bust` defaults to 0.5 for the curvy build).
 
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?

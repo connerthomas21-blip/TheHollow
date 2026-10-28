@@ -817,11 +817,11 @@ function drawKnight(c, x, y, s, o, t) {
 
   // torso
   upper(() => {
-    torsoPath(c, f, br, look.bust || 1); c.fillStyle = A.base; c.fill();
-    c.save(); torsoPath(c, f, br, look.bust || 1); c.clip();
+    torsoPath(c, f, br, look.bust ?? 0.5); c.fillStyle = A.base; c.fill();
+    c.save(); torsoPath(c, f, br, look.bust ?? 0.5); c.clip();
     P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
     if (f) {
-      const bk = look.bust || 1, g = c.createRadialGradient(15.6 + (bk - 1) * 5, -71.4 + br, 1, 15.6 + (bk - 1) * 5, -71.4 + br, 10 + (bk - 1) * 4); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
+      const bk = look.bust ?? 0.5, g = c.createRadialGradient(15.6 + (bk - 1) * 5, -71.4 + br, 1, 15.6 + (bk - 1) * 5, -71.4 + br, 10 + (bk - 1) * 4); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
       c.fillStyle = g; c.fillRect(2, -84 + br, 22, 24);
       L(c, [16, -76 + br, 19.6, -70.6 + br], 'rgba(255,255,255,0.7)', 0.9);
       c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, -63.6 + br); c.quadraticCurveTo(12.6, -59.6 + br, 19, -64.6 + br); c.stroke();
@@ -830,7 +830,7 @@ function drawKnight(c, x, y, s, o, t) {
       L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.6)', 0.8);
     }
     c.restore();
-    torsoPath(c, f, br, look.bust || 1); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+    torsoPath(c, f, br, look.bust ?? 0.5); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
     if (A.cloth) {
       for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
       P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
@@ -895,7 +895,7 @@ function drawKnight(c, x, y, s, o, t) {
     limb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A.base, A.light);
     if (f) {
       // the near upper arm hangs at her side, so the curve of the chest sits in front of it
-      const bk = look.bust || 1, cup = () => { c.beginPath(); c.moveTo(6, -83 + br); c.lineTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
+      const bk = look.bust ?? 0.5, cup = () => { c.beginPath(); c.moveTo(6, -83 + br); c.lineTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
         c.quadraticCurveTo(25 + (bk - 1) * 9, -72.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br); c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6); c.lineTo(5, -61); c.closePath(); };
       cup(); c.fillStyle = A.base; c.fill();
       c.save(); cup(); c.clip();
