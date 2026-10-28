@@ -8,8 +8,8 @@ const path = require('path');
   await pg.goto(server.url);
   await pg.waitForTimeout(500);
   await pg.screenshot({ path: process.argv[2] + '/title.png' });
-  await pg.click('[data-a="new"]'); await pg.click('[data-a="create-done"]'); await pg.click('[data-a="story-next"]');
-  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="story-next"]');
+  await pg.click('[data-a="new"]'); await pg.click('[data-a="create-done"]'); await pg.click('[data-a="cs-skip"]');
+  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="cs-skip"]');
   await pg.click('[data-a="patrol"]'); await pg.waitForTimeout(700);
   await pg.click('[data-a="attack"]'); await pg.waitForTimeout(1500);
   await pg.screenshot({ path: process.argv[2] + '/battle.png' });
@@ -59,7 +59,7 @@ const path = require('path');
       let bossTries = 0, bossTurns = 0, res;
       do { spend(); shop(); const st = stats(); S.hp = st.maxHp; S.en = st.maxEn; [res, bossTurns] = await fight(true); bossTries++;
         if (res !== 'won') for (let k = 0; k < 4; k++) { spend(); shop(); const st2 = stats(); S.hp = st2.maxHp; S.en = st2.maxEn; await fight(false); battles++; }
-      } while (res !== 'won' && bossTries < 8);
+      } while (!S.bosses[w] && bossTries < 12);
       out.push(`${PLANETS[w].name}: patrols=${battles} losses=${losses} bossTries=${bossTries} bossTurns=${bossTurns} -> LV ${S.lvl}, cr ${S.cr}, gear ${Object.values(S.equip).join(',')}`);
     }
     out.push('done=' + S.done + ' boss HP left on losses: ' + window.__bl);

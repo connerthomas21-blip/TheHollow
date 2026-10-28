@@ -7,7 +7,7 @@ beating a boss on each world before facing a final dark power.
 
 Names, story and art are original. Only the gameplay style is borrowed.
 
-Single file: `index.html` (no build step). Published as a claude.ai Artifact.
+Files: `index.html` (styles + markup) and `js/` — data, art, story, cutscene, game, ui (loaded in that order, no build step). Published as a claude.ai Artifact.
 Save data lives in the browser (localStorage), and there's an export/import save code.
 
 ## Core loop (Session 1, done)
@@ -36,8 +36,20 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Appearance screen with arrow cycling for every option, a large head close-up, and an outfit preview; reachable from the main menu any time (edits the saved game, or the look for the next new game if there's no save)
 - Main menu button in the HUD (disabled mid-battle); hero shown on each world hub
 
+## Session A — Story, cutscenes, art pass 3 (done)
+- Story rewritten: the hero is an exiled Sweeper Knight, framed by Master Ardent Kol, who made a pact with the Hollow Dark. Lyra saw it and kept quiet; the player forgives her or not (`S.lyra`).
+- Cutscene engine (`js/cutscene.js`): animated cast, walking, pose blending, typewriter text, title cards, flash/shake, choices, skip, replay from the Story menu. Scripts in `js/story.js`.
+- Scenes: prologue (14 beats), world intros/outros, Kol confrontation, the titan's reveal, ending ceremony.
+- Kol is a boss before the titan on world 5 (`KOL`, `S.kolDown`). The Hollow Dark is now a crowned titan (`drawTitan`) whose armour breaks open in phase 2.
+- Post-game: Hall of Heroes (trophies, record, talk to the Grand Master, Lyra and Squire Tamsin), "Starbreaker" title in the HUD.
+- Art: posable knights (arm, lean, crouch/kneel, walk), curvy build option, swing smears, sprite renderer with bold silhouette outline + scene rim light + hit flash + afterimages, hall and burning-Veyra backdrops.
+- Attack choreography: wind-up, dash, swing, impact freeze, knockback, crit zoom, recovery; leaping slam, charged casts, ranged muzzle flash and tracers; enemy squash-and-stretch; death dissolve.
+
+## Open questions for the user
+- "Scale it up": more content, a bigger screen, or deeper systems?
+
 ## Session 2 — Companion & quests
-- Ally knight joins after world 2 (two-member party, target selection)
+- Lyra joins as a party member after Nebulon (two-member party, target selection)
 - Multi-enemy encounters (1–3 foes)
 - Quest board per world (kill X, collect drops) with rewards
 - Enemy drops and materials

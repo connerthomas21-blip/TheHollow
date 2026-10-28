@@ -1,0 +1,208 @@
+'use strict';
+/* ============================== CUTSCENES ============================== */
+
+const csName = () => (S && S.name) || (loadSaved() || {}).name || (loadPending() || {}).name || 'Kael';
+const fmt = s => String(s || '').replace(/\{name\}/g, csName());
+// Story flags: the live game, else the saved game; choices made while replaying stay local to the replay.
+const storyState = () => ({ ...(S || loadSaved() || {}), ...((U.cs && U.cs.tmp) || {}) });
+const POSE_KEYS = ['arm', 'lean', 'crouch'];
+
+function playCutscene(id, then, replay = false) {
+  U.cs = { id, i: -1, cast: {}, bg: 0, fade: 0, flash: 0, shake: 0, title: null, say: null, choice: null, then, replay, tmp: {}, t0: 0 };
+  U.screen = 'cutscene';
+  csAdvance();
+}
+function curPose(a, now = performance.now()) {
+  const k = a.fromPose ? Math.min(1, (now - a.pt0) / 280) : 1, out = {};
+  for (const p of POSE_KEYS) { const to = a.pose[p] || 0, from = a.fromPose ? (a.fromPose[p] || 0) : to; out[p] = from + (to - from) * EASE.io(k); }
+  return out;
+}
+function csApply(b) {
+  const cs = U.cs, now = performance.now();
+  if (b.bg != null && b.bg !== cs.bg) { cs.bg = b.bg; cs.fade = now; }
+  if (b.cast === null) cs.cast = {};
+  else if (b.cast) for (const [k, v] of Object.entries(b.cast)) {
+    if (v === null) { delete cs.cast[k]; continue; }
+    const prev = cs.cast[k];
+    cs.cast[k] = { who: v.who, def: CAST[v.who](), x: v.x, from: v.x, to: v.x, t0: now, ms: 0, flip: !!v.flip, scale: v.scale || 1, alpha: v.alpha ?? 1,
+      pose: POSES[v.pose || 'stand'], fromPose: prev ? curPose(prev, now) : null, pt0: now };
+  }
+  if (b.move) for (const [k, m] of Object.entries(b.move)) { const a = cs.cast[k]; if (a) Object.assign(a, { from: a.x, to: m.x, t0: now, ms: m.ms || 1000 }); }
+  if (b.pose) for (const [k, p] of Object.entries(b.pose)) { const a = cs.cast[k]; if (a) Object.assign(a, { fromPose: curPose(a, now), pose: POSES[p], pt0: now }); }
+  if (b.fx === 'flash') cs.flash = now;
+  if (b.fx === 'shake') cs.shake = now;
+  if (b.title) cs.title = { text: b.title, t0: now };
+  cs.say = b.say || null; cs.choice = b.choice || null; cs.key = b.key; cs.t0 = now;
+}
+function csAdvance() {
+  const cs = U.cs, beats = CUTSCENES[cs.id].beats;
+  for (;;) {
+    cs.i++;
+    if (cs.i >= beats.length) return csEnd();
+    const b = beats[cs.i];
+    if (b.if && !b.if()) continue;
+    csApply(b);
+    if (b.say || b.choice) break;
+  }
+  render();
+}
+function csChoose(v) {
+  const cs = U.cs;
+  cs.tmp[cs.key] = v;
+  if (!cs.replay && S) { S[cs.key] = v; save(); }
+  csAdvance();
+}
+function csSkip() {
+  const cs = U.cs, beats = CUTSCENES[cs.id].beats;
+  // A skipped choice takes its first option, so the story stays consistent.
+  for (let i = cs.i; i < beats.length; i++) if (beats[i].choice && storyState()[beats[i].key] == null) { cs.tmp[beats[i].key] = beats[i].choice[0][1]; if (!cs.replay && S) S[beats[i].key] = beats[i].choice[0][1]; }
+  csEnd();
+}
+function csNext() {
+  const cs = U.cs;
+  if (!cs || cs.choice) return;
+  if (performance.now() - cs.t0 < fmt(cs.say?.[1]).length / 0.045) { cs.t0 = -1e9; return; }   // first press finishes the line
+  csAdvance();
+}
+function csEnd() {
+  const cs = U.cs;
+  if (!cs.replay && S) { S.cs = S.cs || {}; S.cs[cs.id] = true; save(); }
+  U.cs = null;
+  cs.then();
+}
+
+let csRaf = 0;
+function drawActor(c, a, t, now, rim) {
+  const k = a.ms ? Math.min(1, (now - a.t0) / a.ms) : 1, moving = a.ms && k < 1;
+  a.x = a.from + (a.to - a.from) * k;
+  const flip = moving ? a.to < a.from : a.flip, pose = { ...curPose(a, now), walk: moving ? now * 0.012 : undefined }, d = a.def;
+  const sh = c.createRadialGradient(a.x, GROUND + 3, 1, a.x, GROUND + 3, 36 * a.scale);
+  sh.addColorStop(0, `rgba(0,0,0,${0.5 * a.alpha})`); sh.addColorStop(1, 'rgba(0,0,0,0)');
+  c.save(); c.translate(a.x, GROUND + 3); c.scale(1, 0.22); c.beginPath(); c.arc(0, 0, 40 * a.scale, 0, Math.PI * 2); c.restore();
+  c.fillStyle = sh; c.fill();
+  if (d.enemy) {
+    const box = enemyBox(d.enemy), s = (d.enemy.kind === 'titan' ? 0.95 : 1.25) * a.scale;
+    renderSprite(c, (g, ax, ay) => drawEnemyPosed(g, d.enemy, ax, ay, s, t, { ...pose, lean: pose.lean * 0.5 }), { x: a.x, y: GROUND, w: box.w, h: box.h, ax: box.ax, ay: box.ay, rim, alpha: a.alpha, silhouette: d.silhouette });
+  } else {
+    renderSprite(c, (g, ax, ay) => drawKnight(g, ax, ay, 1.4 * a.scale, { ...d, flip, pose }, t), { x: a.x, y: GROUND, w: 300, h: 260, ax: 150, ay: 240, rim, alpha: a.alpha });
+  }
+}
+function csLoop(t) {
+  csRaf = 0;
+  const cv = document.getElementById('csCanvas'), cs = U.cs;
+  if (!cv || !cs) return;
+  const c = hiDpi(cv, W, H), now = performance.now();
+  c.save();
+  if (cs.shake && now - cs.shake < 700 && !RM) { const k = 1 - (now - cs.shake) / 700; c.translate((Math.random() - 0.5) * 14 * k, (Math.random() - 0.5) * 9 * k); }
+  drawBackdrop(c, cs.bg, t);
+  const rim = SCENE_RIM[cs.bg];
+  for (const a of Object.values(cs.cast)) drawActor(c, a, t, now, rim);
+  c.restore();
+  if (cs.fade && now - cs.fade < 700) { c.fillStyle = `rgba(0,0,0,${1 - (now - cs.fade) / 700})`; c.fillRect(0, 0, W, H); }
+  if (cs.flash && now - cs.flash < 500) { c.fillStyle = `rgba(255,255,255,${0.85 * (1 - (now - cs.flash) / 500)})`; c.fillRect(0, 0, W, H); }
+  // letterbox
+  c.fillStyle = '#000'; c.fillRect(0, 0, W, 18); c.fillRect(0, H - 18, W, 18);
+  if (cs.title) {
+    const age = now - cs.title.t0, al = age < 400 ? age / 400 : age > 2600 ? Math.max(0, 1 - (age - 2600) / 600) : 1;
+    if (al > 0) {
+      c.save(); c.globalAlpha = al; c.textAlign = 'center';
+      c.fillStyle = 'rgba(0,0,0,0.45)'; c.fillRect(0, H / 2 - 40, W, 70);
+      c.font = '600 13px "Chakra Petch", sans-serif'; c.fillStyle = '#f2b544'; c.fillText('—  —  —', W / 2, H / 2 - 16);
+      c.font = '700 30px "Chakra Petch", sans-serif'; c.fillStyle = '#ffffff'; c.fillText(cs.title.text.toUpperCase(), W / 2, H / 2 + 18);
+      c.restore();
+    }
+  }
+  // typewriter text
+  const el = document.getElementById('csText');
+  if (el && cs.say) {
+    const full = fmt(cs.say[1]), n = Math.min(full.length, Math.max(0, Math.floor((now - cs.t0) * 0.045)));
+    if (+el.dataset.n !== n) { el.textContent = full.slice(0, n); el.dataset.n = n; }
+  }
+  csRaf = requestAnimationFrame(csLoop);
+}
+
+function screenCutscene() {
+  const cs = U.cs, sc = CUTSCENES[cs.id], who = cs.say && cs.say[0] ? fmt(cs.say[0]) : '';
+  const line = fmt(cs.say ? cs.say[1] : '');
+  return `<div class="panel cs">
+    <div class="row between"><span class="label">${esc(sc.title)}</span><button class="btn small" data-a="cs-skip">Skip scene</button></div>
+    <canvas id="csCanvas" width="${W}" height="${H}" data-a="cs-next" aria-label="Cutscene"></canvas>
+    <div class="cs-box${who ? '' : ' narration'}">
+      ${who ? `<div class="cs-who">${esc(who)}</div>` : ''}
+      <p id="csText" class="cs-text" data-n="0" aria-hidden="true"></p>
+      <p class="sr-only" aria-live="polite">${who ? esc(who) + ': ' : ''}${esc(line)}</p>
+    </div>
+    <div class="row cs-actions">${cs.choice
+      ? cs.choice.map(([l, v]) => `<button class="btn primary" data-a="cs-choose" data-id="${v}">${esc(l)}</button>`).join('')
+      : `<button class="btn primary" data-a="cs-next">Next ▶</button><span class="dim note">Space or click to continue</span>`}</div>
+  </div>`;
+}
+
+/* ---------- Story menu and Hall of Heroes ---------- */
+function screenStoryMenu() {
+  const st = S || loadSaved();
+  return `<div class="panel">
+    <div class="row between"><h2>Story so far</h2><button class="btn small" data-a="back">← Back</button></div>
+    <p class="dim">Replay any scene you’ve reached. Choices made in a replay don’t change your saved game.</p>
+    <div class="list">${STORY_ORDER.map(id => {
+      const open = storyUnlocked(id, st);
+      return `<div class="item"><div><div class="name">${open ? esc(CUTSCENES[id].title) : 'Not reached yet'}</div></div>
+        ${open ? `<button class="btn small" data-a="cs-replay" data-id="${id}">Watch</button>` : '<span class="tag">Locked</span>'}</div>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+const HALL_TALK = {
+  gm: ['Grand Master', [
+    'The Order is rebuilding Veyra stone by stone. Every Sweeper who passes the gate touches your crest for luck.',
+    'Kol’s name has been struck from the rolls. Yours is carved where his used to be.',
+    'Hollow-spawn still drift at the edge of the Rim. Old habits, Starbreaker. The stars still need sweeping.']],
+  lyra: ['Lyra', () => storyState().lyra === 'cold' ? [
+    'I’m still here. I said I’d earn it, and I meant it.',
+    'Veyra’s first new house went up this morning. I thought you should know.',
+    'If you ever go back out past the Rim, take me with you. Please.'] : [
+    'Three years I couldn’t look at you. Now I can’t stop grinning. It’s embarrassing.',
+    'Veyra’s first new house went up this morning. They hung your crest over the door.',
+    'Whatever’s left out past the Rim, we face it together. That’s a promise.']],
+  squire: ['Squire Tamsin', [
+    'Is it true you beat the Warden with a rusted sword? Everyone in the barracks says so.',
+    'I want to be a Sweeper like you. Lyra says I hold my blade like a broom.',
+    'They’re writing a song about you. It’s not very good yet.']],
+};
+function hallLine(id, n) { const [who, lines] = HALL_TALK[id], list = typeof lines === 'function' ? lines() : lines; return [who, list[n % list.length]]; }
+
+function screenHall() {
+  const trophies = [...PLANETS.slice(0, 4).map((w, i) => [w.boss.name, w.name, S.bosses[i]]), [KOL.name, PLANETS[4].name, S.kolDown], [PLANETS[4].boss.name, PLANETS[4].name, S.bosses[4]]];
+  const talk = U.talk ? hallLine(U.talk.id, U.talk.n) : null;
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Hall of Heroes</h2><button class="btn small" data-a="go-map">← Star chart</button></div>
+    <canvas id="hallCanvas" width="${W}" height="${H}" aria-label="The Hall of Heroes, with you, the Grand Master, Lyra and Squire Tamsin"></canvas>
+    <p class="hall-title">${esc(heroName())} the Starbreaker</p>
+    <div class="talk" aria-live="polite">${talk ? `<b>${esc(talk[0])}</b><span>${esc(talk[1])}</span>` : '<span class="dim">The hall is full of people who want a word with you.</span>'}</div>
+    <div class="row">
+      <button class="btn small" data-a="talk" data-id="gm">Talk to the Grand Master</button>
+      <button class="btn small" data-a="talk" data-id="lyra">Talk to Lyra</button>
+      <button class="btn small" data-a="talk" data-id="squire">Talk to Squire Tamsin</button>
+    </div>
+    <h3>Trophies</h3>
+    <div class="grid3">${trophies.map(([n, w, ok]) => `<div class="item"><div><div class="name">${esc(n)}</div><div class="desc">${esc(w)}</div></div>${ok ? '<span class="tag on">Defeated</span>' : '<span class="tag">Not yet</span>'}</div>`).join('')}</div>
+    <h3>Record</h3>
+    <div class="grid3">
+      <div class="item"><div><div class="label">Level</div><div class="num">${S.lvl}</div></div></div>
+      <div class="item"><div><div class="label">Enemies beaten</div><div class="num">${S.kills}</div></div></div>
+      <div class="item"><div><div class="label">Lyra</div><div class="num">${S.lyra === 'cold' ? 'Earning it back' : 'Forgiven'}</div></div></div>
+    </div>
+    <div class="row"><button class="btn" data-a="story-open">Replay the story</button></div>
+  </div>`;
+}
+const HALL_CAST = [['squire', 120, false, 0.85], ['lyra', 230, false, 1], ['hero', 360, false, 1.05], ['gm', 500, true, 1], ['knight', 630, true, 1.1]];
+function drawHall(cv, t) {
+  const c = hiDpi(cv, W, H), now = performance.now();
+  drawBackdrop(c, SCENE_HALL, t);
+  if (!drawHall.cast) drawHall.cast = HALL_CAST.map(([who, x, flip, scale]) => ({ who, def: who === 'squire' ? SQUIRE() : CAST[who](), x, from: x, to: x, ms: 0, flip, scale, alpha: 1, pose: POSES.stand }));
+  for (const a of drawHall.cast) {
+    a.pose = U.talk && U.talk.id === a.who ? POSES.point : a.who === 'hero' ? POSES.raise : POSES.stand;
+    drawActor(c, a, t, now, SCENE_RIM[SCENE_HALL]);
+  }
+}
+const SQUIRE = () => ({ armor: armorStyle({ base: '#9aa4b4', trim: '#2ab8b0', pauldron: 'pad', cape: '#1e6a6a' }), look: { build: 'f', gear: 'none', skin: 4, hair: 'braids', hairCol: 0, eyes: 1, beard: 'none', mark: 'none' }, weapon: 'w_rust' });

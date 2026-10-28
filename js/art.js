@@ -12,7 +12,10 @@ function hiDpi(cv, w, h) {
 }
 
 /* ---------- Battle scenes: a cached back layer (sky), live stars, a cached front layer, then live effects ---------- */
-const SCENES = ['colony', 'hive', 'station', 'forge', 'void'];
+const SCENES = ['colony', 'hive', 'station', 'forge', 'void', 'hall', 'fire'];
+const SCENE_HALL = 5, SCENE_FIRE = 6;
+// Light colour each scene casts on the edges of sprites.
+const SCENE_RIM = ['#ffb48a', '#ffe2a8', '#9ad8ff', '#ff8a4a', '#d49aff', '#fff0c8', '#ff9a4a'];
 const bgCache = {};
 function layer() { const cv = document.createElement('canvas'); const c = hiDpi(cv, W, H); c.lineJoin = 'round'; return [cv, c]; }
 function skyGrad(c, stops) { const g = c.createLinearGradient(0, 0, 0, GROUND); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(0, 0, W, H); }
@@ -134,6 +137,60 @@ function buildScene(i) {
     ridge(f, r, GROUND - 4, 22, 30, '#1e0806');
     groundBand(f, '#2a0c08', '#0e0303');
     rocks(f, r, 14, '#1a0604', '#3a120a');
+  } else if (kind === 'hall') {
+    const g0 = b.createLinearGradient(0, 0, 0, H); g0.addColorStop(0, '#0e0b1a'); g0.addColorStop(1, '#2a2238'); b.fillStyle = g0; b.fillRect(0, 0, W, H);
+    for (let y = 20; y < GROUND; y += 22) { L(b, [0, y, W, y], 'rgba(255,255,255,0.05)', 1); for (let x = ((y / 22) % 2) * 30; x < W; x += 60) L(b, [x, y, x, y + 22], 'rgba(255,255,255,0.035)', 1); }
+    const wx = 360, wy = 30, ww = 62, wh = 168;
+    const arch = () => { f.beginPath(); f.moveTo(wx - ww, wy + wh); f.lineTo(wx - ww, wy + 60); f.quadraticCurveTo(wx - ww, wy, wx, wy - 8); f.quadraticCurveTo(wx + ww, wy, wx + ww, wy + 60); f.lineTo(wx + ww, wy + wh); f.closePath(); };
+    nebula(f, wx, wy + 80, 170, 'rgba(120,200,255,0.16)');
+    arch(); const wg = f.createLinearGradient(0, wy, 0, wy + wh); wg.addColorStop(0, '#1e4488'); wg.addColorStop(1, '#0e1e4a'); f.fillStyle = wg; f.fill();
+    f.save(); arch(); f.clip();
+    const r2 = seeded(77);
+    for (let y = wy - 10; y < wy + wh; y += 16) for (let x = wx - ww; x < wx + ww; x += 16) { f.fillStyle = ['rgba(42,184,176,0.4)', 'rgba(232,194,90,0.32)', 'rgba(90,120,220,0.32)', 'rgba(196,106,255,0.22)'][Math.floor(r2() * 4)]; f.fillRect(x + 1, y + 1, 14, 14); }
+    const st = []; for (let i = 0; i < 16; i++) { const rr = i % 2 ? 12 : 34, an = -Math.PI / 2 + i * Math.PI / 8; st.push(wx + Math.cos(an) * rr, wy + 78 + Math.sin(an) * rr); }
+    glowOn(f, '#fff0c8', 16); P(f, st, 'rgba(255,240,200,0.9)', 0); glowOff(f);
+    for (let x = wx - ww; x <= wx + ww; x += 16) L(f, [x, wy - 12, x, wy + wh], 'rgba(10,8,20,0.8)', 1.6);
+    for (let y = wy - 10; y <= wy + wh; y += 16) L(f, [wx - ww, y, wx + ww, y], 'rgba(10,8,20,0.8)', 1.6);
+    f.restore();
+    arch(); f.strokeStyle = '#4a4060'; f.lineWidth = 6; f.stroke(); f.strokeStyle = INK; f.lineWidth = 1.4; f.stroke();
+    f.save(); f.globalCompositeOperation = 'lighter';
+    const lg = f.createLinearGradient(0, wy, 0, H); lg.addColorStop(0, 'rgba(160,220,255,0.15)'); lg.addColorStop(1, 'rgba(160,220,255,0)');
+    f.fillStyle = lg; f.beginPath(); f.moveTo(wx - ww, wy + 40); f.lineTo(wx + ww, wy + 40); f.lineTo(wx + ww * 2.4, H); f.lineTo(wx - ww * 1.2, H); f.fill(); f.restore();
+    for (const px of [56, 204, 516, 664]) {
+      const pg = f.createLinearGradient(px - 20, 0, px + 20, 0); pg.addColorStop(0, '#2a2236'); pg.addColorStop(0.45, '#544a6c'); pg.addColorStop(1, '#1e1828');
+      P(f, [px - 18, 0, px + 18, 0, px + 18, GROUND, px - 18, GROUND], pg, 1.2);
+      for (const dx of [-8, 0, 8]) L(f, [px + dx, 46, px + dx, GROUND - 16], 'rgba(0,0,0,0.25)', 1);
+      P(f, [px - 25, GROUND - 14, px + 25, GROUND - 14, px + 25, GROUND, px - 25, GROUND], '#3a3248', 1.2);
+      P(f, [px - 25, 30, px + 25, 30, px + 19, 44, px - 19, 44], '#3a3248', 1.2);
+      L(f, [px - 24, 31, px + 24, 31], 'rgba(255,240,200,0.25)', 1);
+    }
+    for (const bx of [130, 590]) {
+      P(f, [bx - 22, 50, bx + 22, 50, bx + 22, 170, bx, 188, bx - 22, 170], '#1e6a6a', 1.2);
+      P(f, [bx - 22, 50, bx - 8, 50, bx - 8, 175, bx - 22, 170], 'rgba(0,0,0,0.2)', 0);
+      P(f, [bx - 24, 46, bx + 24, 46, bx + 24, 56, bx - 24, 56], '#c9a24a', 1);
+      const sg = []; for (let i = 0; i < 16; i++) { const rr = i % 2 ? 4 : 11, an = -Math.PI / 2 + i * Math.PI / 8; sg.push(bx + Math.cos(an) * rr, 112 + Math.sin(an) * rr); }
+      P(f, sg, '#e8c25a', 0.8);
+      L(f, [bx - 22, 168, bx, 185, bx + 22, 168], '#c9a24a', 1.2);
+    }
+    groundBand(f, '#3a3048', '#120e1a');
+    for (let k = -14; k <= 14; k++) L(f, [W / 2 + k * 30, GROUND, W / 2 + k * 64, H], 'rgba(255,240,200,0.07)', 1);
+    for (const y of [GROUND + 12, GROUND + 30, GROUND + 52]) L(f, [0, y, W, y], 'rgba(255,240,200,0.06)', 1);
+    P(f, [W / 2 - 60, GROUND, W / 2 + 60, GROUND, W / 2 + 112, H, W / 2 - 112, H], '#6a1a24', 0);
+    L(f, [W / 2 - 54, GROUND, W / 2 - 101, H], '#c9a24a', 1.2); L(f, [W / 2 + 54, GROUND, W / 2 + 101, H], '#c9a24a', 1.2);
+  } else if (kind === 'fire') {
+    skyGrad(b, ['#0a0204', '#3a0806', '#8a1e0a', '#e0581a']);
+    nebula(b, 360, GROUND - 40, 300, 'rgba(255,120,40,0.25)');
+    for (const [x, y, rr] of [[140, 90, 90], [330, 60, 110], [560, 80, 100]]) nebula(f, x, y, rr, 'rgba(14,4,4,0.6)');
+    ridge(f, r, GROUND - 58, 52, 20, '#3a1010', 'rgba(255,150,80,0.5)');
+    const bc = '#160608';
+    for (const [x, w, h] of [[30, 48, 66], [86, 26, 100], [290, 64, 50], [366, 22, 84], [628, 54, 74]]) {
+      const y = GROUND - 22;
+      P(f, [x, y, x + w, y, x + w, y - h + 14, x + w * 0.7, y - h, x + w * 0.45, y - h + 10, x + w * 0.2, y - h - 4, x, y - h + 6], bc, 0);
+      for (let wy2 = y - h + 18; wy2 < y - 8; wy2 += 12) for (let wx2 = x + 5; wx2 < x + w - 6; wx2 += 9) if (r() < 0.4) { f.fillStyle = 'rgba(255,140,40,0.9)'; f.fillRect(wx2, wy2, 4, 5); }
+    }
+    ridge(f, r, GROUND - 6, 26, 28, '#1a0808');
+    groundBand(f, '#2a0c0a', '#0e0303');
+    rocks(f, r, 14, '#1a0604', '#3a120a');
   } else {
     skyGrad(b, ['#000000', '#05020c', '#0e0618', '#1a0a2a']);
     nebula(b, 520, 100, 220, 'rgba(160,70,255,0.18)');
@@ -164,15 +221,17 @@ const PARTICLES = {
   station: { n: 22, col: 'rgba(130,230,255,0.6)', vx: 0.003, vy: -0.008, len: 0 },
   forge:   { n: 34, col: '#ffae4a', vx: 0.006, vy: -0.03, len: 0, glow: true },
   void:    { n: 28, col: 'rgba(196,120,255,0.75)', vx: 0, vy: -0.012, len: 0, glow: true },
+  hall:    { n: 24, col: 'rgba(255,236,190,0.45)', vx: 0.002, vy: 0.003, len: 0 },
+  fire:    { n: 44, col: '#ffb04a', vx: 0.01, vy: -0.04, len: 0, glow: true },
 };
 
 function drawBackdrop(c, w, t) {
-  const i = PLANETS.indexOf(w), kind = SCENES[i];
+  const i = typeof w === 'number' ? w : PLANETS.indexOf(w), kind = SCENES[i];
   const sc = bgCache[i] || (bgCache[i] = buildScene(i));
   c.drawImage(sc.back, 0, 0, W, H);
   const r = seeded(i * 97 + 13);
   c.fillStyle = '#ffffff';
-  for (let k = 0; k < 90; k++) {
+  for (let k = 0; k < (kind === 'hall' ? 0 : 90); k++) {
     const x = r() * W, y = r() * GROUND * 0.75, s = r() * 1.5 + 0.4, ph = r() * 6;
     c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.0012 + ph));
     c.fillRect(x, y, s, s);
@@ -200,6 +259,17 @@ function drawBackdrop(c, w, t) {
     c.strokeStyle = 'rgba(255,220,250,0.5)'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 0, 120, 20, 0, a0, a0 + 0.5); c.stroke();
     c.restore();
   }
+  if (kind === 'fire') {
+    c.save(); c.globalCompositeOperation = 'lighter';
+    for (const [x, y, sz] of [[54, GROUND - 80, 1.3], [100, GROUND - 120, 1], [320, GROUND - 70, 1.4], [377, GROUND - 104, 0.9], [655, GROUND - 92, 1.2], [470, GROUND - 22, 1.6], [200, GROUND - 18, 1.1]]) {
+      for (let k = 0; k < 3; k++) {
+        const fl = Math.sin(t * 0.012 + x + k * 2) * 4, hh = (30 - k * 7) * sz + fl;
+        const g = c.createLinearGradient(0, y, 0, y - hh); g.addColorStop(0, k ? 'rgba(255,220,120,0.6)' : 'rgba(255,90,20,0.75)'); g.addColorStop(1, 'rgba(255,60,0,0)');
+        P(c, [x - 10 * sz + k * 3, y, x - 4 * sz + fl * 0.5, y - hh * 0.6, x + fl, y - hh, x + 5 * sz, y - hh * 0.55, x + 10 * sz - k * 3, y], g, 0);
+      }
+    }
+    c.restore();
+  }
   const pc = PARTICLES[kind], pr = seeded(i * 11 + 3);
   c.save(); c.fillStyle = pc.col; c.strokeStyle = pc.col; c.lineWidth = 1;
   if (pc.glow) glowOn(c, pc.col, 6);
@@ -219,7 +289,12 @@ function shadow(c, x, rx) {
 }
 
 /* ---------- Combat effects ---------- */
-function unitPos(side) { return side === 'p' ? { x: 200, y: GROUND - 78 } : { x: 520, y: GROUND - 82 * (B && B.e.big ? 1.45 : 1) }; }
+function unitPos(side) {
+  const a = (B && B.act && B.act[side]) || { dx: 0, dy: 0, kb: 0 };
+  if (side === 'p') return { x: 200 + a.dx + a.kb, y: GROUND - 78 + a.dy };
+  const h = B && B.e.kind === 'titan' ? 160 : 82 * (B && B.e.big ? 1.45 : 1);
+  return { x: 520 + a.dx + a.kb, y: GROUND - h + a.dy };
+}
 function vfx(type, o) { if (B && B.vfx) B.vfx.push({ type, t: 0, life: 0.4, ...o }); }
 function drawVfx(c, dt) {
   B.vfx = B.vfx.filter(v => (v.t += dt / 1000) < v.life);
@@ -283,6 +358,28 @@ function drawVfx(c, dt) {
         }
         break;
       }
+      case 'charge': {
+        const r = seeded(Math.floor(v.seed || 3)); glowOn(c, v.col, 16); c.fillStyle = v.col;
+        for (let i = 0; i < 12; i++) { const an = r() * Math.PI * 2, d = (1 - k) * (28 + r() * 34); c.globalAlpha = Math.min(1, k * 1.5); c.fillRect(v.x + Math.cos(an) * d - 1, v.y + Math.sin(an) * d - 1, 2.4, 2.4); }
+        c.globalAlpha = 1; const rr = 3 + 9 * k; c.beginPath(); c.arc(v.x, v.y, rr, 0, Math.PI * 2); c.fill();
+        c.fillStyle = '#ffffff'; c.beginPath(); c.arc(v.x, v.y, rr * 0.45, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'tracer': {
+        const x = v.x1 + (v.x2 - v.x1) * k, y = v.y1 + (v.y2 - v.y1) * k, k0 = Math.max(0, k - 0.4);
+        glowOn(c, v.col, 10); L(c, [v.x1 + (v.x2 - v.x1) * k0, v.y1 + (v.y2 - v.y1) * k0, x, y], v.col, 3); L(c, [v.x1 + (v.x2 - v.x1) * k0, v.y1 + (v.y2 - v.y1) * k0, x, y], '#ffffff', 1.2);
+        break;
+      }
+      case 'muzzle': {
+        c.translate(v.x, v.y); c.scale(v.dir || 1, 1); glowOn(c, v.col, 14); c.globalAlpha = inv;
+        P(c, [0, -9, 26, 0, 0, 9, 6, 0], v.col, 0); P(c, [0, -5, 14, 0, 0, 5, 3, 0], '#ffffff', 0);
+        break;
+      }
+      case 'dissolve': {
+        const r = seeded(17); c.fillStyle = v.col; glowOn(c, v.col, 8);
+        for (let i = 0; i < 46; i++) { const x = v.x - v.w / 2 + r() * v.w, y = v.y - r() * v.h - k * (40 + r() * 70), sz = 1 + r() * 2.6; c.globalAlpha = inv * (0.4 + r() * 0.6); c.fillRect(x + Math.sin(k * 6 + i) * 6, y, sz, sz); }
+        break;
+      }
       case 'nova': {
         c.translate(v.x, v.y); c.rotate(k * 0.6); glowOn(c, v.col, 20); c.globalAlpha = inv;
         for (let i = 0; i < 8; i++) { const len = (i % 2 ? 50 : 90) * (0.4 + k); c.rotate(Math.PI / 4); P(c, [-4, 0, 0, -len, 4, 0, 0, 6], i % 2 ? v.col : '#ffffff', 0); }
@@ -329,12 +426,13 @@ const SKIN = ['#f3cfae', '#dfa57c', '#b97a52', '#8a5638', '#5a3624', '#8fb7d0', 
 const HAIR = ['#1c1714', '#5a3a22', '#a8692e', '#e3c46e', '#cfd0d8', '#b8323a', '#3f62c8'];
 const EYES = ['#5ad1e6', '#f2b544', '#6fdc8c', '#ff5a6a', '#c46aff', '#f4f4ff'];
 const LOOK_OPTS = {
+  build: [['m', 'Broad'], ['f', 'Curvy']],
   gear: [['visor', 'Visor helm'], ['knight', 'Open helm'], ['horned', 'Horned helm'], ['crest', 'Plumed helm'], ['hood', 'Hood'], ['circlet', 'Circlet'], ['mask', 'Rebreather'], ['none', 'Bare head']],
   hair: [['short', 'Short'], ['long', 'Long'], ['mohawk', 'Mohawk'], ['tail', 'Ponytail'], ['braids', 'Braids'], ['topknot', 'Topknot'], ['shaved', 'Shaved']],
   beard: [['none', 'None'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], ['moustache', 'Moustache'], ['full', 'Full beard']],
   mark: [['none', 'None'], ['scar', 'Scar'], ['paint', 'War paint'], ['tattoo', 'Circuit tattoo'], ['patch', 'Eye patch']],
 };
-const DEFAULT_LOOK = { gear: 'knight', skin: 1, hair: 'short', hairCol: 1, eyes: 0, beard: 'stubble', mark: 'scar' };
+const DEFAULT_LOOK = { build: 'm', gear: 'knight', skin: 1, hair: 'short', hairCol: 1, eyes: 0, beard: 'stubble', mark: 'scar' };
 const pal = (v, list) => typeof v === 'number' ? list[v % list.length] : v;
 
 // How each armour piece looks on the body. Enemy knights pass their own objects in the same shape.
@@ -348,17 +446,20 @@ const ARMOR_LOOK = {
 };
 function armorStyle(a) { return { dark: shade(a.base, -38), light: shade(a.base, 42), ...a }; }
 
-function headPath(c) {
+function headPath(c, f) {
   c.beginPath(); c.moveTo(-7, -3);
   c.quadraticCurveTo(-8, -11.5, 0, -11.5); c.quadraticCurveTo(7, -11.5, 8.5, -5);
-  c.lineTo(8.7, -2.6); c.lineTo(10.6, 1); c.lineTo(8.7, 2); c.lineTo(9.1, 3.9); c.lineTo(8.1, 5.1); c.lineTo(8.4, 7);
-  c.quadraticCurveTo(7.2, 9.6, 3, 9.6); c.lineTo(-2, 6.6); c.quadraticCurveTo(-6, 4, -7, -3); c.closePath();
+  c.lineTo(8.7, -2.6); c.lineTo(10.2, 0.8); c.lineTo(8.7, 2); c.lineTo(9.1, 3.9); c.lineTo(8.1, 5.1);
+  if (f) { c.quadraticCurveTo(8.2, 7.6, 2.8, 8.8); c.lineTo(-1.8, 6.2); }
+  else { c.lineTo(8.4, 7); c.quadraticCurveTo(7.2, 9.6, 3, 9.6); c.lineTo(-2, 6.6); }
+  c.quadraticCurveTo(-6, 4, -7, -3); c.closePath();
 }
 const HAIR_CAP = [-7.6, -2, -8.4, -9, -3.4, -13, 3.5, -12.8, 8.9, -7.4, 7.4, -5.6, 5.6, -7.4, 3.6, -5.8, 1.6, -7.8, -1.2, -6, -3.6, -4.2, -5, -1];
 
 // Head in local space: centre (0,0), facing right, about 22 units tall.
 function drawHead(c, look, A, acc, t) {
   look = { ...DEFAULT_LOOK, ...look };
+  const fem = look.build === 'f';
   const skin = pal(look.skin, SKIN), hair = pal(look.hairCol, HAIR), eye = pal(look.eyes, EYES);
   const g = look.gear, closed = g === 'visor' || g === 'horned', open = g === 'knight' || g === 'crest';
   const bare = g === 'none' || g === 'circlet' || g === 'mask';
@@ -419,17 +520,17 @@ function drawHead(c, look, A, acc, t) {
   }
 
   // Face
-  headPath(c); c.fillStyle = skin; c.fill();
-  c.save(); headPath(c); c.clip();
+  headPath(c, fem); c.fillStyle = skin; c.fill();
+  c.save(); headPath(c, fem); c.clip();
   c.fillStyle = shade(skin, -26); c.beginPath(); c.moveTo(-9, -14); c.lineTo(0.5, -14); c.lineTo(-1.5, 12); c.lineTo(-9, 12); c.fill();
   P(c, [2.6, 4, 8.2, 7.4, 7.6, 9.6, 2, 9.4, -1, 6.6], shade(skin, -14), 0);
   P(c, [6, -6, 8.4, -5, 8.6, -2.6, 6.2, -3], shade(skin, 20), 0);
   P(c, [4.6, 0.6, 7.4, 0.4, 6.4, 2.6], shade(skin, 12), 0);
   c.restore();
-  headPath(c); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+  headPath(c, fem); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
   L(c, [8.6, -2.4, 9.8, 0.8], shade(skin, -32), 0.6);
   c.fillStyle = shade(skin, -55); c.fillRect(8.6, 1.1, 0.8, 0.6);
-  P(c, [7.3, 3.8, 9.1, 3.9, 8.6, 4.9, 7.5, 4.8], shade(skin, -38), 0);
+  P(c, [7.3, 3.8, 9.1, 3.9, 8.6, 4.9, 7.5, 4.8], fem ? '#b8566a' : shade(skin, -38), 0);
   P(c, [-1.4, -2.6, -4, -3, -4.6, 1.6, -2, 2.6], shade(skin, -14), 0.9);
   L(c, [-2.4, -1.6, -3.4, 0.8], shade(skin, -40), 0.6);
   if (look.mark === 'patch') {
@@ -440,6 +541,7 @@ function drawHead(c, look, A, acc, t) {
     c.fillStyle = eye; c.fillRect(5.5, -2.5, 1.6, 1.45); c.fillStyle = INK; c.fillRect(6.2, -2.3, 0.7, 1);
     c.fillStyle = '#ffffff'; c.fillRect(5.6, -2.45, 0.5, 0.5);
     L(c, [3.8, -2.9, 7.6, -2.8], INK, 0.7);
+    if (fem) { L(c, [7.4, -2.8, 8.6, -3.8], INK, 0.6); L(c, [6.8, -2.9, 7.6, -4], INK, 0.5); }
   }
   P(c, [3.6, -4.6, 8.4, -4.9, 8.2, -3.7, 3.8, -3.5], hairDark, 0);
   if (look.mark === 'scar') { L(c, [4.2, -6.6, 7.4, 1.6], shade(skin, -40), 1.1); L(c, [4.4, -6.4, 7.6, 1.4], shade(skin, 35), 0.5); }
@@ -457,7 +559,7 @@ function drawHead(c, look, A, acc, t) {
   if (bare) {
     const h = look.hair;
     if (h === 'mohawk' || h === 'shaved' || h === 'topknot') {
-      c.save(); headPath(c); c.clip(); c.globalAlpha = 0.3; c.fillStyle = hair; c.fillRect(-9, -14, 18, 9); c.fillRect(-9, -14, 5, 16); c.restore();
+      c.save(); headPath(c, fem); c.clip(); c.globalAlpha = 0.3; c.fillStyle = hair; c.fillRect(-9, -14, 18, 9); c.fillRect(-9, -14, 5, 16); c.restore();
     }
     if (h === 'mohawk') {
       P(c, [-6.6, -8, -9.4, -14, -4.2, -12, -3.2, -18.4, 0, -13, 2.6, -18, 4.2, -12.4, 8.4, -15, 7.6, -9, 4, -10, 0, -10.6, -4, -9.6], hair);
@@ -501,7 +603,7 @@ function drawHead(c, look, A, acc, t) {
     P(c, [7.6, -4.8, 8.9, -4.8, 9.4, 1.4, 8.3, 1.6], A.light, 0.9);
     c.fillStyle = A.rivet || A.light; c.fillRect(-5.5, -6, 1.4, 1.4); c.fillRect(-5.5, 2, 1.4, 1.4); c.fillRect(3.6, 0, 1, 1);
   } else if (g === 'hood') {
-    c.save(); headPath(c); c.clip(); c.fillStyle = 'rgba(5,3,12,0.3)'; c.fillRect(-10, -14, 22, 26); c.restore();
+    c.save(); headPath(c, fem); c.clip(); c.fillStyle = 'rgba(5,3,12,0.3)'; c.fillRect(-10, -14, 22, 26); c.restore();
     const hc = A.cape || shade(A.base, -8);
     P(c, [-9.6, 12, -10.8, -5, -4.6, -14.8, 4.8, -14, 10.8, -7, 10.4, -3.8, 5, -6.4, 3, -2.4, 3.4, 6, 0.6, 12], hc);
     P(c, [-4.6, -14.8, 4.8, -14, 10.8, -7, 7, -8, 1, -11.4], shade(hc, 30), 0);
@@ -618,6 +720,14 @@ function drawWeapon(c, id, A, t) {
       if (A.glow) { glowOn(c, A.glow, 10); L(c, [0, -8, 0, -46], A.glow, 1); glowOff(c); }
       break;
     }
+    case 'staff': {
+      P(c, [-1.3, 34, 1.3, 34, 1.3, -58, -1.3, -58], '#6a4a2a');
+      for (const y of [-4, 0, 4]) L(c, [-1.3, y, 1.3, y - 1.2], '#c9a24a', 0.8);
+      P(c, [-4, -58, 4, -58, 2.6, -62, -2.6, -62], '#c9a24a');
+      const st = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 3 : 8, an = -Math.PI / 2 + i * Math.PI / 8; st.push(Math.cos(an) * r, -70 + Math.sin(an) * r); }
+      glowOn(c, '#fff0b0', 14); P(c, st, '#e8c25a', 1); P(c, [0, -73, 2.4, -70, 0, -67, -2.4, -70], '#ffffff', 0); glowOff(c);
+      break;
+    }
     default: // w_rust
       P(c, [-1.6, 5, 1.6, 5, 2.2, 7.6, 0, 9, -2.2, 7.6], '#6a5a3a', 1);
       P(c, [-1.4, -2, 1.4, -2, 1.4, 5, -1.4, 5], '#4a3424', 1);
@@ -630,95 +740,198 @@ function drawWeapon(c, id, A, t) {
   }
 }
 
-// Full knight. Origin at the feet, facing right, about 110 units tall. o: { armor, weapon, look, acc, flip, swing }
+// Glow colour and blade length per weapon, used for swing smears and effects.
+const WEAPON_GLOW = { w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
+const WEAPON_LEN = { w_rust: 41, w_ion: 54, w_lance: 82, w_grav: 51, w_nova: 55, w_star: 64, sword: 55, axe: 52, staff: 70, gun: 36 };
+
+function foot(c, ax, ay, col, lit) {
+  P(c, [ax - 4.4, ay - 1.4, ax + 3.6, ay - 1.4, ax + 10.4, ay + 3.6, ax + 10.4, ay + 5, ax - 4.4, ay + 5], col);
+  if (lit) { P(c, [ax - 3, ay - 1, ax + 3, ay - 1, ax + 7, ay + 2, ax - 3, ay + 2], lit, 0); L(c, [ax + 2.6, ay - 1, ax + 3.6, ay + 5], shade(col, -40), 0.7); }
+}
+
+function torsoPath(c, f, br) {
+  c.beginPath();
+  if (f) {
+    c.moveTo(-11, -83 + br); c.lineTo(11, -84 + br);
+    c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
+    c.quadraticCurveTo(25, -72.4 + br, 19.6, -64.6 + br);
+    c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6);
+    c.quadraticCurveTo(8.2, -56, 9.6, -52);
+    c.lineTo(-7.4, -52); c.quadraticCurveTo(-9.8, -58, -11, -64 + br); c.lineTo(-12.6, -72 + br);
+  } else {
+    c.moveTo(-12, -83 + br); c.lineTo(13, -84 + br); c.lineTo(17, -71 + br); c.lineTo(12, -52); c.lineTo(-9, -52); c.lineTo(-14, -69 + br);
+  }
+  c.closePath();
+}
+
+// Full knight. Origin at the feet, facing right, about 110 units tall.
+// o: { armor, weapon, look, acc, flip, pose: { arm, lean, crouch, walk, smear, smearT, aura } }
 function drawKnight(c, x, y, s, o, t) {
-  const A = o.armor, look = o.look || DEFAULT_LOOK, wpn = o.weapon;
+  const A = o.armor, look = { ...DEFAULT_LOOK, ...(o.look || {}) }, wpn = o.weapon, f = look.build === 'f';
+  const ps = o.pose || {};
+  const arm = ps.arm ?? (o.swing > 0 ? Math.sin((1 - o.swing) * Math.PI) * 1.5 : 0);
+  const lean = ps.lean || 0, cr = clamp(ps.crouch || 0, 0, 1), wk = ps.walk != null ? Math.sin(ps.walk) * 7 : 0;
   c.save(); c.translate(x, y); c.scale(o.flip ? -s : s, s);
   c.lineJoin = 'round'; c.lineCap = 'round';
-  const br = Math.sin(t * 0.004) * 1.1, wv = Math.sin(t * 0.003) * 3;
-  const sw = o.swing || 0, swingRot = sw > 0 ? Math.sin((1 - sw) * Math.PI) * 1.5 : 0;
+  const br = Math.sin(t * 0.004) * 1.1 + (ps.walk != null ? Math.abs(Math.cos(ps.walk)) * -1.6 : 0), wv = Math.sin(t * 0.003) * 3;
+  const hipY = -46 + cr * 14, lw = f ? 0.84 : 1;
+  const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, 46); fn(); c.restore(); };
 
-  if (A.cape) {
-    const end = A.capeLong ? -1 : -16;
-    P(c, [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3, end - 2, -18 + wv, end + 3, -24 + wv, end - 2, -30 + wv * 1.2, end + 2, -28 + wv, -40, -19, -70], A.cape);
-    L(c, [-13, -72, -21 + wv * 0.7, end + 1], shade(A.cape, -28), 1.2);
-    L(c, [-6, -74, -12 + wv * 0.4, end], shade(A.cape, 22), 0.9);
-    P(c, [-10, -82 + br, 6, -83 + br, 1, -77, -8, -76.4], shade(A.cape, -40), 0);
+  if (ps.aura) {
+    const g = c.createRadialGradient(0, -60, 4, 0, -60, 70); g.addColorStop(0, ps.aura); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.save(); c.globalAlpha = 0.45 + 0.15 * Math.sin(t * 0.02); c.fillStyle = g; c.fillRect(-70, -130, 140, 140); c.restore();
   }
-  if (A.scarf) P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
+
+  // cape and scarf (move with the upper body)
+  upper(() => {
+    if (A.cape) {
+      const end = A.capeLong ? -1 - hipY - 46 : -16 - hipY - 46, flow = -lean * 30 - (ps.walk != null ? 6 : 0);
+      P(c, [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3 + flow * 0.4, end - 2, -18 + wv + flow, end + 3, -24 + wv + flow, end - 2, -30 + wv * 1.2 + flow, end + 2, -28 + wv + flow * 0.6, -40, -19, -70], A.cape);
+      L(c, [-13, -72, -21 + wv * 0.7 + flow, end + 1], shade(A.cape, -28), 1.2);
+      L(c, [-6, -74, -12 + wv * 0.4 + flow * 0.5, end], shade(A.cape, 22), 0.9);
+      P(c, [-10, -82 + br, 6, -83 + br, 1, -77, -8, -76.4], shade(A.cape, -40), 0);
+    }
+    if (A.scarf) P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
+  });
   if (o.acc === 'x_boots') {
     glowOn(c, '#5ad1e6', 10);
-    for (const fx of [-18, 10]) { const f = 6 + Math.random() * 5; P(c, [fx - 2, -2, fx + 3, -2, fx, f], '#9fefff', 0); }
+    for (const fx of [-18 - wk, 10 + wk]) { const fl = 6 + Math.random() * 5; P(c, [fx - 2, -2, fx + 3, -2, fx, fl], '#9fefff', 0); }
     glowOff(c);
   }
 
-  // back arm and leg (in shadow)
-  limb(c, -9, -77 + br, -15, -62 + br, 4.2, 3.6, A.dark);
-  limb(c, -15, -62 + br, -11, -50 + br, 3.6, 3.2, A.dark);
-  P(c, [-14, -53 + br, -8, -53 + br, -7.6, -47 + br, -13, -46.4 + br], shade(A.dark, -10));
-  pauldron(c, -10, -80 + br, A, true);
-  limb(c, -4, -46, -11, -25, 6, 5, A.dark);
-  limb(c, -11, -25, -15, -5, 5, 3.8, A.dark);
-  P(c, [-14, -29, -9, -29, -8, -22, -13, -21], A.base, 1);
-  P(c, [-20, -6, -11, -6, -7, 0, -21, 0], shade(A.dark, -12));
+  // back arm
+  upper(() => {
+    const sw = ps.walk != null ? -wk * 0.5 : 0;
+    limb(c, -9, -77 + br, -15 + sw, -62 + br, 4.2 * lw, 3.6 * lw, A.dark);
+    limb(c, -15 + sw, -62 + br, -11 + sw * 1.4, -50 + br, 3.6 * lw, 3.2 * lw, A.dark);
+    P(c, [-14 + sw * 1.4, -53 + br, -8 + sw * 1.4, -53 + br, -7.6 + sw * 1.4, -47 + br, -13 + sw * 1.4, -46.4 + br], shade(A.dark, -10));
+    c.save(); if (f) { c.translate(-10, -80 + br); c.scale(0.9, 0.9); c.translate(10, 80 - br); } pauldron(c, -10, -80 + br, A, true); c.restore();
+  });
+
+  // back leg: the foot stays planted while the knee bends
+  const bkx = -11 - cr * 2 - wk * 0.6, bky = -25 + cr * 17, bfx = -15 - wk;
+  limb(c, -4, hipY, bkx, bky, 6 * lw, 5 * lw, A.dark);
+  limb(c, bkx, bky, bfx, -5, 5 * lw, 3.8 * lw, A.dark);
+  P(c, [bkx - 3, bky - 4, bkx + 2, bky - 4, bkx + 3, bky + 3, bkx - 2, bky + 4], A.base, 1);
+  foot(c, bfx, -5, shade(A.dark, -12));
 
   // torso
-  const chest = [-12, -83 + br, 13, -84 + br, 17, -71 + br, 12, -52, -9, -52, -14, -69 + br];
-  P(c, chest, A.base);
-  P(c, [-12, -83 + br, -2, -83.6 + br, -3, -52, -9, -52, -14, -69 + br], A.dark, 0);
-  P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -66 + br], A.light, 0);
-  P(c, chest, null);
-  if (A.cloth) {
-    for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
-    P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
-  } else {
-    L(c, [3, -82 + br, 2, -56], A.dark, 1);
-    L(c, [-10, -58, 12, -58], A.trim, 1.1);
-  }
-  if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
-  if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
-  if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
-  if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
+  upper(() => {
+    torsoPath(c, f, br); c.fillStyle = A.base; c.fill();
+    c.save(); torsoPath(c, f, br); c.clip();
+    P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
+    if (f) {
+      const g = c.createRadialGradient(15.6, -71.4 + br, 1, 15.6, -71.4 + br, 10); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g; c.fillRect(2, -84 + br, 22, 24);
+      L(c, [16, -76 + br, 19.6, -70.6 + br], 'rgba(255,255,255,0.7)', 0.9);
+      c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, -63.6 + br); c.quadraticCurveTo(12.6, -59.6 + br, 19, -64.6 + br); c.stroke();
+    } else {
+      P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -66 + br], A.light, 0);
+      L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.6)', 0.8);
+    }
+    c.restore();
+    torsoPath(c, f, br); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+    if (A.cloth) {
+      for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
+      P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
+    } else {
+      if (f) { c.strokeStyle = A.dark; c.lineWidth = 1; c.beginPath(); c.moveTo(2, -83 + br); c.quadraticCurveTo(5, -70 + br, 2, -56); c.stroke(); }
+      else L(c, [3, -82 + br, 2, -56], A.dark, 1);
+      L(c, [-10, -58, f ? 10 : 12, -58], A.trim, 1.1);
+    }
+    if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
+    if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
+    if (A.sigil) { const pts = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(0 + Math.cos(an) * r, -71 + br + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
+    if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
+    if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
 
-  // waist, belt and tassets
-  P(c, [-9, -53, 12, -53, 11, -46, -8, -46], A.dark);
-  for (let mx = -7.6; mx < 10.6; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 28), 0.5);
-  P(c, [-9.6, -48.4, 12.6, -48.4, 12.6, -44.4, -9.6, -44.4], A.trim);
-  if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
-  else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
-  P(c, [-10.6, -47.6, -6.4, -47.6, -6.6, -41.4, -10.4, -41.6], '#4a3424', 1);
-  L(c, [-10.4, -45.4, -6.5, -45.4], '#6a4a30', 0.6);
-  P(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base);
-  P(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+    // waist, belt and tassets
+    const wR = f ? 10 : 12, wL = f ? -7.6 : -9;
+    P(c, [wL, -53, wR, -53, wR - 1, -46, wL + 1, -46], A.dark);
+    for (let mx = wL + 1.4; mx < wR - 1.4; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 28), 0.5);
+    P(c, [wL - 0.6, -48.4, wR + 0.6, -48.4, wR + 0.6, -44.4, wL - 0.6, -44.4], A.trim);
+    if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
+    else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
+    P(c, [wL - 1.6, -47.6, wL + 2.6, -47.6, wL + 2.4, -41.4, wL - 1.4, -41.6], '#4a3424', 1);
+    L(c, [wL - 1.4, -45.4, wL + 2.5, -45.4], '#6a4a30', 0.6);
+    const hip = f ? 2 : 0;
+    P(c, [-9 - hip, -44.4, 0.6, -44.4, -0.4, -35, -10.4 - hip * 1.4, -37], A.base);
+    P(c, [1.6, -44.4, 12.6 + hip, -44.4, 14 + hip * 1.4, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+  });
 
   // front leg
-  limb(c, 5, -46, 11, -25, 6.4, 5.2, A.base, A.light);
-  limb(c, 11, -25, 13, -5, 5.2, 4, A.base, A.light);
-  P(c, [7.6, -29.6, 14.4, -28.6, 15.4, -21.6, 8.6, -20.6], A.light);
-  if (A.seams) { glowOn(c, A.glow, 8); L(c, [9, -42, 11, -34, 9, -30], A.glow, 1.1); glowOff(c); }
-  P(c, [8.6, -6.4, 16.6, -6.4, 23.4, -1.4, 23.4, 0, 8.6, 0], A.base);
-  P(c, [10, -6, 16, -6, 20, -3, 10, -3], A.light, 0);
-  L(c, [15.6, -6, 16.6, 0], A.dark, 0.7); L(c, [19.4, -3.8, 20.2, 0], A.dark, 0.7);
+  const fkx = 11 + cr * 9 + wk * 0.6, fky = -25 + cr * 8, ffx = 13 + wk;
+  limb(c, 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A.base, A.light);
+  limb(c, fkx, fky, ffx, -5, 5.2 * lw, 4 * lw, A.base, A.light);
+  P(c, [fkx - 3.4, fky - 4.6, fkx + 3.4, fky - 3.6, fkx + 4.4, fky + 3.4, fkx - 2.4, fky + 4.4], A.light);
+  if (A.seams) { glowOn(c, A.glow, 8); L(c, [(5 + fkx) / 2 - 2, (hipY + fky) / 2 - 4, (5 + fkx) / 2, (hipY + fky) / 2 + 4], A.glow, 1.1); glowOff(c); }
+  foot(c, ffx, -5, A.base, A.light);
 
-  // head
-  c.save(); c.translate(2, -96.5 + br); drawHead(c, look, A, o.acc, t); c.restore();
+  // head, weapon arm, front pauldron
+  upper(() => {
+    c.save(); c.translate(2, -96.5 + br); drawHead(c, look, A, o.acc, t); c.restore();
+    const gun = wpn === 'gun', base = gun ? Math.PI / 2 : wpn === 'w_lance' ? 0.9 : wpn === 'staff' ? 0.15 : 0.35;
+    const sx = 13, sy = -77 + br;
+    const rot = (px, py, a) => { const dx = px - sx, dy = py - sy, ca = Math.cos(a), sa = Math.sin(a); return [sx + dx * ca - dy * sa, sy + dx * sa + dy * ca]; };
+    const hand0 = [gun ? 26 : 27, (gun ? -60 : -55) + br];
+    const [ex, ey] = rot(20, -63 + br, arm), [hx, hy] = rot(hand0[0], hand0[1], arm);
+    // swing smear: the band the blade swept through since the swing began
+    if (ps.smear != null && (ps.smearT ?? 1) > 0 && !gun) {
+      const len = WEAPON_LEN[wpn] || 50, a0 = ps.smear, a1 = arm, n = 10, outer = [], inner = [];
+      for (let i = 0; i <= n; i++) {
+        const a = a0 + (a1 - a0) * i / n, [px, py] = rot(hand0[0], hand0[1], a), th = base + a;
+        outer.push(px + Math.sin(th) * len * 1.05, py - Math.cos(th) * len * 1.05);
+        inner.unshift(px + Math.sin(th) * len * 0.35, py - Math.cos(th) * len * 0.35);
+      }
+      c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.6 * (ps.smearT ?? 1);
+      glowOn(c, WEAPON_GLOW[wpn] || '#ffffff', 14);
+      const col = WEAPON_GLOW[wpn] || '#ffffff';
+      P(c, [...outer, ...inner], col, 0);
+      c.globalAlpha = 0.9 * (ps.smearT ?? 1); L(c, outer, '#ffffff', 2);
+      c.restore();
+    }
+    c.save(); c.translate(hx, hy); c.rotate(base + arm); drawWeapon(c, wpn, A, t); c.restore();
+    limb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A.base, A.light);
+    limb(c, ex, ey, hx, hy, 3.8 * lw, 3.4 * lw, A.base, A.light);
+    P(c, [ex - 2.8, ey - 2.6, ex + 1.2, ey - 4, ex + 3.4, ey + 1, ex - 0.6, ey + 3], A.light, 1);
+    P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
+    L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
+    c.save(); if (f) { c.translate(12, -80 + br); c.scale(0.9, 0.9); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
+    if (o.acc === 'x_lens') {
+      const oy = -104 + Math.sin(t * 0.003) * 3;
+      glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
+      P(c, [-22, oy - 5, -18.6, oy, -22, oy], '#e8f8ff', 0);
+    }
+  });
+  c.restore();
+}
 
-  // weapon arm and front pauldron
-  const gun = wpn === 'gun', lance = wpn === 'w_lance';
-  const hx = gun ? 26 : 27, hy = (gun ? -60 : -55) + br;
-  const base = gun ? Math.PI / 2 : lance ? 0.9 : 0.35;
-  c.save(); c.translate(hx, hy); c.rotate(base + (gun ? -swingRot * 0.15 : swingRot)); drawWeapon(c, wpn, A, t); c.restore();
-  limb(c, 13, -77 + br, 20, -63 + br, 4.4, 3.8, A.base, A.light);
-  limb(c, 20, -63 + br, hx, hy, 3.8, 3.4, A.base, A.light);
-  P(c, [17.2, -65.4 + br, 21.2, -67 + br, 23.4, -62 + br, 19.4, -60 + br], A.light, 1);
-  P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
-  L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
-  pauldron(c, 12, -80 + br, A, false);
-  if (o.acc === 'x_lens') {
-    const oy = -104 + Math.sin(t * 0.003) * 3;
-    glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
-    P(c, [-22, oy - 5, -18.6, oy, -22, oy], '#e8f8ff', 0);
+/* ---------- Sprite renderer: bold silhouette outline, scene rim light, hit flash, afterimages ---------- */
+const SPR = {};
+function sprLayer(k, w, h) { if (!SPR[k]) SPR[k] = document.createElement('canvas'); return hiDpi(SPR[k], w, h); }
+// draw(ctx, ax, ay) paints the sprite with its feet at (ax, ay) on an offscreen canvas; o.x/o.y place those feet on c.
+function renderSprite(c, draw, o) {
+  const w = o.w || 300, h = o.h || 250, ax = o.ax ?? w / 2, ay = o.ay ?? h - 20;
+  const key = w + 'x' + h, s = sprLayer(key + 'a', w, h), tx = sprLayer(key + 'b', w, h), sc = SPR[key + 'a'], tc = SPR[key + 'b'];
+  s.clearRect(0, 0, w, h); s.save(); s.lineJoin = 'round'; s.lineCap = 'round'; draw(s, ax, ay); s.restore();
+  const X = o.x - ax, Y = o.y - ay, alpha = o.alpha ?? 1;
+  const tint = col => { tx.save(); tx.globalCompositeOperation = 'copy'; tx.drawImage(sc, 0, 0, w, h); tx.globalCompositeOperation = 'source-in'; tx.fillStyle = col; tx.fillRect(0, 0, w, h); tx.restore(); };
+  c.save();
+  if (o.ghosts && o.ghosts.length && !RM) {
+    tint(o.ghostCol || '#9ad8ff');
+    o.ghosts.forEach((g, i) => { c.globalAlpha = alpha * 0.3 * (1 - i / o.ghosts.length); c.drawImage(tc, X + g, Y, w, h); });
   }
+  c.globalAlpha = alpha;
+  tint(INK);
+  const d = o.outline ?? 2, e = d * 0.7;
+  for (const [ox, oy] of [[d, 0], [-d, 0], [0, d], [0, -d], [e, e], [-e, e], [e, -e], [-e, -e]]) c.drawImage(tc, X + ox, Y + oy, w, h);
+  if (o.silhouette) { tint(o.silhouette); c.drawImage(tc, X, Y, w, h); } else c.drawImage(sc, X, Y, w, h);
+  if (o.rim) {
+    tint(o.rim);
+    tx.save(); tx.globalCompositeOperation = 'destination-out'; tx.drawImage(sc, -2.2, 2.2, w, h); tx.restore();
+    c.globalAlpha = alpha * 0.8; c.drawImage(tc, X, Y, w, h);
+  }
+  if (o.flash > 0) { tint('#ffffff'); c.globalAlpha = alpha * o.flash; c.drawImage(tc, X, Y, w, h); }
   c.restore();
 }
 
@@ -729,13 +942,14 @@ function heroLook() {
 }
 
 /* ---------- Enemies (all face left, toward the hero) ---------- */
-function drawEnemy(c, e, x, s, t, swing) {
+function drawEnemy(c, e, x, s, t, swing, gy) {
+  const G = gy ?? GROUND;
   const [a, b] = e.col || ['#666666', '#ffffff'], k = e.kind, bob = Math.sin(t * 0.004) * 3;
-  if (k === 'humanoid') { drawKnight(c, x, GROUND, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, swing }, t); return; }
+  if (k === 'humanoid') { drawKnight(c, x, G, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, swing }, t); return; }
   c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
   switch (k) {
     case 'drone': {
-      c.translate(x, GROUND - 92 * s + bob * 2); c.scale(s, s);
+      c.translate(x, G - 92 * s + bob * 2); c.scale(s, s);
       const fl = 12 + Math.random() * 5, g = c.createLinearGradient(0, 10, 0, 10 + fl * 2);
       g.addColorStop(0, b); g.addColorStop(1, 'rgba(0,0,0,0)');
       P(c, [-6, 10, 6, 10, 2, 10 + fl * 2, -2, 10 + fl * 2], g, 0);
@@ -761,7 +975,7 @@ function drawEnemy(c, e, x, s, t, swing) {
     }
     case 'crawler': case 'queen': {
       const q = k === 'queen', sc = s * (q ? 1.5 : 1.05);
-      c.translate(x, GROUND); c.scale(sc, sc);
+      c.translate(x, G); c.scale(sc, sc);
       // Legs splay out: front pair reaches forward, back pair trails behind.
       const reach = [-17, -3, 13];
       const leg = (jx, jy, i, ph, col) => {
@@ -797,7 +1011,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'wyrm': {
-      c.translate(x, GROUND); c.scale(s, s);
+      c.translate(x, G); c.scale(s, s);
       P(c, [-20, 0, -8, -10, 24, -16, 52, -8, 64, 0], shade(a, -40), 1.2);
       const pts = [];
       for (let i = 0; i <= 10; i++) { const u = i / 10; pts.push([34 - u * 56 + Math.sin(t * 0.003 + u * 4) * 4, -4 - u * 92 - Math.sin(u * Math.PI) * 8]); }
@@ -822,7 +1036,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'mech': {
-      c.translate(x, GROUND); c.scale(s, s);
+      c.translate(x, G); c.scale(s, s);
       const leg = (ox, col) => {
         limb(c, ox, -58, ox + 14, -34, 7, 6, col); limb(c, ox + 14, -34, ox + 4, -6, 6, 5, col);
         P(c, [ox - 9, -7, ox + 14, -7, ox + 18, 0, ox - 13, 0], shade(col, -20));
@@ -853,7 +1067,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'wraith': {
-      c.translate(x, GROUND - 46 + bob * 2); c.scale(s, s);
+      c.translate(x, G - 46 + bob * 2); c.scale(s, s);
       const g = c.createLinearGradient(0, -96, 0, 40); g.addColorStop(0, a); g.addColorStop(0.7, shade(a, -25)); g.addColorStop(1, 'rgba(0,0,0,0)');
       const pts = [-4, -100, 10, -92, 18, -72, 24, -40, 28, 8];
       for (let i = 1; i <= 6; i++) pts.push(28 - i * 9, (i % 2 ? 36 : 14) + Math.sin(t * 0.008 + i) * 5);
@@ -874,7 +1088,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'golem': {
-      c.translate(x, GROUND); c.scale(s, s);
+      c.translate(x, G); c.scale(s, s);
       const rock = (pts, lit) => { P(c, pts, a); if (lit) P(c, lit, shade(a, 24), 0); P(c, pts, null); };
       rock([44, -110 + bob, 62, -104 + bob, 66, -70 + bob, 58, -50 + bob, 42, -56 + bob]);
       rock([-30, -46, -10, -48, -8, 0, -34, 0, -37, -22], [-30, -46, -10, -48, -11, -36, -28, -38]);
@@ -897,7 +1111,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'imp': {
-      c.translate(x, GROUND); c.scale(s, s);
+      c.translate(x, G); c.scale(s, s);
       const fl = Math.sin(t * 0.012) * 6;
       P(c, [6, -62, 30, -94 - fl, 34, -72 - fl, 44, -76 - fl, 37, -57 - fl * 0.5, 41, -50, 14, -50], shade(a, -32));
       L(c, [10, -58, 30, -92 - fl], shade(a, -55), 1); L(c, [12, -54, 34, -72 - fl], shade(a, -55), 1);
@@ -926,7 +1140,7 @@ function drawEnemy(c, e, x, s, t, swing) {
       break;
     }
     case 'eye': {
-      c.translate(x, GROUND - 100 * s + bob * 2); c.scale(s, s);
+      c.translate(x, G - 100 * s + bob * 2); c.scale(s, s);
       for (let i = 0; i < 7; i++) {
         const ang = Math.PI * 0.12 + i * (Math.PI * 1.76 / 6); let px = Math.cos(ang) * 34, py = Math.sin(ang) * 34, w = 6.4;
         for (let j = 1; j <= 4; j++) {
@@ -963,6 +1177,138 @@ function drawEnemy(c, e, x, s, t, swing) {
   c.restore();
 }
 
+// The Hollow Dark: a crowned titan of black armour around a starless void. Faces left; about 250 units tall.
+// ps.arm swings the greatsword (negative raises it, positive brings it down). e.p2 = armour broken open.
+function drawTitan(c, e, t, ps) {
+  const glow = e.col ? e.col[1] : '#c46aff', p2 = !!e.p2, arm = ps.arm || 0;
+  const br = Math.sin(t * 0.0025) * 2, wv = Math.sin(t * 0.002) * 6;
+  const plate = '#1c1630', plateL = '#3e3260', plateD = '#0b0814', edge = shade(glow, -40);
+  const voidFill = (pts) => {
+    c.save(); P(c, pts, '#05030a', 1.2); P(c, pts, null, 0); c.clip();
+    const r = seeded(31); c.fillStyle = '#ffffff';
+    for (let i = 0; i < 40; i++) { c.globalAlpha = 0.3 + 0.7 * Math.abs(Math.sin(t * 0.002 + i)); c.fillRect(-80 + r() * 160, -240 + r() * 240, 1.2, 1.2); }
+    c.globalAlpha = 0.35; const g = c.createRadialGradient(-4, -168, 2, -4, -168, 60); g.addColorStop(0, glow); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(-80, -240, 160, 160);
+    c.restore();
+  };
+
+  // cape of night
+  const cape = [-30, -212 + br, 40, -214 + br, 72, -150, 92 + wv * 0.4, -64, 104 + wv, 0, 86 + wv, -9, 70 + wv, 3, 52, -8, 34, -2, 14, -40, -4, -120];
+  const cg = c.createLinearGradient(0, -214, 0, 0); cg.addColorStop(0, '#1a1030'); cg.addColorStop(1, '#05030c');
+  P(c, cape, cg, 1.4);
+  c.save(); P(c, cape, null, 0); c.clip(); const sr = seeded(5); c.fillStyle = '#d8c8ff';
+  for (let i = 0; i < 26; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.0015 + i * 2)); c.fillRect(-10 + sr() * 110, -200 + sr() * 200, 1.4, 1.4); }
+  c.restore();
+
+  if (p2) {
+    for (let i = 0; i < 4; i++) {
+      let px = 20 + i * 8, py = -190 + i * 10, w = 7;
+      for (let j = 0; j < 5; j++) {
+        const a = -0.6 + i * 0.35 + Math.sin(t * 0.003 + i + j * 0.7) * 0.35, nx = px + Math.cos(a) * 16, ny = py + Math.sin(a) * 16 - 4;
+        limb(c, px, py, nx, ny, w, w - 1.2, j % 2 ? '#1a1030' : '#120a22'); px = nx; py = ny; w -= 1.2;
+      }
+      P(c, [px - 2, py, px + 9, py - 4, px - 1, py + 3], glow, 0.8);
+    }
+  }
+
+  // back arm: raised open hand holding a void flame
+  limb(c, 36, -196 + br, 62, -164 + br, 12, 10, plateD); limb(c, 62, -164 + br, 54, -128 + br, 10, 8, plateD);
+  P(c, [44, -134 + br, 62, -134 + br, 64, -122 + br, 46, -120 + br], plate);
+  glowOn(c, glow, 18);
+  const ff = Math.sin(t * 0.01) * 3;
+  P(c, [44, -140 + br, 50, -160 - ff + br, 54, -148 + br, 58, -166 + ff + br, 62, -142 + br], glow, 0);
+  glowOff(c);
+
+  // legs
+  const leg = (hx, kx, ax, col, lit) => {
+    limb(c, hx, -122, kx, -66, 15, 12, col, lit); limb(c, kx, -66, ax, -12, 12, 9, col, lit);
+    P(c, [kx - 10, -74, kx + 8, -72, kx + 10, -60, kx - 2, -54, kx - 12, -60], lit || plateL);
+    P(c, [kx - 6, -74, kx - 2, -88, kx + 2, -73], shade(glow, -60));
+    P(c, [ax - 12, -14, ax + 12, -14, ax + 14, 0, ax - 28, 0, ax - 22, -6], col);
+    P(c, [ax - 28, 0, ax - 34, -2, ax - 22, -6], shade(glow, -50), 0.8);
+  };
+  leg(18, 30, 36, plateD);
+  // armoured skirt
+  P(c, [-34, -136, 34, -138, 42, -96, 20, -88, 4, -98, -14, -86, -40, -94], plate);
+  for (const x of [-20, 2, 22]) L(c, [x, -134, x + 2, -94], plateD, 1.4);
+  L(c, [-34, -136, 34, -138], edge, 2);
+  leg(-20, -36, -44, plate, plateL);
+
+  // torso
+  const torso = [-52, -206 + br, 46, -212 + br, 40, -150, 28, -128, -28, -126, -42, -150];
+  if (!p2) {
+    P(c, torso, plate);
+    P(c, [-52, -206 + br, -6, -210 + br, -10, -128, -28, -126, -42, -150], plateL, 0);
+    P(c, [-48, -200 + br, -20, -204 + br, -24, -176 + br], shade(plateL, 30), 0);
+    for (const y of [-150, -138]) L(c, [-36, y, 34, y - 2], plateD, 1.6);
+    P(c, torso, null);
+  } else {
+    voidFill(torso);
+    P(c, [-52, -206 + br, -6, -210 + br, -16, -188 + br, -36, -176, -42, -150], plate);
+    P(c, [20, -210 + br, 46, -212 + br, 40, -150, 30, -170], plate);
+    P(c, [-28, -126, 28, -128, 24, -140, -6, -146, -24, -138], plate);
+  }
+  // core
+  const cr = p2 ? 22 : 12, pulse = 1 + 0.12 * Math.sin(t * 0.006);
+  glowOn(c, glow, p2 ? 30 : 16);
+  P(c, [-4, -170 - cr * pulse, -4 + cr * 0.7 * pulse, -170, -4, -170 + cr * pulse, -4 - cr * 0.7 * pulse, -170], glow, 1);
+  P(c, [-4, -170 - cr * 0.5, -4 + cr * 0.3, -170, -4, -170 + cr * 0.5, -4 - cr * 0.3, -170], '#ffffff', 0);
+  if (p2) for (let i = 0; i < 6; i++) { const a = i * Math.PI / 3 + t * 0.001; L(c, [-4 + Math.cos(a) * 26, -170 + Math.sin(a) * 26, -4 + Math.cos(a) * 44, -170 + Math.sin(a) * 44], glow, 1.4); }
+  glowOff(c);
+  if (!p2) { glowOn(c, glow, 8); L(c, [-30, -196 + br, -18, -184, -24, -168, -12, -150], shade(glow, -10), 1.2); glowOff(c); }
+  else { glowOn(c, glow, 10); L(c, [-36, -176, -20, -186, -14, -150], glow, 1.6); L(c, [24, -168, 30, -190 + br], glow, 1.6); glowOff(c); }
+
+  // head with crown
+  P(c, [-14, -206 + br, 8, -206 + br, 6, -216 + br, -12, -216 + br], plateD);
+  const helm = [-26, -228 + br, -6, -240 + br, 12, -234 + br, 14, -214 + br, 2, -206 + br, -22, -208 + br];
+  P(c, helm, plate);
+  P(c, [-26, -228 + br, -6, -240 + br, -2, -232 + br, -20, -222 + br], plateL, 0);
+  P(c, helm, null);
+  for (let i = 0; i < 5; i++) { const x = -20 + i * 7, h = [16, 26, 34, 24, 14][i]; P(c, [x - 3, -232 + br + i * 0.6, x - 1 - i * 0.8, -232 - h + br, x + 3, -232 + br + i * 0.4], i === 2 ? edge : plateD, 1); }
+  P(c, [10, -230 + br, 26, -244 + br, 30, -262 + br, 22, -246 + br, 12, -238 + br], plateD);
+  glowOn(c, glow, p2 ? 22 : 12);
+  P(c, [-24, -222 + br, -14, -224 + br, -15, -220 + br, -24, -219 + br], p2 ? '#ffffff' : glow, 0);
+  P(c, [-11, -224 + br, -3, -225 + br, -4, -221 + br, -11, -220 + br], p2 ? '#ffffff' : glow, 0);
+  glowOff(c);
+
+  // sword arm and greatsword. Shoulder at (-44,-196).
+  const sx = -44, sy = -196 + br;
+  const rot = (px, py, a) => { const dx = px - sx, dy = py - sy, ca = Math.cos(a), sa = Math.sin(a); return [sx + dx * ca - dy * sa, sy + dx * sa + dy * ca]; };
+  const a = arm < 0 ? arm * 1.25 : arm * -0.45;
+  const [ex, ey] = rot(-62, -160 + br, -a), [hx, hy] = rot(-70, -126 + br, -a);
+  const th = -2.6 - a;
+  if (ps.smear != null && (ps.smearT ?? 1) > 0) {
+    const outer = [], n = 10, a0s = ps.smear < 0 ? ps.smear * 1.25 : ps.smear * -0.45;
+    for (let i = 0; i <= n; i++) { const aa = a0s + (a - a0s) * i / n, [px, py] = rot(-70, -126 + br, -aa), tt = -2.6 - aa; outer.push(px + Math.sin(tt) * 170, py - Math.cos(tt) * 170); }
+    c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.55 * (ps.smearT ?? 1); glowOn(c, glow, 18);
+    P(c, [hx, hy, ...outer], glow, 0); c.restore();
+  }
+  c.save(); c.translate(hx, hy); c.rotate(th);
+  P(c, [-3, 14, 3, 14, 3, -8, -3, -8], '#2a2236');
+  P(c, [-18, -8, 18, -8, 14, -14, -14, -14], plateL);
+  P(c, [-8, -14, 8, -14, 9, -160, 0, -178, -9, -160], '#0e0a16', 1.4);
+  P(c, [0, -14, 8, -14, 9, -160, 0, -178], '#1e1830', 0);
+  glowOn(c, glow, 12); L(c, [8.5, -18, 9, -160, 0, -178], glow, 1.6); L(c, [0, -22, 0, -150], shade(glow, -30), 1); glowOff(c);
+  c.restore();
+  limb(c, sx, sy, ex, ey, 13, 11, plate, plateL); limb(c, ex, ey, hx, hy, 11, 9, plate, plateL);
+  P(c, [hx - 9, hy - 8, hx + 8, hy - 9, hx + 9, hy + 7, hx - 8, hy + 8], plateL);
+  // front pauldron
+  for (let i = 2; i >= 0; i--) {
+    const o = i * 9;
+    P(c, [sx - 22, sy - 4 + o, sx - 8, sy - 18 + o, sx + 18, sy - 16 + o, sx + 24, sy + 2 + o, sx + 12, sy + 12 + o, sx - 18, sy + 10 + o], i ? plate : plateL);
+    L(c, [sx - 18, sy + 10 + o, sx + 12, sy + 12 + o, sx + 24, sy + 2 + o], edge, 1.4);
+  }
+  for (let i = 0; i < 3; i++) P(c, [sx - 14 + i * 12, sy - 16, sx - 12 + i * 12 - 4, sy - 34 - i * 3, sx - 8 + i * 12, sy - 17], plateD, 1);
+}
+
+// Enemies face left. ps is the battle pose: { dx, dy, lean, sx, sy, arm, smear, smearT }.
+function drawEnemyPosed(c, e, x, y, s, t, ps = {}) {
+  if (e.kind === 'humanoid') { drawKnight(c, x, y, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, pose: ps }, t); return; }
+  c.save(); c.translate(x, y); c.rotate(-(ps.lean || 0)); c.scale(ps.sx || 1, ps.sy || 1); c.translate(-x, -y);
+  if (e.kind === 'titan') { c.translate(x, y); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round'; drawTitan(c, e, t, ps); }
+  else drawEnemy(c, e, x, s, t, 0, y);
+  c.restore();
+}
+
 function drawPortrait(cv, hl, size, zoom = 34) {
   const c = hiDpi(cv, size, size), w = size, h = size;
   c.clearRect(0, 0, w, h);
@@ -981,49 +1327,64 @@ function shieldHex(c, x, y, rad, t) {
   c.save(); c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 0.005); glowOn(c, '#5ad1e6', 10);
   P(c, pts, 'rgba(90,209,230,0.08)', 0); L(c, [...pts, pts[0], pts[1]], '#5ad1e6', 1.4); c.restore();
 }
+const actorPose = a => ({ arm: a.arm, lean: a.lean, crouch: a.crouch, smear: a.smear, smearT: a.smearT, aura: a.aura, sx: a.sx, sy: a.sy });
+// Offscreen box for each enemy size: w/h of the sprite canvas and where its feet sit.
+function enemyBox(e) {
+  if (e.kind === 'titan') return { w: 640, h: 330, ax: 340, ay: 312, s: 0.95 };
+  if (e.big) return { w: 460, h: 330, ax: 230, ay: 312, s: 1.25 * 1.45 };
+  return { w: 360, h: 270, ax: 180, ay: 250, s: 1.25 };
+}
 function loop(t) {
   raf = 0;
   const cv = document.getElementById('battleCanvas');
   if (!cv || !B) return;
-  const dt = Math.min(50, t - (last || t)); last = t;
-  const c = hiDpi(cv, W, H), a = B.anim, w = PLANETS[B.world];
-  c.save();
-  if (a.flash > 0 && !RM) c.translate((Math.random() - 0.5) * 8 * a.flash, (Math.random() - 0.5) * 6 * a.flash);
-  drawBackdrop(c, w, t);
-  for (const k of ['pLunge', 'eLunge', 'pHit', 'eHit', 'flash']) a[k] = Math.max(0, a[k] - dt / (k === 'flash' ? 250 : 320));
-  const lunge = v => Math.sin(v * Math.PI) * 60;
-  const shake = v => Math.sin(v * 40) * 6 * v;
-  const hitFlash = v => { if (v > 0.55 && 'filter' in c) c.filter = 'brightness(2.4) saturate(0.3)'; };
-  // hero
-  const px = 200 + lunge(a.pLunge) + shake(a.pHit);
-  shadow(c, px, 34);
-  if (B.p.hp > 0 || B.over?.result !== 'lost') {
-    hitFlash(a.pHit);
-    drawKnight(c, px, GROUND, 1.4, { ...heroLook(), swing: a.pLunge }, t);
-    c.filter = 'none';
+  const rdt = Math.min(50, t - (last || t)); last = t;
+  let dt = rdt;
+  if (B.hitstop > 0) { B.hitstop -= rdt; dt = 0; }
+  stepTweens(dt);
+  const c = hiDpi(cv, W, H), a = B.anim, pa = B.act.p, ea = B.act.e;
+  for (const act of [pa, ea]) {
+    act.kb *= Math.pow(0.84, dt / 16);
+    if (act.smear != null && !act.swinging) { act.smearT = Math.max(0, act.smearT - dt / 180); if (act.smearT <= 0) act.smear = null; }
+    if (dt > 0) { act.trail.unshift(act.dx); act.trail.length = Math.min(act.trail.length, 6); }
   }
-  if (B.p.fx.shield) shieldHex(c, px, GROUND - 76, 82, t);
-  // enemy
-  const big = B.e.big ? 1.45 : 1;
-  const ex = 520 - lunge(a.eLunge) + shake(a.eHit);
-  if (a.eDie > 0) a.eDie = Math.min(1, a.eDie + dt / 700);
-  shadow(c, ex, 44 * big);
+  for (const k of ['pHit', 'eHit', 'flash']) a[k] = Math.max(0, a[k] - dt / (k === 'flash' ? 250 : 300));
   c.save();
-  c.globalAlpha = a.eDie > 0 ? 1 - a.eDie : 1;
-  hitFlash(a.eHit);
-  if (B.phase === 2) { c.shadowColor = '#ff3a8a'; c.shadowBlur = 30; }
-  drawEnemy(c, B.e, ex, 1.25 * big, t, a.eLunge);
-  c.restore();
-  if (B.e.fx.shield) shieldHex(c, ex, GROUND - 82 * big, 96 * big, t);
+  B.cam = Math.max(0, (B.cam || 0) - rdt / 260);
+  if (B.cam > 0 && !RM) { const z = 1 + B.cam * 0.06, f = unitPos('e'); c.translate(f.x, f.y); c.scale(z, z); c.translate(-f.x, -f.y); }
+  if (a.flash > 0 && !RM) c.translate((Math.random() - 0.5) * 9 * a.flash, (Math.random() - 0.5) * 7 * a.flash);
+  drawBackdrop(c, B.world, t);
+  const rim = SCENE_RIM[B.world];
+  // hero
+  const hx = 200 + pa.dx + pa.kb, hy = GROUND + pa.dy;
+  shadow(c, 200 + pa.dx, 34 * (1 - Math.min(0.5, -pa.dy / 120)));
+  if (B.p.hp > 0 || B.over?.result !== 'lost') {
+    const hl = heroLook();
+    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 1.4, { ...hl, pose: actorPose(pa) }, t), {
+      x: hx, y: hy, w: 360, h: 260, ax: 150, ay: 240, rim, flash: a.pHit > 0.4 ? (a.pHit - 0.4) / 0.6 : 0,
+      ghosts: pa.ghost ? pa.trail.slice(1, 5).map(d => d - pa.dx) : null, ghostCol: WEAPON_GLOW[hl.weapon] || '#9ad8ff' });
+  }
+  if (B.p.fx.shield) shieldHex(c, hx, GROUND - 76 + pa.dy, 82, t);
+  // enemy
+  const box = enemyBox(B.e), ex = 520 + ea.dx + ea.kb, die = a.eDie > 0 ? (a.eDie = Math.min(1, a.eDie + dt / 800)) : 0;
+  const ey = GROUND + ea.dy + die * 18;
+  shadow(c, 520 + ea.dx, (B.e.kind === 'titan' ? 90 : 44 * (B.e.big ? 1.45 : 1)) * (1 - die));
+  if (die < 1) renderSprite(c, (s, ax, ay) => drawEnemyPosed(s, B.e, ax, ay, box.s, t, actorPose(ea)), {
+    x: ex, y: ey, w: box.w, h: box.h, ax: box.ax, ay: box.ay, alpha: 1 - die,
+    rim: B.phase === 2 ? '#ff5aa8' : rim, flash: a.eHit > 0.4 ? (a.eHit - 0.4) / 0.6 : die > 0 ? 0.6 * (1 - die) : 0,
+    ghosts: ea.ghost ? ea.trail.slice(1, 5).map(d => d - ea.dx) : null, ghostCol: (B.e.col && B.e.col[1]) || '#ff8a7a' });
+  if (B.e.fx.shield && die === 0) { const u = unitPos('e'); shieldHex(c, u.x, u.y, B.e.kind === 'titan' ? 150 : 96 * (B.e.big ? 1.45 : 1), t); }
   drawVfx(c, dt);
-  // flash + floating numbers
-  if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.3})`; c.fillRect(-10, -10, W + 20, H + 20); }
-  c.textAlign = 'center'; c.font = '700 22px "Chakra Petch", sans-serif';
+  if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.28})`; c.fillRect(-20, -20, W + 40, H + 40); }
+  // floating numbers pop in, then rise and fade
+  c.textAlign = 'center';
   B.fl = B.fl.filter(f => (f.t += dt / 1000) < 1.1);
   for (const f of B.fl) {
-    const x = (f.side === 'p' ? 200 : 520) + f.dx, y = GROUND - 150 - f.t * 50;
+    const u = f.side === 'p' ? 200 + pa.dx : 520 + ea.dx, x = u + f.dx, y = GROUND - (f.side === 'e' && B.e.kind === 'titan' ? 250 : 150) - f.t * 50;
+    const pop = 1 + 0.7 * Math.max(0, 1 - f.t * 7), big = /CRIT/.test(f.text) ? 1.3 : 1;
+    c.font = `700 ${Math.round(22 * pop * big)}px "Chakra Petch", sans-serif`;
     c.globalAlpha = clamp(1.4 - f.t * 1.3, 0, 1);
-    c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.strokeText(f.text, x, y);
+    c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,0.75)'; c.strokeText(f.text, x, y);
     c.fillStyle = f.color.startsWith('var') ? '#6fdc8c' : f.color; c.fillText(f.text, x, y);
   }
   c.restore();
@@ -1059,7 +1420,7 @@ function ambientLoop() {
     const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, 'rgba(196,106,255,0.33)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = g; c.fillRect(0, 0, 420, 210);
     if (!ambientLoop.hero) ambientLoop.hero = menuHero();
-    drawKnight(c, 150, 200, 1.6, ambientLoop.hero, t);
+    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 1.6, ambientLoop.hero, t), { x: 150, y: 200, w: 300, h: 240, ax: 130, ay: 226, rim: '#d49aff' });
   }
   const cc = document.getElementById('createCanvas');
   if (cc && U.draft) {
@@ -1070,7 +1431,7 @@ function ambientLoop() {
     const sg = c.createRadialGradient(112, h - 16, 1, 112, h - 16, 60); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = sg; c.fillRect(40, h - 40, 150, 40);
     const hl = draftHero();
-    drawKnight(c, 104, h - 18, 2.3, hl, t);
+    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 2.0, hl, t), { x: 104, y: h - 16, w: 240, h: 300, ax: 104, ay: 284, rim: '#c8b8ff', outline: 2.4 });
     const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl, 150, 44);
   }
   const hc = document.getElementById('hubHero');
@@ -1078,8 +1439,10 @@ function ambientLoop() {
     const c = hiDpi(hc, 96, 120); c.clearRect(0, 0, 96, 120);
     const sg = c.createRadialGradient(44, 112, 1, 44, 112, 36); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = sg; c.fillRect(0, 96, 96, 24);
-    drawKnight(c, 42, 112, 0.86, heroLook(), t);
+    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 0.86, heroLook(), t), { x: 42, y: 112, w: 110, h: 124, ax: 42, ay: 116, rim: SCENE_RIM[S.world], outline: 1.4 });
   }
-  if ((tc || cc || hc) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  const hall = document.getElementById('hallCanvas');
+  if (hall && S) drawHall(hall, t);
+  if ((tc || cc || hc || hall) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 

@@ -13,7 +13,7 @@ function hud() {
   const st = stats();
   const hp = B && !B.over ? B.p.hp : S.hp, en = B && !B.over ? B.p.en : S.en;
   return `<div class="hud">
-    <div class="who"><canvas class="portrait" data-portrait width="80" height="80" aria-hidden="true"></canvas><span>${esc(heroName())}<small>LV ${S.lvl}</small></span></div>
+    <div class="who"><canvas class="portrait" data-portrait width="80" height="80" aria-hidden="true"></canvas><span>${esc(heroName())}<small>${S.done ? 'Starbreaker · ' : ''}LV ${S.lvl}</small></span></div>
     <div class="bars">${bar('HP', hp, st.maxHp, 'var(--hp)')}${bar('EN', en, st.maxEn, 'var(--en)')}${bar('XP', S.xp, xpNext(S.lvl), 'var(--xp)')}</div>
     <div class="hud-end"><span class="credits num">${S.cr.toLocaleString()} cr</span>
       <button class="btn small" data-a="main-menu" ${B && !B.over ? 'disabled title="Finish the battle first"' : ''}>Main menu</button></div>
@@ -27,12 +27,13 @@ function screenTitle() {
   return `<div class="panel title-card">
     <canvas id="titleCanvas" width="420" height="210" aria-hidden="true"></canvas>
     <h1>Starbreaker<span>Saga</span></h1>
-    <p>A disgraced knight. Five worlds. One darkness at the edge of the stars. Fight turn-based battles, level up, gear up and win back your honour.</p>
+    <p>A disgraced Sweeper Knight. A master who lied. Five worlds and one darkness at the edge of the stars. Fight, level up, gear up and win back your name.</p>
     <span class="label">${sub}</span>
     <div class="menu-col">
       ${sv ? `<button class="btn primary" data-a="continue">Continue</button>` : ''}
       <button class="btn ${sv ? '' : 'primary'}" data-a="new">New game</button>
       <button class="btn" data-a="look-open">Appearance</button>
+      <button class="btn" data-a="story-open">Story</button>
     </div>
     ${U.confirmNew ? `<div class="row" style="justify-content:center"><span class="dim">This replaces your saved game.</span><button class="btn small" data-a="new-yes">Start over</button><button class="btn small" data-a="new-no">Keep my save</button></div>` : ''}
     <details style="max-width:420px;width:100%;text-align:left"><summary class="dim" style="cursor:pointer">Load a save code</summary>
@@ -45,7 +46,7 @@ const COLOUR_NAMES = {
   hairCol: ['Black', 'Brown', 'Auburn', 'Blonde', 'Silver', 'Crimson', 'Cobalt'],
   eyes: ['Cyan', 'Amber', 'Green', 'Red', 'Violet', 'White'],
 };
-const LOOK_ROWS = [['gear', 'Headgear'], ['hair', 'Hair'], ['hairCol', 'Hair colour'], ['skin', 'Skin'], ['eyes', 'Eyes and visor glow'], ['beard', 'Beard'], ['mark', 'Face mark']];
+const LOOK_ROWS = [['build', 'Build'], ['gear', 'Headgear'], ['hair', 'Hair'], ['hairCol', 'Hair colour'], ['skin', 'Skin'], ['eyes', 'Eyes and visor glow'], ['beard', 'Beard'], ['mark', 'Face mark']];
 const lookList = k => k === 'skin' ? SKIN : k === 'hairCol' ? HAIR : k === 'eyes' ? EYES : LOOK_OPTS[k];
 function cycleLook(k, d) {
   if (k === 'outfit') { U.outfit = ((U.outfit || 0) + d + OUTFITS.length) % OUTFITS.length; return; }
@@ -91,19 +92,10 @@ function screenCreate() {
   </div>`;
 }
 
-function screenStory() {
-  const st = U.story;
-  return `<div class="panel story">
-    <div class="who">${esc(st.title)}</div>
-    ${st.lines.map(l => `<p>${esc(l)}</p>`).join('')}
-    <div class="row"><button class="btn primary" data-a="story-next">${esc(st.button || 'Continue')}</button></div>
-  </div>`;
-}
-
 function screenMap() {
   return `${hud()}<div class="panel">
-    <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="look-open">Appearance</button><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
-    ${S.done ? `<p style="color:var(--gold)">The Hollow Dark is gone. You can keep exploring and fighting on any world.</p>` : ''}
+    <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="story-open">Story</button><button class="btn small" data-a="look-open">Appearance</button><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
+    ${S.done ? `<div class="row between"><p style="color:var(--gold)">The Hollow Dark is gone. The Rim is yours to roam.</p><button class="btn small primary" data-a="go-hall">Hall of Heroes</button></div>` : ''}
     <div class="worlds">${PLANETS.map((w, i) => {
       const locked = i >= S.unlocked;
       return `<button class="btn world ${locked ? 'locked' : ''}" data-a="world" data-id="${i}" ${locked ? 'disabled' : ''}>
@@ -118,7 +110,7 @@ function screenMap() {
 
 function screenHub() {
   const w = PLANETS[S.world], i = S.world, st = stats();
-  const ready = S.wins[i] >= WINS_FOR_BOSS;
+  const ready = S.wins[i] >= WINS_FOR_BOSS, kolNext = i === PLANETS.length - 1 && !S.kolDown, bossName = kolNext ? KOL.name : w.boss.name;
   const restCost = (S.hp >= st.maxHp && S.en >= st.maxEn) ? 0 : 5 + S.lvl * 3;
   return `${hud()}<div class="panel">
     <div class="hub-head"><div class="globe" style="${globeStyle(w)}"></div>
@@ -127,7 +119,7 @@ function screenHub() {
       <button class="hub-hero" data-a="look-open" aria-label="Change appearance"><canvas id="hubHero" width="96" height="120" aria-hidden="true"></canvas></button></div>
     <div class="grid3">
       <button class="btn primary" data-a="patrol" ${S.hp <= 0 ? 'disabled' : ''}>Patrol<span class="sub">Fight a random enemy</span></button>
-      <button class="btn" data-a="boss" ${!ready || S.hp <= 0 ? 'disabled' : ''}>${S.bosses[i] ? 'Rematch boss' : 'Boss'}<span class="sub">${ready ? esc(w.boss.name) : `${WINS_FOR_BOSS - S.wins[i]} more patrols`}</span></button>
+      <button class="btn" data-a="boss" ${!ready || S.hp <= 0 ? 'disabled' : ''}>${S.bosses[i] ? 'Rematch boss' : 'Boss'}<span class="sub">${ready ? esc(bossName) : `${WINS_FOR_BOSS - S.wins[i]} more patrols`}</span></button>
       <button class="btn" data-a="rest" ${restCost === 0 || S.cr < restCost ? 'disabled' : ''}>Medbay<span class="sub">${restCost ? `Full repair · ${restCost} cr` : 'Fully repaired'}</span></button>
       <button class="btn" data-a="go-shop">Trader<span class="sub">Items and gear</span></button>
       <button class="btn" data-a="go-status">Status${S.pts ? ` · ${S.pts} pts` : ''}<span class="sub">Stats and equipment</span></button>
@@ -262,15 +254,17 @@ function screenSave() {
 let prevScreen = 'hub';
 function render() {
   const sc = U.screen;
-  const view = { create: screenCreate, title: screenTitle, story: screenStory, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
-  // Keep the battle canvas element alive across re-renders so the animation never blinks.
-  const keep = sc === 'battle' ? document.getElementById('battleCanvas') : null;
+  const view = { cutscene: screenCutscene, storymenu: screenStoryMenu, hall: screenHall, create: screenCreate, title: screenTitle, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
+  // Keep live canvases alive across re-renders so animation never blinks.
+  const cid = sc === 'battle' ? 'battleCanvas' : sc === 'cutscene' ? 'csCanvas' : null, keep = cid && document.getElementById(cid);
   app.innerHTML = view();
-  if (keep) { const fresh = document.getElementById('battleCanvas'); fresh.replaceWith(keep); }
+  if (keep) document.getElementById(cid).replaceWith(keep);
   if (sc === 'battle' && !raf) raf = requestAnimationFrame(loop);
+  if (sc === 'cutscene' && !csRaf) csRaf = requestAnimationFrame(csLoop);
+  if (sc === 'hall') drawHall.cast = null;
   for (const cv of app.querySelectorAll('canvas[data-portrait]')) drawPortrait(cv, heroLook(), 40);
   if (sc === 'title') ambientLoop.hero = null;
-  if ((sc === 'title' || sc === 'create' || sc === 'hub') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  if ((sc === 'title' || sc === 'create' || sc === 'hub' || sc === 'hall') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 function toast(msg) {
@@ -278,12 +272,13 @@ function toast(msg) {
   clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2200);
 }
 
-function showStory(title, lines, then, button) { U.story = { title, lines, then, button }; U.screen = 'story'; render(); scrollTo(0, 0); }
+
+// Screen change usable from anywhere (cutscene callbacks included).
+function goTo(s) { if (['status', 'skills', 'create', 'storymenu'].includes(s) && !['status', 'skills', 'create', 'storymenu'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); }
 
 function enterWorld(i) {
   S.world = i; save();
-  const w = PLANETS[i];
-  if (!S.seen[i]) { S.seen[i] = true; save(); return showStory(w.name, [w.intro], () => { U.screen = 'hub'; render(); }); }
+  if (!S.seen[i]) { S.seen[i] = true; save(); return playCutscene('w' + i + '_in', () => goTo('hub')); }
   U.screen = 'hub'; render();
 }
 
@@ -292,7 +287,7 @@ function enterWorld(i) {
 app.addEventListener('click', ev => {
   const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
   const a = el.dataset.a, id = el.dataset.id;
-  const go = s => { if (['status', 'skills', 'create'].includes(s) && !['status', 'skills', 'create'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); };
+  const go = goTo;
   switch (a) {
     case 'new': if (loadSaved() && !U.confirmNew) { U.confirmNew = true; render(); break; } // falls through when no save exists
     case 'new-yes': { U.confirmNew = false; S = null; const pend = loadPending() || {}; U.draft = { ...DEFAULT_LOOK, ...pend.look }; U.draftName = pend.name || 'Kael'; U.editing = 'new'; U.outfit = 0; go('create'); break; }
@@ -319,7 +314,7 @@ app.addEventListener('click', ev => {
       if (U.editing !== 'new') { toast('Appearance saved'); go(prevScreen); break; }
       savePending({ look, name });
       S = fresh(); S.look = look; S.name = name; topUpCaps(); save();
-      showStory('Prologue', STORY_OPEN, () => { U.screen = 'map'; render(); }, 'Answer the beacon'); break;
+      playCutscene('prologue', () => goTo('map')); break;
     }
     case 'new-no': U.confirmNew = false; render(); break;
     case 'continue': S = Object.assign(fresh(), loadSaved()); topUpCaps(); go('map'); break;
@@ -335,7 +330,19 @@ app.addEventListener('click', ev => {
     case 'back': go(U.screen === 'create' && U.editing === 'new' ? 'title' : prevScreen); break;
     case 'tab': U.tab = id; render(); break;
     case 'patrol': startBattle(false); break;
-    case 'boss': startBattle(true); break;
+    case 'boss': {
+      const kolNext = S.world === PLANETS.length - 1 && !S.kolDown;
+      if (kolNext && !(S.cs && S.cs.kol_in)) playCutscene('kol_in', () => startBattle(true));
+      else startBattle(true);
+      break;
+    }
+    case 'cs-next': csNext(); break;
+    case 'cs-skip': csSkip(); break;
+    case 'cs-choose': csChoose(id); break;
+    case 'cs-replay': playCutscene(id, () => goTo('storymenu'), true); break;
+    case 'story-open': go('storymenu'); break;
+    case 'go-hall': U.talk = null; go('hall'); break;
+    case 'talk': U.talk = U.talk && U.talk.id === id ? { id, n: U.talk.n + 1 } : { id, n: 0 }; render(); break;
     case 'rest': { const st = stats(), cost = 5 + S.lvl * 3; if (S.cr >= cost) { S.cr -= cost; S.hp = st.maxHp; S.en = st.maxEn; save(); toast('Fully repaired'); render(); } break; }
     case 'buy-item': { const it = ITEMS[id]; if (S.cr >= it.price) { S.cr -= it.price; S.inv[id] = (S.inv[id] || 0) + 1; save(); toast(`Bought ${it.name}`); render(); } break; }
     case 'buy-gear': { const g = GEAR[id]; if (S.cr >= g.price && !S.gear.includes(id)) { S.cr -= g.price; S.gear.push(id); S.equip[g.slot] = id; topUpCaps(); save(); toast(`Bought and equipped ${g.name}`); render(); } break; }
@@ -358,13 +365,13 @@ app.addEventListener('click', ev => {
     case 'use-skill': playerAction('skill', id); break;
     case 'use-item': playerAction('item', id); break;
     case 'battle-done': {
-      const wasBoss = B.boss && B.over.result === 'won', wi = B.world;
+      const won = B.over.result === 'won', wasBoss = B.boss && won, wasKol = B.kol && won, wi = B.world;
       B = null;
-      if (wasBoss) {
-        if (wi === PLANETS.length - 1) showStory('Epilogue', STORY_END, () => { U.screen = 'map'; render(); }, 'Return to the stars');
-        else if (!S.seen['out' + wi]) { S.seen['out' + wi] = true; save(); showStory(PLANETS[wi].name, [PLANETS[wi].outro, `New world unlocked: ${PLANETS[wi + 1].name}.`], () => { U.screen = 'map'; render(); }); }
-        else go('hub');
-      } else go('hub');
+      const seen = id => S.cs && S.cs[id];
+      if (wasKol) playCutscene('kol_down', () => goTo('hub'));
+      else if (wasBoss && wi === PLANETS.length - 1) { if (!seen('ending')) playCutscene('ending', () => { U.talk = null; goTo('hall'); }); else go('hub'); }
+      else if (wasBoss && !seen('w' + wi + '_out') && !S.seen['out' + wi]) { S.seen['out' + wi] = true; playCutscene('w' + wi + '_out', () => { toast(`New world unlocked: ${PLANETS[wi + 1].name}`); goTo('map'); }); }
+      else go('hub');
       break;
     }
   }
@@ -372,8 +379,13 @@ app.addEventListener('click', ev => {
 
 app.addEventListener('input', ev => { if (ev.target.id === 'heroName') U.draftName = ev.target.value; });
 
-// Keyboard shortcuts in battle: 1 Attack, 2 Skills, 3 Items, 4 Defend, 5 Flee, Esc back.
+// Keyboard: in cutscenes Space/Enter continues and Esc skips; in battle 1 Attack, 2 Skills, 3 Items, 4 Defend, 5 Flee, Esc back.
 document.addEventListener('keydown', ev => {
+  if (U.screen === 'cutscene' && U.cs && !/INPUT|TEXTAREA|BUTTON/.test(ev.target.tagName)) {
+    if (ev.key === ' ' || ev.key === 'Enter') { ev.preventDefault(); csNext(); }
+    if (ev.key === 'Escape') csSkip();
+    return;
+  }
   if (U.screen !== 'battle' || !B || ev.target.tagName === 'TEXTAREA') return;
   const map = { '1': 'attack', '2': 'menu-skills', '3': 'menu-items', '4': 'defend', '5': 'flee', 'Escape': 'menu-back', 'Enter': 'battle-done' };
   const a = map[ev.key]; if (!a) return;

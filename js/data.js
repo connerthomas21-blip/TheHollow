@@ -56,8 +56,6 @@ const BONUS_LABEL = { atk: 'ATK', mag: 'TECH ATK', armor: 'ARMOUR', hp: 'HP', en
 const PLANETS = [
   { name: 'Veyra Outpost', sub: 'Fallen mining colony', lv: '1–4', globe: ['#c98b5a', '#5b3420'], glow: '#c98b5a55',
     sky: ['#2b1a2e', '#7a4a3a'], hills: '#3a2228', ground: '#2a1a1a',
-    intro: 'Veyra fell on your watch. The colonists are gone, and the machines they left behind have turned on anything that moves. The Order says you ran. Start here, where you lost everything.',
-    outro: 'The Warden’s core sputters out. In its memory banks you find a signal: the attack on Veyra came from the Krytos Wastes. Someone sent the Skrell.',
     foes: [
       { name: 'Scrap Drone',   kind: 'drone',   col: ['#9aa3ad', '#ff6b4a'], hp: 28, atk: 9,  def: 2, agi: 6, xp: 12, cr: 14,  moves: [{ n: 'Zap', c: 0.3, m: 1.3 }] },
       { name: 'Dust Crawler',  kind: 'crawler', col: ['#a8865a', '#e6d36a'], hp: 36, atk: 8,  def: 4, agi: 3, xp: 13, cr: 11,  moves: [{ n: 'Venom Bite', c: 0.3, m: 1, fx: 'poison' }] },
@@ -67,8 +65,6 @@ const PLANETS = [
       moves: [{ n: 'Rocket Salvo', c: 0.3, m: 0.6, hits: 3 }, { n: 'Lockdown Beam', c: 0.15, m: 0.8, fx: 'stun' }, { n: 'Self-Repair', c: 0.12, heal: 0.15 }] } },
   { name: 'Krytos Wastes', sub: 'Skrell hive desert', lv: '4–8', globe: ['#d9b45a', '#6b4a1a'], glow: '#d9b45a55',
     sky: ['#3a2a14', '#c9864a'], hills: '#6a4426', ground: '#4a3018',
-    intro: 'Heat shimmer and the clicking of a million legs. The Skrell hives stretch to the horizon. Something has taught these swarms to fight like an army.',
-    outro: 'The Brood Queen collapses, and the hive goes quiet. Carved into her throne is a sigil you know: the crest of Admiral Vex, the Order’s own fleet commander.',
     foes: [
       { name: 'Skrell Scout',   kind: 'crawler', col: ['#4a7a5a', '#c6ff6a'], hp: 70,  atk: 22, def: 8,  agi: 10, xp: 30, cr: 38, moves: [{ n: 'Lunge', c: 0.3, m: 1.4 }] },
       { name: 'Skrell Spitter', kind: 'crawler', col: ['#6a5a8a', '#b6ff4a'], hp: 62,  atk: 25, def: 6,  agi: 7,  xp: 32, cr: 42, moves: [{ n: 'Acid Spit', c: 0.4, m: 1.1, fx: 'poison' }] },
@@ -78,8 +74,6 @@ const PLANETS = [
       moves: [{ n: 'Acid Rain', c: 0.25, m: 0.55, hits: 3, fx: 'poison' }, { n: 'Crushing Mandibles', c: 0.2, m: 1.7 }, { n: 'Brood Feast', c: 0.12, heal: 0.1 }] } },
   { name: 'Nebulon Station', sub: 'Order fleet dockyard', lv: '8–12', globe: ['#6a8ad9', '#1a2a5a'], glow: '#6a8ad955',
     sky: ['#0a0e2a', '#2a3a7a'], hills: '#1a2048', ground: '#20244a',
-    intro: 'The Order’s great dockyard hangs in a violet nebula. Its guns are pointed at its own knights now. Vex has made a deal with something out past the rim.',
-    outro: '“You don’t understand,” Vex gasps. “The Hollow Dark promised the Order would survive what’s coming. I only had to feed it worlds.” His final order went to the forges of Cinder Moon.',
     foes: [
       { name: 'Sentinel Unit',  kind: 'drone',    col: ['#c8d0e0', '#4ad0ff'], hp: 150, atk: 38, def: 18, agi: 12, xp: 70, cr: 88, moves: [{ n: 'Laser Grid', c: 0.35, m: 0.8, hits: 2 }] },
       { name: 'Void Wraith',    kind: 'wraith',   col: ['#3a2a6a', '#c46aff'], hp: 125, atk: 43, def: 10, agi: 18, xp: 75, cr: 80, moves: [{ n: 'Soul Drain', c: 0.35, m: 1.2, drain: true }] },
@@ -89,8 +83,6 @@ const PLANETS = [
       moves: [{ n: 'Fleet Barrage', c: 0.25, m: 0.5, hits: 4 }, { n: 'Command Shield', c: 0.15, shield: 140 }, { n: 'Execution', c: 0.15, m: 2.0 }] } },
   { name: 'Cinder Moon', sub: 'Volcanic forge world', lv: '12–16', globe: ['#ff6a3a', '#5a1a0a'], glow: '#ff6a3a66',
     sky: ['#1a0808', '#8a2a14'], hills: '#3a1010', ground: '#2a0c08',
-    intro: 'Rivers of magma feed the Order’s old forges. The fire spirits here were bound to the anvils for a thousand years. Now someone has set them loose and armed them.',
-    outro: 'Skarn’s flames gutter. Beneath the forge lies a gate of black glass, and through it, no stars at all. The Hollow Dark is waiting.',
     foes: [
       { name: 'Magma Golem', kind: 'golem',    col: ['#4a3a3a', '#ff7a2a'], hp: 300, atk: 58, def: 30, agi: 6,  xp: 140, cr: 152,  moves: [{ n: 'Lava Fist', c: 0.35, m: 1.3, fx: 'burn' }] },
       { name: 'Fire Imp',    kind: 'imp',      col: ['#c43a1a', '#ffd04a'], hp: 185, atk: 62, def: 18, agi: 26, xp: 130, cr: 144,  moves: [{ n: 'Fireball', c: 0.3, m: 1.2, fx: 'burn' }, { n: 'Claw Flurry', c: 0.25, m: 0.5, hits: 3 }] },
@@ -100,28 +92,21 @@ const PLANETS = [
       moves: [{ n: 'Eruption', c: 0.25, m: 0.6, hits: 3, fx: 'burn' }, { n: 'Magma Armour', c: 0.12, shield: 180 }, { n: 'Meteor Fall', c: 0.15, m: 2.2 }] } },
   { name: 'The Hollow Dark', sub: 'Beyond the last star', lv: '16+', globe: ['#2a1a4a', '#000000'], glow: '#9a5aff66',
     sky: ['#000000', '#1a0a2a'], hills: '#0e0618', ground: '#08040e',
-    intro: 'No light. No sound. Only the feeling of being looked at by something very large. Every knight who came here before you was swallowed. You came anyway.',
-    outro: '',
     foes: [
       { name: 'Abyss Spawn', kind: 'wraith',   col: ['#1a0a2a', '#ff3a8a'], hp: 380, atk: 87, def: 36, agi: 24, xp: 240, cr: 256, moves: [{ n: 'Hungering Touch', c: 0.35, m: 1.3, drain: true }] },
       { name: 'Shade Knight',kind: 'humanoid', col: ['#1a1a2a', '#9a6aff'], hp: 420, atk: 84, def: 44, agi: 22, xp: 260, cr: 288, armor: { base: '#24203a', trim: '#9a6aff', glow: '#9a6aff', stars: true, pauldron: 'layered', cape: '#140a24', capeLong: true, blade: '#3a2a5a' }, look: { gear: 'hood', skin: 5, eyes: '#c49aff', beard: 'none', mark: 'none' }, weapon: 'sword', cape: '#1a0a2a', moves: [{ n: 'Dark Slash', c: 0.3, m: 1.5 }, { n: 'Hex of Ruin', c: 0.18, m: 0.6, fx: 'weaken' }] },
       { name: 'Null Horror', kind: 'eye',      col: ['#2a1a3a', '#ff4a4a'], hp: 400, atk: 90, def: 38, agi: 20, xp: 280, cr: 304, moves: [{ n: 'Paralysing Gaze', c: 0.18, m: 0.7, fx: 'stun' }, { n: 'Mind Rend', c: 0.25, m: 1.6 }] },
     ],
-    boss: { name: 'The Hollow Dark', kind: 'eye', big: true, col: ['#120820', '#c46aff'], hp: 1500, atk: 70, def: 36, agi: 24, xp: 0, cr: 0, phase2: true,
+    boss: { name: 'The Hollow Dark', kind: 'titan', big: true, col: ['#120820', '#c46aff'], hp: 1500, atk: 70, def: 36, agi: 24, xp: 0, cr: 0, phase2: true,
       moves: [{ n: 'Swallowing Night', c: 0.25, m: 0.55, hits: 4 }, { n: 'Unmaking Gaze', c: 0.15, m: 0.9, fx: 'stun' }, { n: 'Entropy', c: 0.15, m: 0.8, fx: 'weaken' }] } },
 ];
+// Master Ardent Kol guards the heart of the Hollow Dark. He must fall before the titan wakes.
+const KOL = { name: 'Master Ardent Kol', kind: 'humanoid', col: ['#3a2e2a', '#c46aff'], hp: 1150, atk: 60, def: 34, agi: 20, xp: 1500, cr: 2600, weapon: 'sword',
+  armor: { base: '#3a2e2a', trim: '#c46aff', glow: '#c46aff', seams: true, pauldron: 'spiky', cape: '#2a0a24', spike: '#5a4a44', blade: '#2a2236' },
+  look: { build: 'm', gear: 'none', skin: 1, hair: 'short', hairCol: 4, eyes: '#c46aff', beard: 'full', mark: 'scar' },
+  moves: [{ n: 'Sweeper’s Judgement', c: 0.2, m: 1.9 }, { n: 'Twin Cut', c: 0.2, m: 0.6, hits: 2 }, { n: 'Severing Oath', c: 0.18, m: 0.8, fx: 'weaken' }, { n: 'Hollow Pact', c: 0.1, heal: 0.12 }] };
 const PHASE2 = { name: 'The Hollow Dark, Unbound', atkMul: 1.15,
   moves: [{ n: 'Event Horizon', c: 0.2, m: 1.8 }, { n: 'Starless Rain', c: 0.25, m: 0.5, hits: 4, fx: 'burn' }, { n: 'Devour Light', c: 0.15, m: 1.2, drain: true }] };
 const WINS_FOR_BOSS = 5;
 
-const STORY_OPEN = [
-  'Three years ago the colony of Veyra burned while its guardian knight was away. The Order of the Star stripped that knight of rank, name and honour.',
-  'That knight was you. Since then you have drifted between worlds with a rusted blade and a ship held together by tape.',
-  'Tonight a distress beacon wakes you. It’s coming from Veyra, from the ruins you were never allowed to return to.',
-];
-const STORY_END = [
-  'The Hollow Dark folds in on itself like a dying star. Light pours back into the rim worlds for the first time in a generation.',
-  'When you return to the Order’s capital, the knights who cast you out stand in silence. The Grand Master hands back your crest himself.',
-  'The galaxy will tell this story for a long time. They will call you Starbreaker.',
-];
 
