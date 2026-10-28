@@ -1,0 +1,1072 @@
+<title>Starbreaker Saga</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<!--
+  Starbreaker Saga — a turn-based space-knight RPG in the style of the Flash series
+  "Lethal RPG Universe". Original names, story and art. See ROADMAP.md for the session plan.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: a single centred console, HUD strip on top, one screen at a time below. Deliberately dark-only (space cockpit). */
+:root {
+  --void: #0e0d22;
+  --hull: #1a1838;
+  --hull-2: #252250;
+  --line: #3a3670;
+  --text: #e9e6ff;
+  --dim: #a29dcc;
+  --gold: #f2b544;
+  --gold-ink: #24190a;
+  --hp: #ef5d6b;
+  --en: #5ad1e6;
+  --xp: #b88cff;
+  --good: #6fdc8c;
+  --display: "Chakra Petch", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { min-height: 100%; }
+body {
+  background: radial-gradient(1200px 600px at 50% -10%, #221f52 0%, var(--void) 60%) fixed, var(--void);
+  color: var(--text);
+  font-family: var(--body);
+  font-size: 15px;
+  line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 32px;
+}
+button { font: inherit; color: inherit; }
+.app { max-width: 760px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; text-wrap: balance; letter-spacing: 0.02em; }
+h2 { font-size: 1.35rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+.dim { color: var(--dim); }
+.num { font-family: var(--display); font-variant-numeric: tabular-nums; }
+.label { font-family: var(--display); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--dim); }
+
+/* HUD */
+.hud { display: grid; grid-template-columns: auto 1fr auto; gap: 6px 14px; align-items: center;
+  background: var(--hull); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+.hud .who { font-family: var(--display); font-weight: 700; font-size: 1.05rem; }
+.hud .who small { color: var(--gold); font-weight: 600; margin-left: 6px; }
+.bars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; min-width: 0; }
+.bar { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bar .track { height: 8px; background: #0b0a1c; border-radius: 4px; overflow: hidden; }
+.bar .fill { height: 100%; border-radius: 4px; transition: width .35s ease; }
+.bar .meta { display: flex; justify-content: space-between; font-size: 0.72rem; gap: 6px; }
+.credits { font-family: var(--display); color: var(--gold); font-weight: 600; white-space: nowrap; }
+@media (max-width: 560px) {
+  .hud { grid-template-columns: 1fr auto; }
+  .bars { grid-column: 1 / -1; grid-row: 2; }
+}
+
+/* Panels and buttons */
+.panel { background: var(--hull); border: 1px solid var(--line); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.between { justify-content: space-between; }
+.btn { background: var(--hull-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px;
+  font-family: var(--display); font-weight: 600; letter-spacing: 0.03em; cursor: pointer; text-align: left;
+  transition: border-color .15s, background .15s, transform .08s; }
+.btn:hover:not(:disabled) { border-color: var(--gold); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn.primary { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+.btn.small { padding: 6px 10px; font-size: 0.85rem; }
+.btn .sub { display: block; font-family: var(--body); font-weight: 500; font-size: 0.78rem; color: var(--dim); letter-spacing: 0; }
+.btn.primary .sub { color: #5a4210; }
+.grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.grid3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 520px) { .grid3 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab { background: transparent; border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-family: var(--display); font-size: 0.85rem; }
+.tab[aria-pressed="true"] { background: var(--gold); color: var(--gold-ink); border-color: var(--gold); }
+.list { display: flex; flex-direction: column; gap: 8px; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: #15132e; }
+.item .name { font-family: var(--display); font-weight: 600; }
+.item .desc { font-size: 0.85rem; color: var(--dim); }
+.tag { font-family: var(--display); font-size: 0.7rem; padding: 2px 7px; border-radius: 999px; border: 1px solid var(--line); color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.tag.on { border-color: var(--good); color: var(--good); }
+
+/* Title */
+.title-card { text-align: center; align-items: center; padding: 40px 20px; gap: 18px; overflow: hidden; position: relative; }
+.title-card h1 { font-size: clamp(2.2rem, 8vw, 3.6rem); line-height: 1; text-transform: uppercase; letter-spacing: 0.06em; }
+.title-card h1 span { color: var(--gold); display: block; font-size: 0.42em; letter-spacing: 0.5em; margin-top: 10px; }
+.title-card p { max-width: 52ch; color: var(--dim); }
+#titleCanvas { width: 100%; max-width: 420px; height: auto; aspect-ratio: 2 / 1; }
+
+/* Map */
+.worlds { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+.world { position: relative; display: flex; gap: 12px; align-items: center; padding: 12px; }
+.globe { width: 54px; height: 54px; border-radius: 50%; flex: none; box-shadow: inset -10px -8px 16px rgba(0,0,0,.55), 0 0 18px var(--glow, transparent); }
+.world.locked .globe { filter: grayscale(1) brightness(.5); }
+.world .info { min-width: 0; }
+
+/* Hub */
+.hub-head { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 14px; align-items: center; }
+.progress { height: 6px; background: #0b0a1c; border-radius: 3px; overflow: hidden; }
+.progress > div { height: 100%; background: var(--gold); }
+
+/* Battle */
+.combatants { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.cbox { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.cbox .nm { font-family: var(--display); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fxrow { display: flex; gap: 4px; flex-wrap: wrap; min-height: 20px; }
+.fx { font-family: var(--display); font-size: 0.68rem; padding: 1px 6px; border-radius: 4px; background: #0b0a1c; border: 1px solid var(--line); }
+#battleCanvas { width: 100%; height: auto; aspect-ratio: 9 / 4; display: block; border-radius: 8px; background: #000; }
+.log { font-size: 0.88rem; min-height: 5.6em; display: flex; flex-direction: column; gap: 2px; }
+.log div:not(:last-child) { color: var(--dim); }
+.log b { color: var(--gold); font-weight: 600; }
+.actions { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+@media (max-width: 560px) { .actions { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.actions .btn { text-align: center; }
+
+/* Story */
+.story { max-width: 60ch; margin: 0 auto; gap: 16px; }
+.story p { font-size: 1.02rem; line-height: 1.6; }
+.story .who { font-family: var(--display); color: var(--gold); text-transform: uppercase; letter-spacing: 0.14em; font-size: 0.78rem; }
+
+/* Stats */
+.stat { display: grid; grid-template-columns: 4.5em minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+.stat .k { font-family: var(--display); font-weight: 700; }
+textarea { width: 100%; min-height: 80px; background: #0b0a1c; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-family: ui-monospace, monospace; font-size: 0.75rem; resize: vertical; }
+.toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--gold); color: var(--gold-ink);
+  font-family: var(--display); font-weight: 600; padding: 8px 16px; border-radius: 8px; z-index: 20; max-width: calc(100% - 32px); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+'use strict';
+/* ============================== DATA ============================== */
+
+const HERO = 'Kael';
+
+// Skills: rank 1–5. Each level of rank adds ~15% power. `lv` is the hero level required to learn it.
+const SKILLS = {
+  slash:  { name: 'Twin Slash',     lv: 1,  en: 4,  kind: 'atk',    desc: 'Two fast sword strikes.',                         p: r => ({ type: 'phys', mult: 0.72 + 0.08 * (r - 1), hits: 2 }) },
+  bolt:   { name: 'Plasma Bolt',    lv: 2,  en: 6,  kind: 'atk',    desc: 'Tech blast that ignores half of the target’s armour.', p: r => ({ type: 'mag', mult: 1.45 + 0.15 * (r - 1), pierce: 0.5 }) },
+  barrier:{ name: 'Barrier',        lv: 3,  en: 7,  kind: 'shield', desc: 'A shield that soaks damage for 3 turns.',          p: (r, u) => ({ amt: Math.round(u.mag * (1.6 + 0.3 * (r - 1)) + 10) }) },
+  repair: { name: 'Nanite Repair',  lv: 4,  en: 8,  kind: 'heal',   desc: 'Restore HP and clear burn and poison.',            p: (r, u) => ({ amt: Math.round(u.mag * (2.2 + 0.4 * (r - 1)) + 15) }) },
+  quake:  { name: 'Shockwave',      lv: 6,  en: 10, kind: 'atk',    desc: 'Heavy slam. May stun the target.',                 p: r => ({ type: 'phys', mult: 1.25 + 0.15 * (r - 1), fx: 'stun', chance: 0.35 + 0.05 * (r - 1) }) },
+  over:   { name: 'Overdrive',      lv: 8,  en: 10, kind: 'buff',   desc: 'Deal 50% more damage for 3 turns.',                p: r => ({ fx: 'power', turns: 3 + Math.floor((r - 1) / 2) }) },
+  inferno:{ name: 'Inferno Core',   lv: 10, en: 12, kind: 'atk',    desc: 'Tech fire attack that sets the target burning.',   p: r => ({ type: 'mag', mult: 1.35 + 0.15 * (r - 1), fx: 'burn', chance: 1 }) },
+  star:   { name: 'Starbreaker',    lv: 13, en: 22, kind: 'atk',    desc: 'The lost art of the Order. Strength and tech combined.', p: r => ({ type: 'both', mult: 1.6 + 0.2 * (r - 1), pierce: 0.3 }) },
+};
+
+const ITEMS = {
+  medkit:  { name: 'Med Kit',       price: 25,  w: 1, desc: 'Restore 60 HP.',              use: u => heal(u, 60) },
+  cell:    { name: 'Energy Cell',   price: 30,  w: 1, desc: 'Restore 25 EN.',              use: u => restoreEn(u, 25) },
+  purifier:{ name: 'Purifier',      price: 30,  w: 1, desc: 'Cure burn, poison and armour break.', use: u => cleanse(u) },
+  frag:    { name: 'Frag Grenade',  price: 60,  w: 1, desc: 'Deal 90 damage that ignores armour.', battleOnly: true, use: (u, e) => trueDamage(e, 90) },
+  smoke:   { name: 'Smoke Bomb',    price: 40,  w: 1, desc: 'Escape any non-boss battle.', battleOnly: true, use: () => 'flee' },
+  megakit: { name: 'Mega Kit',      price: 90,  w: 2, desc: 'Restore 220 HP.',             use: u => heal(u, 220) },
+  supercell:{ name: 'Fusion Cell',  price: 85,  w: 3, desc: 'Restore 70 EN.',              use: u => restoreEn(u, 70) },
+  elixir:  { name: 'Star Elixir',   price: 320, w: 3, desc: 'Fully restore HP and EN.',    use: u => { heal(u, 99999); restoreEn(u, 9999); } },
+};
+
+// Gear: `w` = first world whose shop sells it.
+const GEAR = {
+  w_rust:   { name: 'Rusted Blade',      slot: 'weapon', price: 0,    w: 9, b: { atk: 3 } },
+  w_ion:    { name: 'Ion Saber',         slot: 'weapon', price: 120,  w: 1, b: { atk: 8 } },
+  w_lance:  { name: 'Shock Lance',       slot: 'weapon', price: 220,  w: 2, b: { atk: 14, mag: 4 } },
+  w_grav:   { name: 'Graviton Cleaver',  slot: 'weapon', price: 700, w: 3, b: { atk: 22 } },
+  w_nova:   { name: 'Nova Edge',         slot: 'weapon', price: 1000, w: 4, b: { atk: 32, mag: 10 } },
+  w_star:   { name: 'Oathkeeper',        slot: 'weapon', price: 3000, w: 5, b: { atk: 45, mag: 18, crit: 5 } },
+  a_vest:   { name: 'Padded Vest',       slot: 'armor',  price: 0,    w: 9, b: { armor: 2 } },
+  a_alloy:  { name: 'Alloy Plate',       slot: 'armor',  price: 100,  w: 1, b: { armor: 6 } },
+  a_cara:   { name: 'Skrell Carapace',   slot: 'armor',  price: 270,  w: 2, b: { armor: 11, hp: 20 } },
+  a_aegis:  { name: 'Aegis Mail',        slot: 'armor',  price: 650, w: 3, b: { armor: 17 } },
+  a_magma:  { name: 'Magmaforged Plate', slot: 'armor',  price: 1400, w: 4, b: { armor: 24, hp: 60 } },
+  a_void:   { name: 'Voidweave Mantle',  slot: 'armor',  price: 2800, w: 5, b: { armor: 32, en: 20, agi: 3 } },
+  x_scope:  { name: 'Targeting Scope',   slot: 'acc',    price: 150,  w: 1, b: { crit: 6 } },
+  x_core:   { name: 'Spare Core',        slot: 'acc',    price: 220,  w: 2, b: { en: 15 } },
+  x_boots:  { name: 'Thruster Boots',    slot: 'acc',    price: 250,  w: 2, b: { agi: 4 } },
+  x_heart:  { name: 'Titan Heart',       slot: 'acc',    price: 600,  w: 3, b: { vit: 4 } },
+  x_lens:   { name: 'Arc Lens',          slot: 'acc',    price: 1000, w: 4, b: { tec: 4, mag: 6 } },
+  x_sigil:  { name: 'Sigil of the Order',slot: 'acc',    price: 2000, w: 5, b: { str: 4, def: 4 } },
+};
+const BONUS_LABEL = { atk: 'ATK', mag: 'TECH ATK', armor: 'ARMOUR', hp: 'HP', en: 'EN', crit: 'CRIT %', str: 'STR', def: 'DEF', agi: 'AGI', tec: 'TEC', vit: 'VIT' };
+
+// Enemy move: n=name, c=chance per turn, m=damage multiplier, hits, fx=effect on hit, heal/shield/buff = self effects.
+const PLANETS = [
+  { name: 'Veyra Outpost', sub: 'Fallen mining colony', lv: '1–4', globe: ['#c98b5a', '#5b3420'], glow: '#c98b5a55',
+    sky: ['#2b1a2e', '#7a4a3a'], hills: '#3a2228', ground: '#2a1a1a',
+    intro: 'Veyra fell on your watch. The colonists are gone, and the machines they left behind have turned on anything that moves. The Order says you ran. Start here, where you lost everything.',
+    outro: 'The Warden’s core sputters out. In its memory banks you find a signal: the attack on Veyra came from the Krytos Wastes. Someone sent the Skrell.',
+    foes: [
+      { name: 'Scrap Drone',   kind: 'drone',   col: ['#9aa3ad', '#ff6b4a'], hp: 28, atk: 9,  def: 2, agi: 6, xp: 12, cr: 14,  moves: [{ n: 'Zap', c: 0.3, m: 1.3 }] },
+      { name: 'Dust Crawler',  kind: 'crawler', col: ['#a8865a', '#e6d36a'], hp: 36, atk: 8,  def: 4, agi: 3, xp: 13, cr: 11,  moves: [{ n: 'Venom Bite', c: 0.3, m: 1, fx: 'poison' }] },
+      { name: 'Rogue Trooper', kind: 'humanoid',col: ['#5a6a4a', '#d84a3a'], hp: 42, atk: 11, def: 4, agi: 5, xp: 16, cr: 24, weapon: 'gun', moves: [{ n: 'Burst Fire', c: 0.35, m: 0.65, hits: 2 }] },
+    ],
+    boss: { name: 'Warden Mk-II', kind: 'mech', col: ['#7d8590', '#ffb02e'], hp: 140, atk: 14, def: 7, agi: 4, xp: 70, cr: 224,
+      moves: [{ n: 'Rocket Salvo', c: 0.3, m: 0.6, hits: 3 }, { n: 'Lockdown Beam', c: 0.15, m: 0.8, fx: 'stun' }, { n: 'Self-Repair', c: 0.12, heal: 0.15 }] } },
+  { name: 'Krytos Wastes', sub: 'Skrell hive desert', lv: '4–8', globe: ['#d9b45a', '#6b4a1a'], glow: '#d9b45a55',
+    sky: ['#3a2a14', '#c9864a'], hills: '#6a4426', ground: '#4a3018',
+    intro: 'Heat shimmer and the clicking of a million legs. The Skrell hives stretch to the horizon. Something has taught these swarms to fight like an army.',
+    outro: 'The Brood Queen collapses, and the hive goes quiet. Carved into her throne is a sigil you know: the crest of Admiral Vex, the Order’s own fleet commander.',
+    foes: [
+      { name: 'Skrell Scout',   kind: 'crawler', col: ['#4a7a5a', '#c6ff6a'], hp: 70,  atk: 22, def: 8,  agi: 10, xp: 30, cr: 38, moves: [{ n: 'Lunge', c: 0.3, m: 1.4 }] },
+      { name: 'Skrell Spitter', kind: 'crawler', col: ['#6a5a8a', '#b6ff4a'], hp: 62,  atk: 25, def: 6,  agi: 7,  xp: 32, cr: 42, moves: [{ n: 'Acid Spit', c: 0.4, m: 1.1, fx: 'poison' }] },
+      { name: 'Sand Wyrm',      kind: 'wyrm',    col: ['#b8925a', '#ff7a3a'], hp: 115, atk: 27, def: 12, agi: 5,  xp: 40, cr: 54, moves: [{ n: 'Burrow Strike', c: 0.25, m: 1.6 }] },
+    ],
+    boss: { name: 'Skrell Brood Queen', kind: 'queen', col: ['#5a3a6a', '#d4ff5a'], hp: 420, atk: 31, def: 14, agi: 8, xp: 260, cr: 720,
+      moves: [{ n: 'Acid Rain', c: 0.25, m: 0.55, hits: 3, fx: 'poison' }, { n: 'Crushing Mandibles', c: 0.2, m: 1.7 }, { n: 'Brood Feast', c: 0.12, heal: 0.1 }] } },
+  { name: 'Nebulon Station', sub: 'Order fleet dockyard', lv: '8–12', globe: ['#6a8ad9', '#1a2a5a'], glow: '#6a8ad955',
+    sky: ['#0a0e2a', '#2a3a7a'], hills: '#1a2048', ground: '#20244a',
+    intro: 'The Order’s great dockyard hangs in a violet nebula. Its guns are pointed at its own knights now. Vex has made a deal with something out past the rim.',
+    outro: '“You don’t understand,” Vex gasps. “The Hollow Dark promised the Order would survive what’s coming. I only had to feed it worlds.” His final order went to the forges of Cinder Moon.',
+    foes: [
+      { name: 'Sentinel Unit',  kind: 'drone',    col: ['#c8d0e0', '#4ad0ff'], hp: 150, atk: 38, def: 18, agi: 12, xp: 70, cr: 88, moves: [{ n: 'Laser Grid', c: 0.35, m: 0.8, hits: 2 }] },
+      { name: 'Void Wraith',    kind: 'wraith',   col: ['#3a2a6a', '#c46aff'], hp: 125, atk: 43, def: 10, agi: 18, xp: 75, cr: 80, moves: [{ n: 'Soul Drain', c: 0.35, m: 1.2, drain: true }] },
+      { name: 'Merc Captain',   kind: 'humanoid', col: ['#3a3a4a', '#ffcf4a'], hp: 180, atk: 40, def: 16, agi: 12, xp: 85, cr: 144, weapon: 'gun', moves: [{ n: 'Flashbang', c: 0.18, m: 0.6, fx: 'stun' }, { n: 'Headshot', c: 0.2, m: 1.8 }] },
+    ],
+    boss: { name: 'Admiral Vex', kind: 'humanoid', big: true, col: ['#e6e6f0', '#3a6aff'], hp: 600, atk: 40, def: 22, agi: 14, xp: 600, cr: 1760, weapon: 'sword', cape: '#2a3a8a',
+      moves: [{ n: 'Fleet Barrage', c: 0.25, m: 0.5, hits: 4 }, { n: 'Command Shield', c: 0.15, shield: 140 }, { n: 'Execution', c: 0.15, m: 2.0 }] } },
+  { name: 'Cinder Moon', sub: 'Volcanic forge world', lv: '12–16', globe: ['#ff6a3a', '#5a1a0a'], glow: '#ff6a3a66',
+    sky: ['#1a0808', '#8a2a14'], hills: '#3a1010', ground: '#2a0c08',
+    intro: 'Rivers of magma feed the Order’s old forges. The fire spirits here were bound to the anvils for a thousand years. Now someone has set them loose and armed them.',
+    outro: 'Skarn’s flames gutter. Beneath the forge lies a gate of black glass, and through it, no stars at all. The Hollow Dark is waiting.',
+    foes: [
+      { name: 'Magma Golem', kind: 'golem',    col: ['#4a3a3a', '#ff7a2a'], hp: 300, atk: 58, def: 30, agi: 6,  xp: 140, cr: 152,  moves: [{ n: 'Lava Fist', c: 0.35, m: 1.3, fx: 'burn' }] },
+      { name: 'Fire Imp',    kind: 'imp',      col: ['#c43a1a', '#ffd04a'], hp: 185, atk: 62, def: 18, agi: 26, xp: 130, cr: 144,  moves: [{ n: 'Fireball', c: 0.3, m: 1.2, fx: 'burn' }, { n: 'Claw Flurry', c: 0.25, m: 0.5, hits: 3 }] },
+      { name: 'Ash Knight',  kind: 'humanoid', col: ['#3a3434', '#ff5a2a'], hp: 265, atk: 65, def: 28, agi: 16, xp: 155, cr: 192, weapon: 'axe', moves: [{ n: 'Cinder Cleave', c: 0.3, m: 1.6 }, { n: 'Sunder', c: 0.15, m: 0.8, fx: 'weaken' }] },
+    ],
+    boss: { name: 'Pyrelord Skarn', kind: 'golem', big: true, col: ['#2a1a1a', '#ffb02a'], hp: 860, atk: 52, def: 34, agi: 14, xp: 1300, cr: 3840,
+      moves: [{ n: 'Eruption', c: 0.25, m: 0.6, hits: 3, fx: 'burn' }, { n: 'Magma Armour', c: 0.12, shield: 180 }, { n: 'Meteor Fall', c: 0.15, m: 2.2 }] } },
+  { name: 'The Hollow Dark', sub: 'Beyond the last star', lv: '16+', globe: ['#2a1a4a', '#000000'], glow: '#9a5aff66',
+    sky: ['#000000', '#1a0a2a'], hills: '#0e0618', ground: '#08040e',
+    intro: 'No light. No sound. Only the feeling of being looked at by something very large. Every knight who came here before you was swallowed. You came anyway.',
+    outro: '',
+    foes: [
+      { name: 'Abyss Spawn', kind: 'wraith',   col: ['#1a0a2a', '#ff3a8a'], hp: 380, atk: 87, def: 36, agi: 24, xp: 240, cr: 256, moves: [{ n: 'Hungering Touch', c: 0.35, m: 1.3, drain: true }] },
+      { name: 'Shade Knight',kind: 'humanoid', col: ['#1a1a2a', '#9a6aff'], hp: 420, atk: 84, def: 44, agi: 22, xp: 260, cr: 288, weapon: 'sword', cape: '#1a0a2a', moves: [{ n: 'Dark Slash', c: 0.3, m: 1.5 }, { n: 'Hex of Ruin', c: 0.18, m: 0.6, fx: 'weaken' }] },
+      { name: 'Null Horror', kind: 'eye',      col: ['#2a1a3a', '#ff4a4a'], hp: 400, atk: 90, def: 38, agi: 20, xp: 280, cr: 304, moves: [{ n: 'Paralysing Gaze', c: 0.18, m: 0.7, fx: 'stun' }, { n: 'Mind Rend', c: 0.25, m: 1.6 }] },
+    ],
+    boss: { name: 'The Hollow Dark', kind: 'eye', big: true, col: ['#120820', '#c46aff'], hp: 1500, atk: 70, def: 36, agi: 24, xp: 0, cr: 0, phase2: true,
+      moves: [{ n: 'Swallowing Night', c: 0.25, m: 0.55, hits: 4 }, { n: 'Unmaking Gaze', c: 0.15, m: 0.9, fx: 'stun' }, { n: 'Entropy', c: 0.15, m: 0.8, fx: 'weaken' }] } },
+];
+const PHASE2 = { name: 'The Hollow Dark, Unbound', atkMul: 1.15,
+  moves: [{ n: 'Event Horizon', c: 0.2, m: 1.8 }, { n: 'Starless Rain', c: 0.25, m: 0.5, hits: 4, fx: 'burn' }, { n: 'Devour Light', c: 0.15, m: 1.2, drain: true }] };
+const WINS_FOR_BOSS = 5;
+
+const STORY_OPEN = [
+  'Three years ago the colony of Veyra burned while its guardian knight was away. The Order of the Star stripped that knight of rank, name and honour.',
+  'That knight was you. Since then you have drifted between worlds with a rusted blade and a ship held together by tape.',
+  'Tonight a distress beacon wakes you. It’s coming from Veyra, from the ruins you were never allowed to return to.',
+];
+const STORY_END = [
+  'The Hollow Dark folds in on itself like a dying star. Light pours back into the rim worlds for the first time in a generation.',
+  'When you return to the Order’s capital, the knights who cast you out stand in silence. The Grand Master hands back your crest himself.',
+  'The galaxy will tell this story for a long time. They will call you Starbreaker.',
+];
+
+/* ============================== STATE ============================== */
+
+const SAVE_KEY = 'starbreaker-save-v1';
+const fresh = () => ({
+  v: 1, lvl: 1, xp: 0, cr: 96, pts: 0, sp: 0,
+  base: { str: 5, def: 5, agi: 5, tec: 5, vit: 5 },
+  hp: null, en: null,
+  equip: { weapon: 'w_rust', armor: 'a_vest', acc: null },
+  gear: ['w_rust', 'a_vest'],
+  inv: { medkit: 3, cell: 1 },
+  skills: { slash: 1 },
+  world: 0, unlocked: 1, wins: [0, 0, 0, 0, 0], bosses: [false, false, false, false, false],
+  seen: {}, done: false, kills: 0,
+});
+let S = null;              // saved game state
+let U = { screen: 'title', tab: 'items', story: null }; // UI state
+let B = null;              // active battle
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const rnd = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, window.__fast ? 0 : RM ? ms * 0.4 : ms));
+const xpNext = l => Math.round(14 * Math.pow(l, 1.7));
+
+function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+function loadSaved() { try { const s = localStorage.getItem(SAVE_KEY); return s ? JSON.parse(s) : null; } catch (e) { return null; } }
+function encodeSave() { return btoa(unescape(encodeURIComponent(JSON.stringify(S)))); }
+function decodeSave(code) { const s = JSON.parse(decodeURIComponent(escape(atob(code.trim())))); if (!s || s.v !== 1 || !s.base) throw new Error('bad'); return Object.assign(fresh(), s); }
+
+function gearBonus() {
+  const t = {};
+  for (const slot of ['weapon', 'armor', 'acc']) {
+    const g = GEAR[S.equip[slot]]; if (!g) continue;
+    for (const k in g.b) t[k] = (t[k] || 0) + g.b[k];
+  }
+  return t;
+}
+function stats() {
+  const g = gearBonus(), b = S.base, v = k => b[k] + (g[k] || 0);
+  return {
+    str: v('str'), def: v('def'), agi: v('agi'), tec: v('tec'), vit: v('vit'),
+    maxHp: 30 + v('vit') * 10 + S.lvl * 12 + (g.hp || 0),
+    maxEn: 15 + v('tec') * 3 + (g.en || 0),
+    atk: Math.round(v('str') * 2.5) + (g.atk || 0),
+    mag: Math.round(v('tec') * 2.5) + (g.mag || 0),
+    armor: Math.round(v('def') * 1.2) + (g.armor || 0),
+    crit: 5 + v('agi') * 0.5 + (g.crit || 0),
+  };
+}
+function topUpCaps() {
+  const st = stats();
+  if (S.hp == null) S.hp = st.maxHp; if (S.en == null) S.en = st.maxEn;
+  S.hp = clamp(S.hp, 0, st.maxHp); S.en = clamp(S.en, 0, st.maxEn);
+}
+
+/* ============================== EFFECTS (shared by items and skills) ============================== */
+// `u` is a battle unit, or the hero outside battle (a light wrapper with hp/maxHp/en/maxEn).
+function heal(u, n) { const before = u.hp; u.hp = Math.min(u.maxHp, u.hp + n); pop(u, '+' + (u.hp - before), 'var(--good)'); return `restores ${u.hp - before} HP`; }
+function restoreEn(u, n) { const before = u.en; u.en = Math.min(u.maxEn, u.en + n); pop(u, '+' + (u.en - before) + ' EN', '#5ad1e6'); return `restores ${u.en - before} EN`; }
+function cleanse(u) { if (u.fx) { delete u.fx.burn; delete u.fx.poison; delete u.fx.weaken; } return 'is purified'; }
+function trueDamage(t, n) { applyDamage(t, n, false); return `deals ${n} damage`; }
+
+/* ============================== BATTLE ENGINE ============================== */
+
+function heroUnit() {
+  const st = stats();
+  return { side: 'p', name: HERO, hp: S.hp, maxHp: st.maxHp, en: S.en, maxEn: st.maxEn, atk: st.atk, mag: st.mag, def: st.armor, agi: st.agi, crit: st.crit, fx: {} };
+}
+function enemyUnit(d) {
+  return { side: 'e', ...clone(d), maxHp: d.hp, mag: d.atk, crit: 5 + d.agi * 0.3, fx: {} };
+}
+
+function startBattle(boss) {
+  const w = PLANETS[S.world];
+  const def = boss ? w.boss : w.foes[Math.floor(Math.random() * w.foes.length)];
+  topUpCaps();
+  B = { p: heroUnit(), e: enemyUnit(def), boss, log: [], busy: false, over: null, menu: null, fl: [],
+        anim: { pLunge: 0, eLunge: 0, pHit: 0, eHit: 0, flash: 0, eDie: 0, t: 0 }, world: S.world, phase: 1 };
+  U.screen = 'battle';
+  log(boss ? `<b>${def.name}</b> blocks your path!` : `A <b>${def.name}</b> appears!`);
+  render();
+  if (!boss && B.e.agi > B.p.agi + 4 && Math.random() < 0.5) {
+    log('It strikes first!');
+    B.busy = true; render();
+    sleep(600).then(enemyTurn);
+  }
+}
+
+function log(msg) { if (!B) return; B.log.push(msg); if (B.log.length > 4) B.log.shift(); }
+function pop(u, text, color) { if (B && u && u.side) B.fl.push({ side: u.side, text, color, t: 0, dx: rnd(-20, 20) }); }
+
+function calcHit(a, t, o) {
+  const power = o.type === 'mag' ? a.mag : o.type === 'both' ? (a.atk + a.mag) * 0.75 : a.atk;
+  const dodge = clamp(0.03 + (t.agi - a.agi) * 0.01, 0, 0.25);
+  if (Math.random() < dodge) return { miss: true, d: 0 };
+  let d = power * o.mult * rnd(0.9, 1.1);
+  const armor = t.def * (t.fx.weaken ? 0.6 : 1) * (1 - (o.pierce || 0));
+  d -= armor * 0.5;
+  if (a.fx.power) d *= 1.5;
+  d = Math.max(1, d);
+  const crit = Math.random() * 100 < a.crit;
+  if (crit) d *= 1.75;
+  if (t.fx.guard) d *= 0.5;
+  return { d: Math.round(d), crit };
+}
+function applyDamage(t, d, crit) {
+  if (t.fx.shield) {
+    const soak = Math.min(t.fx.shield.amt, d);
+    t.fx.shield.amt -= soak; d -= soak;
+    if (soak) pop(t, 'shield ' + soak, '#5ad1e6');
+    if (t.fx.shield.amt <= 0) delete t.fx.shield;
+  }
+  t.hp = Math.max(0, t.hp - d);
+  if (d > 0 || !t.fx.shield) pop(t, (crit ? 'CRIT ' : '') + d, crit ? '#f2b544' : '#fff');
+  B.anim[t.side + 'Hit'] = 1;
+  if (crit) B.anim.flash = 1;
+  return d;
+}
+function addFx(t, fx, turns) {
+  const map = { burn: 3, poison: 4, stun: 1, weaken: 3, power: 3 };
+  t.fx[fx] = { t: (turns || map[fx]) + (t.side === 'p' && fx === 'power' ? 1 : 0) };
+  pop(t, fx.toUpperCase(), fx === 'power' ? '#f2b544' : '#c46aff');
+}
+
+// One attack from a to t. Returns total damage dealt.
+async function strike(a, t, o, label) {
+  B.anim[a.side + 'Lunge'] = 1;
+  await sleep(180);
+  let total = 0, hits = o.hits || 1, crits = 0, missed = 0;
+  for (let i = 0; i < hits; i++) {
+    const r = calcHit(a, t, o);
+    if (r.miss) { missed++; pop(t, 'MISS', '#a29dcc'); }
+    else { total += applyDamage(t, r.d, r.crit); if (r.crit) crits++; }
+    if (hits > 1) await sleep(170);
+    if (t.hp <= 0) break;
+  }
+  let msg = `${label}${hits > 1 ? ` (${hits} hits)` : ''}: `;
+  msg += missed === hits ? 'miss!' : `<b>${total}</b> damage${crits ? ' (critical!)' : ''}.`;
+  if (total > 0 && o.fx && t.hp > 0 && Math.random() < (o.chance ?? 1)) { addFx(t, o.fx); msg += ` ${t.name} is ${fxWord(o.fx)}.`; }
+  if (o.drain && total > 0) { const h = Math.round(total * 0.5); a.hp = Math.min(a.maxHp, a.hp + h); pop(a, '+' + h, 'var(--good)'); msg += ` Drains ${h} HP.`; }
+  log(msg);
+  render();
+  await sleep(300);
+  return total;
+}
+const fxWord = fx => ({ burn: 'burning', poison: 'poisoned', stun: 'stunned', weaken: 'armour-broken', power: 'overdriven' }[fx] || fx);
+
+// Start-of-turn ticks. Returns false if the unit loses its turn.
+async function tick(u) {
+  for (const k of ['burn', 'poison']) if (u.fx[k] && u.hp > 0) {
+    const d = Math.max(1, Math.round(u.maxHp * (k === 'burn' ? 0.06 : 0.05)));
+    u.hp = Math.max(0, u.hp - d); pop(u, d, k === 'burn' ? '#ff8a3a' : '#9aff5a');
+    log(`${u.name} takes ${d} ${k} damage.`); render(); await sleep(350);
+  }
+  delete u.fx.guard;
+  let acts = true;
+  if (u.fx.stun) { acts = false; log(`${u.name} is stunned and can’t move!`); }
+  for (const k in u.fx) {
+    if (k === 'shield') { if (--u.fx.shield.t <= 0) delete u.fx.shield; continue; }
+    if (u.fx[k].t != null && --u.fx[k].t <= 0) delete u.fx[k];
+  }
+  render();
+  return acts;
+}
+
+async function playerAction(kind, id) {
+  if (!B || B.busy || B.over) return;
+  const p = B.p, e = B.e;
+  if (kind === 'skill') {
+    const sk = SKILLS[id], r = S.skills[id];
+    if (!r || p.en < sk.en) return;
+  }
+  if (kind === 'item' && !(S.inv[id] > 0)) return;
+  B.busy = true; B.menu = null; render();
+
+  if (kind === 'attack') await strike(p, e, { type: 'phys', mult: 1 }, 'Sword strike');
+  else if (kind === 'defend') { p.fx.guard = { t: 1 }; restoreEn(p, 5); log('You raise your guard. Damage halved this turn, +5 EN.'); render(); await sleep(300); }
+  else if (kind === 'flee') {
+    const chance = clamp(0.5 + (p.agi - e.agi) * 0.04, 0.2, 0.9);
+    if (!B.boss && Math.random() < chance) return endBattle('fled');
+    log(B.boss ? 'There’s no escape from this fight!' : 'You couldn’t get away!'); render(); await sleep(400);
+  }
+  else if (kind === 'skill') {
+    const sk = SKILLS[id], r = S.skills[id], prm = sk.p(r, p);
+    p.en -= sk.en;
+    if (sk.kind === 'atk') await strike(p, e, prm, sk.name);
+    else if (sk.kind === 'shield') { p.fx.shield = { amt: prm.amt, t: 3 }; pop(p, 'SHIELD ' + prm.amt, '#5ad1e6'); log(`${sk.name}: a ${prm.amt}-point shield surrounds you.`); }
+    else if (sk.kind === 'heal') { const m = heal(p, prm.amt); cleanse(p); log(`${sk.name} ${m}.`); }
+    else if (sk.kind === 'buff') { addFx(p, prm.fx, prm.turns); log(`${sk.name}! Your damage is boosted for ${prm.turns} turns.`); }
+    render(); await sleep(350);
+  }
+  else if (kind === 'item') {
+    const it = ITEMS[id];
+    S.inv[id]--; if (!S.inv[id]) delete S.inv[id];
+    const res = it.use(p, e);
+    if (res === 'flee') { if (!B.boss) return endBattle('fled'); log('The smoke clears. The boss is still there.'); }
+    else log(`${it.name} ${res || 'used'}.`);
+    render(); await sleep(350);
+  }
+
+  if (await checkEnd()) return;
+  await sleep(250);
+  await enemyTurn();
+}
+
+async function enemyTurn() {
+  const p = B.p, e = B.e;
+  if (await tick(e)) {
+    if (await checkEnd()) return;
+    const mv = e.moves.find(m => Math.random() < m.c);
+    if (!mv) await strike(e, p, { type: 'phys', mult: 1 }, e.name + ' attacks');
+    else if (mv.heal) { heal(e, Math.round(e.maxHp * mv.heal)); log(`${e.name} uses <b>${mv.n}</b> and recovers.`); render(); await sleep(400); }
+    else if (mv.shield) { e.fx.shield = { amt: mv.shield, t: 3 }; pop(e, 'SHIELD', '#5ad1e6'); log(`${e.name} uses <b>${mv.n}</b>.`); render(); await sleep(400); }
+    else await strike(e, p, { type: 'phys', mult: mv.m, hits: mv.hits, fx: mv.fx, chance: 1, drain: mv.drain }, `${e.name}: ${mv.n}`);
+  } else await sleep(400);
+  if (await checkEnd()) return;
+  // Hero's turn begins: small EN regeneration, then effects tick.
+  p.en = Math.min(p.maxEn, p.en + 2 + Math.floor(stats().tec / 6));
+  const acts = await tick(p);
+  if (await checkEnd()) return;
+  if (!acts) { await sleep(450); return enemyTurn(); }
+  B.busy = false; render();
+}
+
+async function checkEnd() {
+  if (B.e.hp <= 0) {
+    if (B.e.phase2 && B.phase === 1) {
+      B.phase = 2; B.anim.flash = 1;
+      Object.assign(B.e, { name: PHASE2.name, moves: PHASE2.moves, atk: Math.round(B.e.atk * PHASE2.atkMul), hp: Math.round(B.e.maxHp * 0.5), maxHp: Math.round(B.e.maxHp * 0.5), fx: {} });
+      B.e.mag = B.e.atk;
+      log('The darkness tears itself open. <b>Something worse crawls out.</b>');
+      render(); await sleep(900);
+      return false;
+    }
+    await endBattle('won'); return true;
+  }
+  if (B.p.hp <= 0) { await endBattle('lost'); return true; }
+  return false;
+}
+
+async function endBattle(result) {
+  const p = B.p, e = B.e;
+  B.busy = true;
+  S.hp = p.hp; S.en = p.en;
+  const r = { result, xp: 0, cr: 0, drop: null, levels: 0 };
+  if (result === 'won') {
+    B.anim.eDie = 0.001;
+    r.xp = e.xp; r.cr = Math.round(e.cr * rnd(0.85, 1.15));
+    S.xp += r.xp; S.cr += r.cr; S.kills++;
+    if (!B.boss && Math.random() < 0.18) {
+      const pool = ['medkit', 'medkit', 'cell', 'purifier', ...(S.world >= 1 ? ['megakit'] : []), ...(S.world >= 2 ? ['supercell'] : [])];
+      r.drop = pool[Math.floor(Math.random() * pool.length)];
+      S.inv[r.drop] = (S.inv[r.drop] || 0) + 1;
+    }
+    while (S.xp >= xpNext(S.lvl)) {
+      S.xp -= xpNext(S.lvl); S.lvl++; S.pts += 3; S.sp += 1; r.levels++;
+    }
+    if (r.levels) { const st = stats(); S.hp = st.maxHp; S.en = st.maxEn; }
+    if (B.boss) {
+      S.bosses[B.world] = true;
+      S.unlocked = Math.max(S.unlocked, Math.min(PLANETS.length, B.world + 2));
+      if (B.world === PLANETS.length - 1) S.done = true;
+    } else S.wins[B.world]++;
+    log(`<b>${e.name}</b> is defeated!`);
+  } else if (result === 'lost') {
+    r.cr = -Math.floor(S.cr * 0.3);
+    S.cr += r.cr;
+    S.hp = Math.round(stats().maxHp * 0.5);
+    log('You fall... and wake up in the medbay.');
+  } else log('You escape.');
+  B.over = r;
+  save();
+  render();
+}
+
+/* ============================== RENDERING: CANVAS ============================== */
+
+const W = 720, H = 320, GROUND = 262;
+function seeded(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+
+function drawBackdrop(c, w, t) {
+  const g = c.createLinearGradient(0, 0, 0, H);
+  g.addColorStop(0, w.sky[0]); g.addColorStop(1, w.sky[1]);
+  c.fillStyle = g; c.fillRect(0, 0, W, H);
+  const r = seeded(PLANETS.indexOf(w) * 97 + 13);
+  c.fillStyle = '#ffffff';
+  for (let i = 0; i < 70; i++) {
+    const x = r() * W, y = r() * GROUND * 0.8, s = r() * 1.6 + 0.3;
+    c.globalAlpha = 0.25 + 0.5 * Math.abs(Math.sin(t * 0.0015 + i));
+    c.fillRect(x, y, s, s);
+  }
+  c.globalAlpha = 1;
+  // distant planet
+  c.fillStyle = w.globe[0]; c.globalAlpha = 0.35;
+  c.beginPath(); c.arc(W * 0.78, 70, 34, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
+  // hills
+  c.fillStyle = w.hills; c.beginPath(); c.moveTo(0, GROUND);
+  for (let x = 0; x <= W; x += 20) c.lineTo(x, GROUND - 40 - 30 * Math.sin(x * 0.012 + 1) - 18 * Math.sin(x * 0.031) - r() * 6);
+  c.lineTo(W, GROUND); c.fill();
+  c.fillStyle = w.ground; c.fillRect(0, GROUND, W, H - GROUND);
+  c.fillStyle = 'rgba(255,255,255,0.05)'; c.fillRect(0, GROUND, W, 2);
+}
+
+function shadow(c, x, rx) { c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(x, GROUND + 4, rx, 7, 0, 0, Math.PI * 2); c.fill(); }
+
+// Humanoid knight / soldier. Faces right unless flipped.
+function drawHumanoid(c, x, y, s, o, t) {
+  c.save(); c.translate(x, y); c.scale(o.flip ? -s : s, s);
+  const bob = Math.sin(t * 0.004) * 1.5;
+  const body = o.col[0], glow = o.col[1];
+  if (o.cape) { c.fillStyle = o.cape; c.beginPath(); c.moveTo(-8, -62 + bob); c.quadraticCurveTo(-26, -30, -22 + Math.sin(t * 0.003) * 3, 0); c.lineTo(-4, -2); c.closePath(); c.fill(); }
+  c.fillStyle = shade(body, -25);
+  c.fillRect(-10, -26, 8, 26); c.fillRect(3, -26, 8, 26); // legs
+  c.fillStyle = shade(body, -40); c.fillRect(-12, -4, 11, 5); c.fillRect(2, -4, 11, 5); // boots
+  c.fillStyle = body; // torso
+  c.beginPath(); c.moveTo(-14, -64 + bob); c.lineTo(14, -64 + bob); c.lineTo(10, -26); c.lineTo(-10, -26); c.closePath(); c.fill();
+  c.fillStyle = shade(body, 20); c.fillRect(-16, -66 + bob, 9, 8); c.fillRect(8, -66 + bob, 9, 8); // pauldrons
+  c.fillStyle = glow; c.fillRect(-2, -54 + bob, 4, 14); // chest core
+  c.fillStyle = shade(body, 10); c.beginPath(); c.arc(0, -76 + bob, 11, 0, Math.PI * 2); c.fill(); // helm
+  if (o.horns) { c.fillStyle = shade(body, -30); c.beginPath(); c.moveTo(-8, -84 + bob); c.lineTo(-14, -98 + bob); c.lineTo(-3, -86 + bob); c.fill(); c.beginPath(); c.moveTo(8, -84 + bob); c.lineTo(14, -98 + bob); c.lineTo(3, -86 + bob); c.fill(); }
+  c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 8; c.fillRect(1, -79 + bob, 10, 3); c.shadowBlur = 0; // visor
+  // arm + weapon
+  c.fillStyle = shade(body, -10); c.fillRect(10, -60 + bob, 7, 22);
+  if (o.weapon === 'gun') { c.fillStyle = '#2a2a33'; c.fillRect(10, -44 + bob, 26, 7); c.fillStyle = glow; c.fillRect(34, -43 + bob, 4, 5); }
+  else if (o.weapon === 'axe') { c.fillStyle = '#555'; c.fillRect(14, -76 + bob, 4, 42); c.fillStyle = glow; c.beginPath(); c.moveTo(18, -76 + bob); c.quadraticCurveTo(36, -68 + bob, 18, -56 + bob); c.fill(); }
+  else if (o.weapon === 'claws') { c.strokeStyle = glow; c.lineWidth = 2; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(16, -40 + i * 3 + bob); c.lineTo(26, -44 + i * 4 + bob); c.stroke(); } }
+  else { c.fillStyle = '#c9c9d6'; c.fillRect(14, -92 + bob, 4, 52); c.fillStyle = glow; c.shadowColor = glow; c.shadowBlur = 10; c.fillRect(15, -92 + bob, 2, 50); c.shadowBlur = 0; c.fillStyle = '#6a5a3a'; c.fillRect(10, -42 + bob, 12, 4); }
+  c.restore();
+}
+
+function shade(hex, amt) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = v => clamp(v + amt, 0, 255);
+  return `rgb(${f(n >> 16)},${f((n >> 8) & 255)},${f(n & 255)})`;
+}
+
+function drawEnemy(c, e, x, s, t) {
+  const [a, b] = e.col, k = e.kind, bob = Math.sin(t * 0.004) * 3;
+  c.save();
+  switch (k) {
+    case 'humanoid': drawHumanoid(c, x, GROUND, s * 1.05, { col: e.col, flip: true, weapon: e.weapon, cape: e.cape }, t); break;
+    case 'imp': drawHumanoid(c, x, GROUND, s * 0.8, { col: e.col, flip: true, weapon: 'claws', horns: true }, t); break;
+    case 'drone': {
+      const y = GROUND - 80 * s + bob * 2;
+      c.translate(x, y); c.scale(s, s);
+      c.strokeStyle = shade(a, -30); c.lineWidth = 3;
+      const sp = Math.sin(t * 0.05) * 18;
+      c.beginPath(); c.moveTo(-34, -22); c.lineTo(-34 + sp, -24); c.moveTo(34, -22); c.lineTo(34 - sp, -24); c.stroke();
+      c.fillStyle = shade(a, -20); c.fillRect(-36, -22, 6, 10); c.fillRect(30, -22, 6, 10);
+      c.fillStyle = a; c.beginPath(); c.arc(0, 0, 24, 0, Math.PI * 2); c.fill();
+      c.fillStyle = shade(a, -40); c.beginPath(); c.arc(0, 0, 14, 0, Math.PI * 2); c.fill();
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 14; c.beginPath(); c.arc(-4, 0, 7, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      break;
+    }
+    case 'crawler': case 'queen': {
+      const q = k === 'queen'; c.translate(x, GROUND); c.scale(-s * (q ? 1.5 : 1), s * (q ? 1.5 : 1));
+      c.strokeStyle = shade(a, -30); c.lineWidth = 3;
+      for (let i = 0; i < 3; i++) { const lx = -18 + i * 16, w = Math.sin(t * 0.012 + i) * 4; c.beginPath(); c.moveTo(lx, -18); c.lineTo(lx - 8 + w, -6); c.lineTo(lx - 12 + w, 0); c.stroke(); }
+      if (q) { c.fillStyle = shade(a, -15); c.beginPath(); c.ellipse(-40, -28, 30, 22, -0.2, 0, Math.PI * 2); c.fill(); c.fillStyle = b; c.globalAlpha = 0.5; for (let i = 0; i < 4; i++) c.fillRect(-58 + i * 10, -32, 5, 10); c.globalAlpha = 1; }
+      c.fillStyle = a;
+      c.beginPath(); c.ellipse(-16, -22, 16, 12, 0, 0, Math.PI * 2); c.fill();
+      c.beginPath(); c.ellipse(6, -24, 14, 13, 0, 0, Math.PI * 2); c.fill();
+      c.fillStyle = shade(a, 15); c.beginPath(); c.ellipse(24, -26 + bob * 0.4, 11, 10, 0, 0, Math.PI * 2); c.fill();
+      c.strokeStyle = shade(a, 30); c.beginPath(); c.moveTo(32, -22); c.lineTo(40, -14); c.moveTo(32, -30); c.lineTo(42, -28); c.stroke();
+      if (q) { c.fillStyle = b; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(16 + i * 6, -34); c.lineTo(19 + i * 6, -46); c.lineTo(22 + i * 6, -34); c.fill(); } }
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 8; c.beginPath(); c.arc(28, -28, 2.5, 0, Math.PI * 2); c.arc(26, -22, 2, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      break;
+    }
+    case 'wyrm': {
+      c.translate(x, GROUND); c.scale(s, s);
+      for (let i = 6; i >= 0; i--) {
+        const px = 40 - i * 13, py = -20 - Math.sin(t * 0.004 + i * 0.7) * 10 - (6 - i) * 9;
+        c.fillStyle = i % 2 ? a : shade(a, -15); c.beginPath(); c.arc(px, py, 16 - i * 0.6, 0, Math.PI * 2); c.fill();
+      }
+      const hx = -40, hy = -20 - Math.sin(t * 0.004) * 10 - 54;
+      c.fillStyle = shade(a, 10); c.beginPath(); c.ellipse(hx, hy, 22, 15, 0.3, 0, Math.PI * 2); c.fill();
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 10; c.beginPath(); c.arc(hx - 8, hy - 4, 4, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      c.fillStyle = '#eee'; for (let i = 0; i < 4; i++) { c.beginPath(); c.moveTo(hx - 18 + i * 6, hy + 6); c.lineTo(hx - 16 + i * 6, hy + 13); c.lineTo(hx - 14 + i * 6, hy + 6); c.fill(); }
+      break;
+    }
+    case 'mech': {
+      c.translate(x, GROUND); c.scale(s, s);
+      c.fillStyle = shade(a, -30); c.fillRect(-28, -46, 14, 46); c.fillRect(14, -46, 14, 46);
+      c.fillStyle = a; c.fillRect(-36, -110 + bob, 72, 66);
+      c.fillStyle = shade(a, -20); c.fillRect(-58, -112 + bob, 22, 30); c.fillRect(36, -112 + bob, 22, 30);
+      c.fillStyle = '#222'; for (let i = 0; i < 3; i++) { c.beginPath(); c.arc(-47, -104 + i * 9 + bob, 3, 0, Math.PI * 2); c.fill(); }
+      c.fillStyle = shade(a, -45); c.fillRect(-24, -100 + bob, 48, 18);
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 14; c.fillRect(-20 + Math.sin(t * 0.003) * 10, -95 + bob, 18, 8); c.shadowBlur = 0;
+      c.fillStyle = shade(a, -10); c.fillRect(-62, -82 + bob, 14, 40);
+      break;
+    }
+    case 'wraith': {
+      const y = GROUND - 40 + bob * 2; c.translate(x, y); c.scale(s, s);
+      const g = c.createLinearGradient(0, -90, 0, 30); g.addColorStop(0, a); g.addColorStop(1, 'rgba(0,0,0,0)');
+      c.fillStyle = g; c.beginPath(); c.moveTo(0, -95);
+      c.bezierCurveTo(38, -90, 34, -30, 30 + Math.sin(t * 0.006) * 8, 30);
+      for (let i = 0; i < 5; i++) c.lineTo(18 - i * 12, 10 + (i % 2) * 18 + Math.sin(t * 0.008 + i) * 4);
+      c.bezierCurveTo(-34, -30, -38, -90, 0, -95); c.fill();
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 16; c.beginPath(); c.ellipse(-10, -62, 5, 3, 0.2, 0, Math.PI * 2); c.ellipse(8, -62, 5, 3, -0.2, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      break;
+    }
+    case 'golem': {
+      c.translate(x, GROUND); c.scale(s, s);
+      const rock = (rx, ry, rw, rh) => { c.fillStyle = a; c.fillRect(rx, ry, rw, rh); c.fillStyle = shade(a, 15); c.fillRect(rx, ry, rw, 4); };
+      rock(-28, -40, 20, 40); rock(8, -40, 20, 40);
+      rock(-40, -112 + bob, 80, 74);
+      rock(-62, -106 + bob, 22, 54); rock(40, -106 + bob, 22, 54);
+      rock(-16, -134 + bob, 32, 24);
+      c.strokeStyle = b; c.shadowColor = b; c.shadowBlur = 12; c.lineWidth = 3;
+      c.beginPath(); c.moveTo(-20, -100 + bob); c.lineTo(-5, -80 + bob); c.lineTo(-14, -60 + bob); c.moveTo(18, -96 + bob); c.lineTo(8, -70 + bob); c.stroke();
+      c.fillStyle = b; c.fillRect(-10, -126 + bob, 7, 5); c.fillRect(3, -126 + bob, 7, 5); c.shadowBlur = 0;
+      break;
+    }
+    case 'eye': {
+      const y = GROUND - 95 * s + bob * 2; c.translate(x, y); c.scale(s, s);
+      c.strokeStyle = shade(a, 20); c.lineWidth = 6;
+      for (let i = 0; i < 6; i++) {
+        const ang = Math.PI * 0.3 + i * 0.45;
+        c.beginPath(); c.moveTo(0, 0);
+        for (let j = 1; j <= 6; j++) { const r = 30 + j * 12; c.lineTo(Math.cos(ang + Math.sin(t * 0.003 + j + i) * 0.25) * r, Math.sin(ang + Math.sin(t * 0.003 + j + i) * 0.25) * r); }
+        c.stroke();
+      }
+      c.fillStyle = a; c.beginPath(); c.arc(0, 0, 44, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#e8dcea'; c.beginPath(); c.ellipse(0, 0, 32, 22, 0, 0, Math.PI * 2); c.fill();
+      const lx = Math.sin(t * 0.0013) * 8 - 6;
+      c.fillStyle = b; c.shadowColor = b; c.shadowBlur = 18; c.beginPath(); c.arc(lx, 0, 14, 0, Math.PI * 2); c.fill(); c.shadowBlur = 0;
+      c.fillStyle = '#000'; c.beginPath(); c.ellipse(lx, 0, 4, 11, 0, 0, Math.PI * 2); c.fill();
+      break;
+    }
+  }
+  c.restore();
+}
+
+let raf = 0, last = 0;
+function loop(t) {
+  raf = 0;
+  const cv = document.getElementById('battleCanvas');
+  if (!cv || !B) return;
+  const dt = Math.min(50, t - (last || t)); last = t;
+  const c = cv.getContext('2d'), a = B.anim, w = PLANETS[B.world];
+  drawBackdrop(c, w, t);
+  for (const k of ['pLunge', 'eLunge', 'pHit', 'eHit', 'flash']) a[k] = Math.max(0, a[k] - dt / (k === 'flash' ? 250 : 320));
+  const lunge = v => Math.sin(v * Math.PI) * 60;
+  const shake = v => Math.sin(v * 40) * 6 * v;
+  // hero
+  const px = 200 + lunge(a.pLunge) + shake(a.pHit);
+  shadow(c, px, 26);
+  if (B.p.hp > 0 || B.over?.result !== 'lost') {
+    if (a.pHit > 0.5) c.globalAlpha = 0.6;
+    drawHumanoid(c, px, GROUND, 1.4, { col: ['#5a6a9a', '#5ad1e6'], weapon: 'sword', cape: '#8a2a3a' }, t);
+    c.globalAlpha = 1;
+  }
+  if (B.p.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, GROUND - 70, 50, 80, 0, 0, Math.PI * 2); c.stroke(); }
+  // enemy
+  const big = B.e.big ? 1.45 : 1;
+  const ex = 520 - lunge(a.eLunge) + shake(a.eHit);
+  if (a.eDie > 0) a.eDie = Math.min(1, a.eDie + dt / 700);
+  shadow(c, ex, 34 * big);
+  c.globalAlpha = a.eDie > 0 ? 1 - a.eDie : a.eHit > 0.5 ? 0.6 : 1;
+  if (B.phase === 2) { c.save(); c.shadowColor = '#ff3a8a'; c.shadowBlur = 30; }
+  drawEnemy(c, B.e, ex, 1.25 * big, t);
+  if (B.phase === 2) c.restore();
+  c.globalAlpha = 1;
+  if (B.e.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, GROUND - 80 * big, 64 * big, 95 * big, 0, 0, Math.PI * 2); c.stroke(); }
+  // flash + floating numbers
+  if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.35})`; c.fillRect(0, 0, W, H); }
+  c.textAlign = 'center'; c.font = '700 22px "Chakra Petch", sans-serif';
+  B.fl = B.fl.filter(f => (f.t += dt / 1000) < 1.1);
+  for (const f of B.fl) {
+    const x = (f.side === 'p' ? 200 : 520) + f.dx, y = GROUND - 150 - f.t * 50;
+    c.globalAlpha = clamp(1.4 - f.t * 1.3, 0, 1);
+    c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.strokeText(f.text, x, y);
+    c.fillStyle = f.color.startsWith('var') ? '#6fdc8c' : f.color; c.fillText(f.text, x, y);
+  }
+  c.globalAlpha = 1;
+  raf = requestAnimationFrame(loop);
+}
+
+let titleLoop = false;
+function drawTitle() {
+  titleLoop = false;
+  const cv = document.getElementById('titleCanvas'); if (!cv) return;
+  const c = cv.getContext('2d'), t = performance.now();
+  c.clearRect(0, 0, 420, 210);
+  const r = seeded(7);
+  c.fillStyle = '#fff';
+  for (let i = 0; i < 60; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + i)); c.fillRect(r() * 420, r() * 210, 1.5, 1.5); }
+  c.globalAlpha = 1;
+  const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, '#c46aff55'); g.addColorStop(1, 'transparent');
+  c.fillStyle = g; c.fillRect(0, 0, 420, 210);
+  c.save(); c.translate(0, -40);
+  drawHumanoid(c, 140, 245, 1.6, { col: ['#5a6a9a', '#5ad1e6'], weapon: 'sword', cape: '#8a2a3a' }, t);
+  c.restore();
+  if (U.screen === 'title' && !titleLoop) { titleLoop = true; requestAnimationFrame(drawTitle); }
+}
+
+/* ============================== RENDERING: DOM ============================== */
+
+const app = document.getElementById('app');
+const esc = s => String(s).replace(/[&<>"]/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]));
+
+function bar(label, cur, max, color) {
+  const pct = max ? clamp(cur / max * 100, 0, 100) : 0;
+  return `<div class="bar"><div class="meta"><span class="label">${label}</span><span class="num">${Math.round(cur)} / ${Math.round(max)}</span></div>
+    <div class="track"><div class="fill" style="width:${pct}%;background:${color}"></div></div></div>`;
+}
+function hud() {
+  const st = stats();
+  const hp = B && !B.over ? B.p.hp : S.hp, en = B && !B.over ? B.p.en : S.en;
+  return `<div class="hud">
+    <div class="who">${HERO}<small>LV ${S.lvl}</small></div>
+    <div class="bars">${bar('HP', hp, st.maxHp, 'var(--hp)')}${bar('EN', en, st.maxEn, 'var(--en)')}${bar('XP', S.xp, xpNext(S.lvl), 'var(--xp)')}</div>
+    <div class="credits num">${S.cr.toLocaleString()} cr</div>
+  </div>`;
+}
+const globeStyle = w => `background: radial-gradient(circle at 35% 35%, ${w.globe[0]}, ${w.globe[1]}); --glow:${w.glow}`;
+
+function screenTitle() {
+  const has = !!loadSaved();
+  return `<div class="panel title-card">
+    <canvas id="titleCanvas" width="420" height="210" aria-hidden="true"></canvas>
+    <h1>Starbreaker<span>Saga</span></h1>
+    <p>A disgraced knight. Five worlds. One darkness at the edge of the stars. Fight turn-based battles, level up, gear up and win back your honour.</p>
+    <div class="row" style="justify-content:center">
+      ${has ? `<button class="btn primary" data-a="continue">Continue</button>` : ''}
+      <button class="btn ${has ? '' : 'primary'}" data-a="new">New game</button>
+    </div>
+    ${U.confirmNew ? `<div class="row" style="justify-content:center"><span class="dim">This replaces your saved game.</span><button class="btn small" data-a="new-yes">Start over</button><button class="btn small" data-a="new-no">Keep my save</button></div>` : ''}
+    <details style="max-width:420px;width:100%;text-align:left"><summary class="dim" style="cursor:pointer">Load a save code</summary>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:8px"><textarea id="importBox" placeholder="Paste a save code"></textarea><button class="btn small" data-a="import">Load save code</button></div></details>
+  </div>`;
+}
+
+function screenStory() {
+  const st = U.story;
+  return `<div class="panel story">
+    <div class="who">${esc(st.title)}</div>
+    ${st.lines.map(l => `<p>${esc(l)}</p>`).join('')}
+    <div class="row"><button class="btn primary" data-a="story-next">${esc(st.button || 'Continue')}</button></div>
+  </div>`;
+}
+
+function screenMap() {
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
+    ${S.done ? `<p style="color:var(--gold)">The Hollow Dark is gone. You can keep exploring and fighting on any world.</p>` : ''}
+    <div class="worlds">${PLANETS.map((w, i) => {
+      const locked = i >= S.unlocked;
+      return `<button class="btn world ${locked ? 'locked' : ''}" data-a="world" data-id="${i}" ${locked ? 'disabled' : ''}>
+        <div class="globe" style="${globeStyle(w)}"></div>
+        <div class="info"><div>${locked ? 'Unknown signal' : esc(w.name)}</div>
+        <span class="sub">${locked ? 'Defeat the previous boss' : `${esc(w.sub)} · LV ${w.lv}`}</span>
+        <span class="sub">${S.bosses[i] ? '✓ Boss defeated' : locked ? '' : `${Math.min(S.wins[i], WINS_FOR_BOSS)}/${WINS_FOR_BOSS} patrols`}</span></div>
+      </button>`;
+    }).join('')}</div>
+  </div>`;
+}
+
+function screenHub() {
+  const w = PLANETS[S.world], i = S.world, st = stats();
+  const ready = S.wins[i] >= WINS_FOR_BOSS;
+  const restCost = (S.hp >= st.maxHp && S.en >= st.maxEn) ? 0 : 5 + S.lvl * 3;
+  return `${hud()}<div class="panel">
+    <div class="hub-head"><div class="globe" style="${globeStyle(w)}"></div>
+      <div style="min-width:0;display:flex;flex-direction:column;gap:6px"><h2>${esc(w.name)}</h2><span class="dim">${esc(w.sub)} · recommended LV ${w.lv}</span>
+      <div class="progress" aria-label="Patrol progress"><div style="width:${Math.min(100, S.wins[i] / WINS_FOR_BOSS * 100)}%"></div></div></div></div>
+    <div class="grid3">
+      <button class="btn primary" data-a="patrol" ${S.hp <= 0 ? 'disabled' : ''}>Patrol<span class="sub">Fight a random enemy</span></button>
+      <button class="btn" data-a="boss" ${!ready || S.hp <= 0 ? 'disabled' : ''}>${S.bosses[i] ? 'Rematch boss' : 'Boss'}<span class="sub">${ready ? esc(w.boss.name) : `${WINS_FOR_BOSS - S.wins[i]} more patrols`}</span></button>
+      <button class="btn" data-a="rest" ${restCost === 0 || S.cr < restCost ? 'disabled' : ''}>Medbay<span class="sub">${restCost ? `Full repair · ${restCost} cr` : 'Fully repaired'}</span></button>
+      <button class="btn" data-a="go-shop">Trader<span class="sub">Items and gear</span></button>
+      <button class="btn" data-a="go-status">Status${S.pts ? ` · ${S.pts} pts` : ''}<span class="sub">Stats and equipment</span></button>
+      <button class="btn" data-a="go-skills">Skills${S.sp ? ` · ${S.sp} pts` : ''}<span class="sub">Learn and rank up</span></button>
+    </div>
+    <div class="row"><button class="btn small" data-a="go-map">← Star chart</button><button class="btn small" data-a="go-save">Save code</button></div>
+  </div>`;
+}
+
+function screenBattle() {
+  const p = B.p, e = B.e, o = B.over;
+  const fxl = u => Object.keys(u.fx).map(k => `<span class="fx">${k === 'shield' ? 'SHIELD ' + u.fx.shield.amt : k.toUpperCase()}</span>`).join('');
+  let actions;
+  if (o) {
+    const lines = [];
+    if (o.result === 'won') {
+      lines.push(`<h3>Victory</h3>`);
+      lines.push(`<div class="row"><span class="num" style="color:var(--xp)">+${o.xp} XP</span><span class="num" style="color:var(--gold)">+${o.cr} cr</span>${o.drop ? `<span>Found: ${ITEMS[o.drop].name}</span>` : ''}</div>`);
+      if (o.levels) lines.push(`<p style="color:var(--gold)">Level up! You are now level ${S.lvl}. +${o.levels * 3} stat points, +${o.levels} skill point${o.levels > 1 ? 's' : ''}. HP and EN restored.</p>`);
+      const newSk = Object.entries(SKILLS).filter(([id, s]) => !S.skills[id] && s.lv <= S.lvl);
+      if (o.levels && newSk.length) lines.push(`<p>New skill available to learn: ${newSk.map(([, s]) => s.name).join(', ')}.</p>`);
+    } else if (o.result === 'lost') lines.push(`<h3>Defeated</h3><p class="dim">The medbay pulled you back. Repair costs took ${-o.cr} cr. You wake with half HP.</p>`);
+    else lines.push(`<h3>Escaped</h3>`);
+    actions = `<div class="panel" style="padding:14px">${lines.join('')}<div class="row"><button class="btn primary" data-a="battle-done">Continue</button></div></div>`;
+  } else if (B.menu === 'skills') {
+    const list = Object.keys(S.skills).map(id => { const s = SKILLS[id]; return `<button class="btn" data-a="use-skill" data-id="${id}" ${B.busy || p.en < s.en ? 'disabled' : ''}>${s.name} <span class="num" style="color:var(--en)">${s.en} EN</span><span class="sub">${s.desc}</span></button>`; }).join('');
+    actions = `<div class="grid2">${list}<button class="btn" data-a="menu-back">← Back</button></div>`;
+  } else if (B.menu === 'items') {
+    const ids = Object.keys(S.inv).filter(id => S.inv[id] > 0);
+    const list = ids.map(id => `<button class="btn" data-a="use-item" data-id="${id}" ${B.busy ? 'disabled' : ''}>${ITEMS[id].name} ×${S.inv[id]}<span class="sub">${ITEMS[id].desc}</span></button>`).join('');
+    actions = `<div class="grid2">${list || '<p class="dim">Your pack is empty.</p>'}<button class="btn" data-a="menu-back">← Back</button></div>`;
+  } else {
+    const dis = B.busy ? 'disabled' : '';
+    actions = `<div class="actions">
+      <button class="btn primary" data-a="attack" ${dis}>Attack</button>
+      <button class="btn" data-a="menu-skills" ${dis}>Skills</button>
+      <button class="btn" data-a="menu-items" ${dis}>Items</button>
+      <button class="btn" data-a="defend" ${dis}>Defend</button>
+      <button class="btn" data-a="flee" ${dis || (B.boss ? 'disabled' : '')}>Flee</button></div>`;
+  }
+  return `${hud()}<div class="panel" style="gap:10px">
+    <div class="combatants">
+      <div class="cbox"><span class="nm">${HERO}</span>${bar('HP', p.hp, p.maxHp, 'var(--hp)')}<div class="fxrow">${fxl(p)}</div></div>
+      <div class="cbox"><span class="nm" style="text-align:right">${esc(e.name)}${B.boss ? ' · BOSS' : ''}</span>${bar('HP', e.hp, e.maxHp, 'var(--hp)')}<div class="fxrow" style="justify-content:flex-end">${fxl(e)}</div></div>
+    </div>
+    <canvas id="battleCanvas" width="${W}" height="${H}" aria-label="Battle scene"></canvas>
+    <div class="log" aria-live="polite">${B.log.map(l => `<div>${l}</div>`).join('')}</div>
+    ${actions}
+  </div>`;
+}
+
+function screenShop() {
+  const wmax = S.world + 1, tab = U.tab;
+  let body;
+  if (tab === 'items') {
+    body = Object.entries(ITEMS).filter(([, it]) => it.w <= wmax).map(([id, it]) => `<div class="item">
+      <div><div class="name">${it.name} <span class="dim num">×${S.inv[id] || 0}</span></div><div class="desc">${it.desc}</div></div>
+      <div class="row"><button class="btn small" data-a="buy-item" data-id="${id}" ${S.cr < it.price ? 'disabled' : ''}>Buy · ${it.price} cr</button></div></div>`).join('');
+  } else {
+    body = Object.entries(GEAR).filter(([id, g]) => g.w <= wmax || S.gear.includes(id)).map(([id, g]) => {
+      const owned = S.gear.includes(id), eq = S.equip[g.slot] === id;
+      const sell = Math.floor(g.price / 2);
+      return `<div class="item"><div><div class="name">${g.name} <span class="tag">${g.slot === 'acc' ? 'accessory' : g.slot}</span> ${eq ? '<span class="tag on">equipped</span>' : ''}</div>
+        <div class="desc">${bonusText(g.b)}</div></div>
+        <div class="row">${owned
+          ? (eq ? '' : `<button class="btn small" data-a="equip" data-id="${id}">Equip</button>${sell ? `<button class="btn small" data-a="sell" data-id="${id}">Sell · ${sell} cr</button>` : ''}`)
+          : `<button class="btn small" data-a="buy-gear" data-id="${id}" ${S.cr < g.price ? 'disabled' : ''}>Buy · ${g.price} cr</button>`}</div></div>`;
+    }).join('');
+  }
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Trader · ${esc(PLANETS[S.world].name)}</h2><button class="btn small" data-a="go-hub">← Back</button></div>
+    <div class="tabs"><button class="tab" data-a="tab" data-id="items" aria-pressed="${tab === 'items'}">Supplies</button><button class="tab" data-a="tab" data-id="gear" aria-pressed="${tab === 'gear'}">Gear</button></div>
+    <div class="list">${body}</div>
+  </div>`;
+}
+const bonusText = b => Object.entries(b).map(([k, v]) => `+${v} ${BONUS_LABEL[k]}`).join(' · ');
+
+function screenStatus() {
+  const st = stats();
+  const info = { str: 'Sword damage', def: 'Armour', agi: 'Crit chance, dodge, escape', tec: 'Tech damage, EN, healing', vit: 'Max HP' };
+  const rows = ['str', 'def', 'agi', 'tec', 'vit'].map(k => `<div class="stat"><span class="k">${k.toUpperCase()}</span>
+    <span><span class="num">${st[k]}</span> <span class="dim">${st[k] !== S.base[k] ? `(${S.base[k]} base) ` : ''}· ${info[k]}</span></span>
+    <button class="btn small" data-a="add-stat" data-id="${k}" ${S.pts ? '' : 'disabled'} aria-label="Add a point to ${k}">+1</button></div>`).join('');
+  const slots = ['weapon', 'armor', 'acc'].map(slot => {
+    const g = GEAR[S.equip[slot]];
+    const others = S.gear.filter(id => GEAR[id].slot === slot && id !== S.equip[slot]);
+    return `<div class="item"><div><div class="label">${slot === 'acc' ? 'Accessory' : slot === 'armor' ? 'Armour' : 'Weapon'}</div><div class="name">${g ? g.name : 'Empty'}</div><div class="desc">${g ? bonusText(g.b) : ''}</div></div>
+      <div class="row">${others.map(id => `<button class="btn small" data-a="equip" data-id="${id}">${GEAR[id].name}</button>`).join('')}</div></div>`;
+  }).join('');
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Status</h2><button class="btn small" data-a="back">← Back</button></div>
+    <div class="row"><span class="label">Stat points</span><span class="num" style="color:var(--gold)">${S.pts}</span></div>
+    <div class="list">${rows}</div>
+    <div class="grid3">
+      <div class="item"><div><div class="label">Attack</div><div class="num">${st.atk}</div></div></div>
+      <div class="item"><div><div class="label">Tech attack</div><div class="num">${st.mag}</div></div></div>
+      <div class="item"><div><div class="label">Armour</div><div class="num">${st.armor}</div></div></div>
+      <div class="item"><div><div class="label">Crit</div><div class="num">${st.crit.toFixed(1)}%</div></div></div>
+      <div class="item"><div><div class="label">Enemies beaten</div><div class="num">${S.kills}</div></div></div>
+      <div class="item"><div><div class="label">Next level</div><div class="num">${xpNext(S.lvl) - S.xp} XP</div></div></div>
+    </div>
+    <h3>Equipment</h3><div class="list">${slots}</div>
+    <h3>Pack</h3><div class="list">${Object.keys(S.inv).filter(id => S.inv[id] > 0).map(id => `<div class="item"><div><div class="name">${ITEMS[id].name} ×${S.inv[id]}</div><div class="desc">${ITEMS[id].desc}</div></div>
+      ${ITEMS[id].battleOnly ? '' : `<button class="btn small" data-a="field-item" data-id="${id}">Use</button>`}</div>`).join('') || '<p class="dim">Empty.</p>'}</div>
+  </div>`;
+}
+
+function screenSkills() {
+  const rows = Object.entries(SKILLS).map(([id, s]) => {
+    const r = S.skills[id] || 0, can = S.lvl >= s.lv;
+    const btn = r >= 5 ? '<span class="tag on">max rank</span>'
+      : `<button class="btn small" data-a="skill-up" data-id="${id}" ${can && S.sp > 0 ? '' : 'disabled'}>${r ? 'Rank up' : 'Learn'} · 1 pt</button>`;
+    return `<div class="item"><div><div class="name">${s.name} <span class="num dim">${r ? `rank ${r}/5` : can ? 'not learned' : `unlocks at LV ${s.lv}`}</span></div>
+      <div class="desc">${s.desc} <span class="num" style="color:var(--en)">${s.en} EN</span></div></div>${btn}</div>`;
+  }).join('');
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Skills</h2><button class="btn small" data-a="back">← Back</button></div>
+    <div class="row"><span class="label">Skill points</span><span class="num" style="color:var(--gold)">${S.sp}</span><span class="dim">You earn one per level. Each rank adds roughly 15% power.</span></div>
+    <div class="list">${rows}</div>
+  </div>`;
+}
+
+function screenSave() {
+  return `${hud()}<div class="panel">
+    <div class="row between"><h2>Save code</h2><button class="btn small" data-a="go-hub">← Back</button></div>
+    <p class="dim">Your game saves automatically in this browser. Copy this code to move your game to another device or keep a backup.</p>
+    <textarea id="saveBox" readonly>${encodeSave()}</textarea>
+    <div class="row"><button class="btn small" data-a="copy-save">Copy code</button></div>
+  </div>`;
+}
+
+let prevScreen = 'hub';
+function render() {
+  const sc = U.screen;
+  const view = { title: screenTitle, story: screenStory, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
+  // Keep the battle canvas element alive across re-renders so the animation never blinks.
+  const keep = sc === 'battle' ? document.getElementById('battleCanvas') : null;
+  app.innerHTML = view();
+  if (keep) { const fresh = document.getElementById('battleCanvas'); fresh.replaceWith(keep); }
+  if (sc === 'battle' && !raf) raf = requestAnimationFrame(loop);
+  if (sc === 'title' && !titleLoop) { titleLoop = true; requestAnimationFrame(drawTitle); }
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast'); t.textContent = msg; t.hidden = false;
+  clearTimeout(toast.h); toast.h = setTimeout(() => (t.hidden = true), 2200);
+}
+
+function showStory(title, lines, then, button) { U.story = { title, lines, then, button }; U.screen = 'story'; render(); scrollTo(0, 0); }
+
+function enterWorld(i) {
+  S.world = i; save();
+  const w = PLANETS[i];
+  if (!S.seen[i]) { S.seen[i] = true; save(); return showStory(w.name, [w.intro], () => { U.screen = 'hub'; render(); }); }
+  U.screen = 'hub'; render();
+}
+
+/* ============================== INPUT ============================== */
+
+app.addEventListener('click', ev => {
+  const el = ev.target.closest('[data-a]'); if (!el || el.disabled) return;
+  const a = el.dataset.a, id = el.dataset.id;
+  const go = s => { if (['status', 'skills'].includes(s) && !['status', 'skills'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); };
+  switch (a) {
+    case 'new': if (loadSaved() && !U.confirmNew) { U.confirmNew = true; render(); break; } // falls through when no save exists
+    case 'new-yes': U.confirmNew = false; S = fresh(); topUpCaps(); save();
+      showStory('Prologue', STORY_OPEN, () => { U.screen = 'map'; render(); }, 'Answer the beacon'); break;
+    case 'new-no': U.confirmNew = false; render(); break;
+    case 'continue': S = Object.assign(fresh(), loadSaved()); topUpCaps(); go('map'); break;
+    case 'import': try { S = decodeSave(document.getElementById('importBox').value); topUpCaps(); save(); toast('Save loaded'); go('map'); } catch (e) { toast('That code didn’t work. Check it was copied in full.'); } break;
+    case 'story-next': { const f = U.story.then; U.story = null; f(); break; }
+    case 'world': enterWorld(+id); break;
+    case 'go-map': go('map'); break;
+    case 'go-hub': go('hub'); break;
+    case 'go-shop': go('shop'); break;
+    case 'go-status': go('status'); break;
+    case 'go-skills': go('skills'); break;
+    case 'go-save': go('save'); break;
+    case 'back': go(prevScreen); break;
+    case 'tab': U.tab = id; render(); break;
+    case 'patrol': startBattle(false); break;
+    case 'boss': startBattle(true); break;
+    case 'rest': { const st = stats(), cost = 5 + S.lvl * 3; if (S.cr >= cost) { S.cr -= cost; S.hp = st.maxHp; S.en = st.maxEn; save(); toast('Fully repaired'); render(); } break; }
+    case 'buy-item': { const it = ITEMS[id]; if (S.cr >= it.price) { S.cr -= it.price; S.inv[id] = (S.inv[id] || 0) + 1; save(); toast(`Bought ${it.name}`); render(); } break; }
+    case 'buy-gear': { const g = GEAR[id]; if (S.cr >= g.price && !S.gear.includes(id)) { S.cr -= g.price; S.gear.push(id); S.equip[g.slot] = id; topUpCaps(); save(); toast(`Bought and equipped ${g.name}`); render(); } break; }
+    case 'sell': { const g = GEAR[id]; if (S.equip[g.slot] !== id) { S.gear = S.gear.filter(x => x !== id); S.cr += Math.floor(g.price / 2); save(); toast(`Sold ${g.name}`); render(); } break; }
+    case 'equip': S.equip[GEAR[id].slot] = id; topUpCaps(); save(); render(); break;
+    case 'add-stat': if (S.pts > 0) { const before = stats(); S.base[id]++; S.pts--; const after = stats(); S.hp += after.maxHp - before.maxHp; S.en += after.maxEn - before.maxEn; topUpCaps(); save(); render(); } break;
+    case 'skill-up': { const s = SKILLS[id]; if (S.sp > 0 && S.lvl >= s.lv && (S.skills[id] || 0) < 5) { S.skills[id] = (S.skills[id] || 0) + 1; S.sp--; save(); toast(`${s.name} is now rank ${S.skills[id]}`); render(); } break; }
+    case 'field-item': {
+      const it = ITEMS[id], st = stats(), u = { hp: S.hp, maxHp: st.maxHp, en: S.en, maxEn: st.maxEn };
+      it.use(u); S.hp = u.hp; S.en = u.en; S.inv[id]--; if (!S.inv[id]) delete S.inv[id]; save(); toast(`Used ${it.name}`); render(); break;
+    }
+    case 'copy-save': { const box = document.getElementById('saveBox'); navigator.clipboard?.writeText(box.value).then(() => toast('Copied'), () => { box.select(); toast('Press Ctrl+C to copy'); }) ?? box.select(); break; }
+    // battle
+    case 'attack': playerAction('attack'); break;
+    case 'defend': playerAction('defend'); break;
+    case 'flee': playerAction('flee'); break;
+    case 'menu-skills': B.menu = 'skills'; render(); break;
+    case 'menu-items': B.menu = 'items'; render(); break;
+    case 'menu-back': B.menu = null; render(); break;
+    case 'use-skill': playerAction('skill', id); break;
+    case 'use-item': playerAction('item', id); break;
+    case 'battle-done': {
+      const wasBoss = B.boss && B.over.result === 'won', wi = B.world;
+      B = null;
+      if (wasBoss) {
+        if (wi === PLANETS.length - 1) showStory('Epilogue', STORY_END, () => { U.screen = 'map'; render(); }, 'Return to the stars');
+        else if (!S.seen['out' + wi]) { S.seen['out' + wi] = true; save(); showStory(PLANETS[wi].name, [PLANETS[wi].outro, `New world unlocked: ${PLANETS[wi + 1].name}.`], () => { U.screen = 'map'; render(); }); }
+        else go('hub');
+      } else go('hub');
+      break;
+    }
+  }
+});
+
+// Keyboard shortcuts in battle: 1 Attack, 2 Skills, 3 Items, 4 Defend, 5 Flee, Esc back.
+document.addEventListener('keydown', ev => {
+  if (U.screen !== 'battle' || !B || ev.target.tagName === 'TEXTAREA') return;
+  const map = { '1': 'attack', '2': 'menu-skills', '3': 'menu-items', '4': 'defend', '5': 'flee', 'Escape': 'menu-back', 'Enter': 'battle-done' };
+  const a = map[ev.key]; if (!a) return;
+  const el = app.querySelector(`[data-a="${a}"]`); if (el && !el.disabled) el.click();
+});
+
+/* ============================== BOOT ============================== */
+
+function start(data) {
+  if (data && data.save) { try { S = Object.assign(fresh(), JSON.parse(data.save)); topUpCaps(); U.screen = 'map'; } catch (e) {} }
+  render();
+}
+window.claude?.hot?.snapshot?.(() => ({ save: S ? JSON.stringify(S) : null }));
+window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+</script>
