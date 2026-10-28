@@ -426,7 +426,7 @@ const SKIN = ['#f3cfae', '#dfa57c', '#b97a52', '#8a5638', '#5a3624', '#8fb7d0', 
 const HAIR = ['#1c1714', '#5a3a22', '#a8692e', '#e3c46e', '#cfd0d8', '#b8323a', '#3f62c8'];
 const EYES = ['#5ad1e6', '#f2b544', '#6fdc8c', '#ff5a6a', '#c46aff', '#f4f4ff'];
 const LOOK_OPTS = {
-  build: [['m', 'Broad'], ['f', 'Curvy']],
+  build: [['m', 'Broad'], ['f', 'Slender']],
   gear: [['visor', 'Visor helm'], ['knight', 'Open helm'], ['horned', 'Horned helm'], ['crest', 'Plumed helm'], ['hood', 'Hood'], ['circlet', 'Circlet'], ['mask', 'Rebreather'], ['none', 'Bare head']],
   hair: [['short', 'Short'], ['long', 'Long'], ['mohawk', 'Mohawk'], ['tail', 'Ponytail'], ['braids', 'Braids'], ['topknot', 'Topknot'], ['shaved', 'Shaved']],
   beard: [['none', 'None'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], ['moustache', 'Moustache'], ['full', 'Full beard']],
@@ -744,7 +744,8 @@ function drawWeapon(c, id, A, t) {
 const WEAPON_GLOW = { w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
 const WEAPON_LEN = { w_rust: 41, w_ion: 54, w_lance: 82, w_grav: 51, w_nova: 55, w_star: 64, sword: 55, axe: 52, staff: 70, gun: 36 };
 
-function foot(c, ax, ay, col, lit) {
+function foot(c, ax, ay, col, lit, s = 1) {
+  if (s !== 1) { c.save(); c.translate(ax, ay); c.scale(s, s); foot(c, 0, 0, col, lit); c.restore(); return; }
   P(c, [ax - 4.4, ay - 1.4, ax + 3.6, ay - 1.4, ax + 10.4, ay + 3.6, ax + 10.4, ay + 5, ax - 4.4, ay + 5], col);
   if (lit) { P(c, [ax - 3, ay - 1, ax + 3, ay - 1, ax + 7, ay + 2, ax - 3, ay + 2], lit, 0); L(c, [ax + 2.6, ay - 1, ax + 3.6, ay + 5], shade(col, -40), 0.7); }
 }
@@ -752,12 +753,12 @@ function foot(c, ax, ay, col, lit) {
 function torsoPath(c, f, br, k = 1) {
   c.beginPath();
   if (f) {
-    c.moveTo(-11, -83 + br); c.lineTo(11, -84 + br);
-    c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
-    c.quadraticCurveTo(25 + (k - 1) * 9, -72.4 + br, 19.6 + (k - 1) * 4, -64.6 + br);
-    c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6);
-    c.quadraticCurveTo(8.2, -56, 9.6, -52);
-    c.lineTo(-7.4, -52); c.quadraticCurveTo(-9.8, -58, -11, -64 + br); c.lineTo(-12.6, -72 + br);
+    c.moveTo(-8.4, -83 + br); c.lineTo(8.6, -84 + br);
+    c.quadraticCurveTo(12, -83 + br, 12.6, -78 + br);
+    c.quadraticCurveTo(14.2 + (k - 0.5) * 4, -72 + br, 12.2, -66 + br);
+    c.quadraticCurveTo(8.4, -61, 6.6, -57);
+    c.quadraticCurveTo(6.4, -54.4, 8, -52);
+    c.lineTo(-6, -52); c.quadraticCurveTo(-7, -55, -6.4, -58); c.quadraticCurveTo(-8.6, -66, -9.4, -74 + br);
   } else {
     c.moveTo(-12, -83 + br); c.lineTo(13, -84 + br); c.lineTo(17, -71 + br); c.lineTo(12, -52); c.lineTo(-9, -52); c.lineTo(-14, -69 + br);
   }
@@ -774,7 +775,7 @@ function drawKnight(c, x, y, s, o, t) {
   c.save(); c.translate(x, y); c.scale(o.flip ? -s : s, s);
   c.lineJoin = 'round'; c.lineCap = 'round';
   const br = Math.sin(t * 0.004) * 1.1 + (ps.walk != null ? Math.abs(Math.cos(ps.walk)) * -1.6 : 0), wv = Math.sin(t * 0.003) * 3;
-  const hipY = -46 + cr * 14, lw = f ? 0.84 : 1;
+  const hipY = -46 + cr * 14, lw = f ? 0.68 : 1;
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, 46); fn(); c.restore(); };
 
   if (ps.aura) {
@@ -802,18 +803,20 @@ function drawKnight(c, x, y, s, o, t) {
   // back arm
   upper(() => {
     const sw = ps.walk != null ? -wk * 0.5 : 0;
-    limb(c, -9, -77 + br, -15 + sw, -62 + br, 4.2 * lw, 3.6 * lw, A.dark);
-    limb(c, -15 + sw, -62 + br, -11 + sw * 1.4, -50 + br, 3.6 * lw, 3.2 * lw, A.dark);
-    P(c, [-14 + sw * 1.4, -53 + br, -8 + sw * 1.4, -53 + br, -7.6 + sw * 1.4, -47 + br, -13 + sw * 1.4, -46.4 + br], shade(A.dark, -10));
-    c.save(); if (f) { c.translate(-10, -80 + br); c.scale(0.9, 0.9); c.translate(10, 80 - br); } pauldron(c, -10, -80 + br, A, true); c.restore();
+    const bs = f ? 2 : 0;
+    limb(c, -9 + bs, -77 + br, -15 + bs + sw, -62 + br, 4.2 * lw, 3.6 * lw, A.dark);
+    limb(c, -15 + bs + sw, -62 + br, -11 + bs + sw * 1.4, -50 + br, 3.6 * lw, 3.2 * lw, A.dark);
+    c.save(); c.translate(bs, 0); if (f) { c.translate(-11, -50 + br); c.scale(0.75, 0.75); c.translate(11, 50 - br); }
+    P(c, [-14 + sw * 1.4, -53 + br, -8 + sw * 1.4, -53 + br, -7.6 + sw * 1.4, -47 + br, -13 + sw * 1.4, -46.4 + br], shade(A.dark, -10)); c.restore();
+    c.save(); if (f) { c.translate(-8, -82 + br); c.scale(0.72, 0.72); c.translate(10, 80 - br); } pauldron(c, -10, -80 + br, A, true); c.restore();
   });
 
   // back leg: the foot stays planted while the knee bends
-  const bkx = -11 - cr * 2 - wk * 0.6, bky = -25 + cr * 17, bfx = -15 - wk;
-  limb(c, -4, hipY, bkx, bky, 6 * lw, 5 * lw, A.dark);
+  const bkx = (f ? -9 : -11) - cr * 2 - wk * 0.6, bky = -25 + cr * 17, bfx = (f ? -13.5 : -15) - wk, fs = f ? 0.8 : 1;
+  limb(c, f ? -4.6 : -4, hipY, bkx, bky, 6 * lw, 5 * lw, A.dark);
   limb(c, bkx, bky, bfx, -5, 5 * lw, 3.8 * lw, A.dark);
-  P(c, [bkx - 3, bky - 4, bkx + 2, bky - 4, bkx + 3, bky + 3, bkx - 2, bky + 4], A.base, 1);
-  foot(c, bfx, -5, shade(A.dark, -12));
+  P(c, [bkx - 3 * fs, bky - 4 * fs, bkx + 2 * fs, bky - 4 * fs, bkx + 3 * fs, bky + 3 * fs, bkx - 2 * fs, bky + 4 * fs], A.base, 1);
+  foot(c, bfx, -5, shade(A.dark, -12), null, fs);
 
   // torso
   upper(() => {
@@ -821,10 +824,9 @@ function drawKnight(c, x, y, s, o, t) {
     c.save(); torsoPath(c, f, br, look.bust ?? 0.5); c.clip();
     P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
     if (f) {
-      const bk = look.bust ?? 0.5, g = c.createRadialGradient(15.6 + (bk - 1) * 5, -71.4 + br, 1, 15.6 + (bk - 1) * 5, -71.4 + br, 10 + (bk - 1) * 4); g.addColorStop(0, A.light); g.addColorStop(1, 'rgba(0,0,0,0)');
-      c.fillStyle = g; c.fillRect(2, -84 + br, 22, 24);
-      L(c, [16, -76 + br, 19.6, -70.6 + br], 'rgba(255,255,255,0.7)', 0.9);
-      c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, -63.6 + br); c.quadraticCurveTo(12.6, -59.6 + br, 19, -64.6 + br); c.stroke();
+      P(c, [4, -82 + br, 11, -83 + br, 13.6, -72 + br, 8.6, -69 + br], A.light, 0);
+      L(c, [10.4, -80 + br, 12.4, -74 + br], 'rgba(255,255,255,0.65)', 0.8);
+      P(c, [-6.4, -60, 7, -60, 6.6, -57, -6.4, -57], A.dark, 0);
     } else {
       P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -66 + br], A.light, 0);
       L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.6)', 0.8);
@@ -835,9 +837,9 @@ function drawKnight(c, x, y, s, o, t) {
       for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
       P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
     } else {
-      if (f) { c.strokeStyle = A.dark; c.lineWidth = 1; c.beginPath(); c.moveTo(2, -83 + br); c.quadraticCurveTo(5, -70 + br, 2, -56); c.stroke(); }
+      if (f) { c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(2, -83 + br); c.quadraticCurveTo(3.6, -70 + br, 1.4, -57); c.stroke(); }
       else L(c, [3, -82 + br, 2, -56], A.dark, 1);
-      L(c, [-10, -58, f ? 10 : 12, -58], A.trim, 1.1);
+      L(c, f ? [-6.6, -61, 8, -61] : [-10, -58, 12, -58], A.trim, 1.1);
     }
     if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
     if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
@@ -847,7 +849,7 @@ function drawKnight(c, x, y, s, o, t) {
     if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
 
     // waist, belt and tassets
-    const wR = f ? 10 : 12, wL = f ? -7.6 : -9;
+    const wR = f ? 8.4 : 12, wL = f ? -6 : -9;
     P(c, [wL, -53, wR, -53, wR - 1, -46, wL + 1, -46], A.dark);
     for (let mx = wL + 1.4; mx < wR - 1.4; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 28), 0.5);
     P(c, [wL - 0.6, -48.4, wR + 0.6, -48.4, wR + 0.6, -44.4, wL - 0.6, -44.4], A.trim);
@@ -855,27 +857,32 @@ function drawKnight(c, x, y, s, o, t) {
     else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
     P(c, [wL - 1.6, -47.6, wL + 2.6, -47.6, wL + 2.4, -41.4, wL - 1.4, -41.6], '#4a3424', 1);
     L(c, [wL - 1.4, -45.4, wL + 2.5, -45.4], '#6a4a30', 0.6);
-    const hip = f ? 2 : 0;
-    P(c, [-9 - hip, -44.4, 0.6, -44.4, -0.4, -35, -10.4 - hip * 1.4, -37], A.base);
-    P(c, [1.6, -44.4, 12.6 + hip, -44.4, 14 + hip * 1.4, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+    if (f) {
+      P(c, [-7.4, -44.4, 1, -44.4, 0, -33, -13, -34.6], A.base);
+      P(c, [1.6, -44.4, 9.6, -44.4, 15, -34.6, 2.4, -33], A.cloth ? A.base : A.light);
+      L(c, [-12.4, -35.4, -0.4, -33.8], A.trim, 0.9); L(c, [2.8, -33.8, 14.4, -35.4], A.trim, 0.9);
+    } else {
+      P(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base);
+      P(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+    }
   });
 
   // front leg
-  const fkx = 11 + cr * 9 + wk * 0.6, fky = -25 + cr * 8, ffx = 13 + wk;
-  limb(c, 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A.base, A.light);
+  const fkx = (f ? 9 : 11) + cr * 9 + wk * 0.6, fky = -25 + cr * 8, ffx = (f ? 12 : 13) + wk;
+  limb(c, f ? 5.6 : 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A.base, A.light);
   limb(c, fkx, fky, ffx, -5, 5.2 * lw, 4 * lw, A.base, A.light);
-  P(c, [fkx - 3.4, fky - 4.6, fkx + 3.4, fky - 3.6, fkx + 4.4, fky + 3.4, fkx - 2.4, fky + 4.4], A.light);
+  P(c, [fkx - 3.4 * fs, fky - 4.6 * fs, fkx + 3.4 * fs, fky - 3.6 * fs, fkx + 4.4 * fs, fky + 3.4 * fs, fkx - 2.4 * fs, fky + 4.4 * fs], A.light);
   if (A.seams) { glowOn(c, A.glow, 8); L(c, [(5 + fkx) / 2 - 2, (hipY + fky) / 2 - 4, (5 + fkx) / 2, (hipY + fky) / 2 + 4], A.glow, 1.1); glowOff(c); }
-  foot(c, ffx, -5, A.base, A.light);
+  foot(c, ffx, -5, A.base, A.light, fs);
 
   // head, weapon arm, front pauldron
   upper(() => {
-    c.save(); c.translate(2, -96.5 + br); drawHead(c, look, A, o.acc, t); c.restore();
+    c.save(); c.translate(f ? 1.6 : 2, (f ? -98.5 : -96.5) + br); if (f) c.scale(0.94, 0.94); drawHead(c, look, A, o.acc, t); c.restore();
     const gun = wpn === 'gun', base = gun ? Math.PI / 2 : wpn === 'w_lance' ? 0.9 : wpn === 'staff' ? 0.15 : 0.35;
-    const sx = 13, sy = -77 + br;
+    const sx = f ? 10.6 : 13, sy = -77 + br;
     const rot = (px, py, a) => { const dx = px - sx, dy = py - sy, ca = Math.cos(a), sa = Math.sin(a); return [sx + dx * ca - dy * sa, sy + dx * sa + dy * ca]; };
-    const hand0 = [gun ? 26 : 27, (gun ? -60 : -55) + br];
-    const [ex, ey] = rot(20, -63 + br, arm), [hx, hy] = rot(hand0[0], hand0[1], arm);
+    const hand0 = [(gun ? 26 : 27) - (f ? 3 : 0), (gun ? -60 : -55) + br];
+    const [ex, ey] = rot(f ? 17 : 20, -63 + br, arm), [hx, hy] = rot(hand0[0], hand0[1], arm);
     // swing smear: the band the blade swept through since the swing began
     if (ps.smear != null && (ps.smearT ?? 1) > 0 && !gun) {
       const len = WEAPON_LEN[wpn] || 50, a0 = ps.smear, a1 = arm, n = 10, outer = [], inner = [];
@@ -893,25 +900,11 @@ function drawKnight(c, x, y, s, o, t) {
     }
     c.save(); c.translate(hx, hy); c.rotate(base + arm); drawWeapon(c, wpn, A, t); c.restore();
     limb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A.base, A.light);
-    if (f) {
-      // the near upper arm hangs at her side, so the curve of the chest sits in front of it
-      const bk = look.bust ?? 0.5, cup = () => { c.beginPath(); c.moveTo(6, -83 + br); c.lineTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br);
-        c.quadraticCurveTo(25 + (bk - 1) * 9, -72.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br); c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6); c.lineTo(5, -61); c.closePath(); };
-      cup(); c.fillStyle = A.base; c.fill();
-      c.save(); cup(); c.clip();
-      P(c, [12, -81 + br, 17 + (bk - 1) * 3, -78.5 + br, 22 + (bk - 1) * 7, -71 + br, 18.5 + (bk - 1) * 4, -72.4 + br, 14, -76.6 + br], A.light, 0);
-      P(c, [8, -64, 14, -62.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br, 14, -59, 8, -59], A.dark, 0);
-      c.restore();
-      c.beginPath(); c.moveTo(11, -84 + br); c.quadraticCurveTo(15, -82.5 + br, 15.6, -77.5 + br); c.quadraticCurveTo(25 + (bk - 1) * 9, -72.4 + br, 19.6 + (bk - 1) * 4, -64.6 + br); c.quadraticCurveTo(15, -60.6 + br, 10.2, -59.6);
-      c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
-      L(c, [16.6 + (bk - 1) * 3, -76 + br, 20.4 + (bk - 1) * 5, -70.6 + br], 'rgba(255,255,255,0.75)', 0.9);
-      L(c, [6, -77 + br, 12, -84 + br], A.trim, 0.9);
-    }
     limb(c, ex, ey, hx, hy, 3.8 * lw, 3.4 * lw, A.base, A.light);
     P(c, [ex - 2.8, ey - 2.6, ex + 1.2, ey - 4, ex + 3.4, ey + 1, ex - 0.6, ey + 3], A.light, 1);
     P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
     L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
-    c.save(); if (f) { c.translate(10, -84 + br); c.scale(0.78, 0.78); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
+    c.save(); if (f) { c.translate(9.4, -83 + br); c.scale(0.72, 0.72); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
     if (o.acc === 'x_lens') {
       const oy = -104 + Math.sin(t * 0.003) * 3;
       glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
