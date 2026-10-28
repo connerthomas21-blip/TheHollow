@@ -28,6 +28,14 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Head portrait in the HUD
 - `node test/gallery.js <dir>` renders every gear set, head option and enemy for review
 
+## Session 1.6 — Art pass 2 + menus (done)
+- Sharp rendering on high-density screens (`hiDpi`)
+- Painted battle backdrops per world (`buildScene`, cached layers) with live stars, particles, blinking lights, lava pulse, black-hole swirl
+- Combat effects (`drawVfx`): slashes, sparks, plasma bolts, fire bursts, shockwave ring, heal sparkles, hex shield, Starbreaker nova; hit flash and crit shake
+- Heads redrawn with more detail; new options: Circlet, Rebreather, Braids, Topknot, Goatee, Moustache, Circuit tattoo, Eye patch
+- Appearance screen with arrow cycling for every option, a large head close-up, and an outfit preview; reachable from the main menu any time (edits the saved game, or the look for the next new game if there's no save)
+- Main menu button in the HUD (disabled mid-battle); hero shown on each world hub
+
 ## Session 2 — Companion & quests
 - Ally knight joins after world 2 (two-member party, target selection)
 - Multi-enemy encounters (1–3 foes)

@@ -107,7 +107,7 @@ p { margin: 0; }
 .world .info { min-width: 0; }
 
 /* Hub */
-.hub-head { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 14px; align-items: center; }
+.hub-head { display: grid; grid-template-columns: auto minmax(0,1fr) auto; gap: 14px; align-items: center; }
 .progress { height: 6px; background: #0b0a1c; border-radius: 3px; overflow: hidden; }
 .progress > div { height: 100%; background: var(--gold); }
 
@@ -136,23 +136,35 @@ p { margin: 0; }
 textarea { width: 100%; min-height: 80px; background: #0b0a1c; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px; font-family: ui-monospace, monospace; font-size: 0.75rem; resize: vertical; }
 .toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--gold); color: var(--gold-ink);
   font-family: var(--display); font-weight: 600; padding: 8px 16px; border-radius: 8px; z-index: 20; max-width: calc(100% - 32px); }
-/* Character creator */
+/* Appearance */
 .creator { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 18px; align-items: start; }
-.preview { position: relative; }
+.preview { display: flex; flex-direction: column; gap: 10px; align-items: center; }
 #createCanvas { width: 100%; max-width: 240px; height: auto; aspect-ratio: 4 / 5; border-radius: 10px; border: 1px solid var(--line); display: block; }
-.portrait-big { position: absolute; right: 8px; top: 8px; width: 64px; height: 64px; border-radius: 8px; border: 1px solid var(--line); }
+.portrait-big { width: 150px; height: 150px; border-radius: 10px; border: 1px solid var(--line); }
+.cyc { display: grid; grid-template-columns: 9.5em minmax(0, 1fr); gap: 10px; align-items: center; }
+.cyc-ctl { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px; align-items: center; max-width: 320px; }
+.cyc-val { display: flex; align-items: center; gap: 8px; justify-content: center; font-family: var(--display); font-weight: 600; background: #0b0a1c; border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cyc-val small { color: var(--dim); font-weight: 500; font-size: 0.72rem; }
+.chip { width: 14px; height: 14px; border-radius: 4px; border: 1px solid var(--line); flex: none; }
+.btn.arrow { padding: 6px 10px; font-size: 0.8rem; }
+.outfit { margin-top: 6px; padding-top: 12px; border-top: 1px solid var(--line); }
+@media (max-width: 460px) { .cyc { grid-template-columns: minmax(0, 1fr); gap: 4px; } }
+.menu-col { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 240px; }
+.menu-col .btn { text-align: center; }
+.hud-end { display: flex; align-items: center; gap: 10px; justify-content: flex-end; }
+.hub-hero { background: transparent; border: 1px solid transparent; border-radius: 10px; padding: 0; cursor: pointer; }
+.hub-hero:hover { border-color: var(--gold); }
+.hub-hero:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+#hubHero { width: 96px; height: 120px; display: block; }
 .opts { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
 .opt { display: flex; flex-direction: column; gap: 6px; }
 .opt .note { font-size: 0.8rem; }
-.swatches { display: flex; gap: 6px; flex-wrap: wrap; }
-.swatch { width: 30px; height: 30px; border-radius: 6px; border: 2px solid var(--line); cursor: pointer; padding: 0; }
-.swatch[aria-pressed="true"] { border-color: var(--gold); box-shadow: 0 0 0 2px var(--void), 0 0 0 4px var(--gold); }
-.swatch:focus-visible, .tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.tab:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
 input#heroName { background: #0b0a1c; color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; font-family: var(--display); max-width: 280px; }
 input#heroName:focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
 .hud .who { display: flex; align-items: center; gap: 10px; }
 .portrait { width: 40px; height: 40px; border-radius: 8px; border: 1px solid var(--line); flex: none; }
-@media (max-width: 600px) { .creator { grid-template-columns: minmax(0, 1fr); } .preview { max-width: 240px; margin: 0 auto; width: 100%; } }
+@media (max-width: 600px) { .creator { grid-template-columns: minmax(0, 1fr); } .preview { flex-direction: row; justify-content: center; } #createCanvas { max-width: 180px; } .portrait-big { width: 110px; height: 110px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 
@@ -176,6 +188,9 @@ const SKILLS = {
   inferno:{ name: 'Inferno Core',   lv: 10, en: 12, kind: 'atk',    desc: 'Tech fire attack that sets the target burning.',   p: r => ({ type: 'mag', mult: 1.35 + 0.15 * (r - 1), fx: 'burn', chance: 1 }) },
   star:   { name: 'Starbreaker',    lv: 13, en: 22, kind: 'atk',    desc: 'The lost art of the Order. Strength and tech combined.', p: r => ({ type: 'both', mult: 1.6 + 0.2 * (r - 1), pierce: 0.3 }) },
 };
+
+// Colour and effect for each skill's animation.
+const SKILL_FX = { slash: { col: '#cfeaff' }, bolt: { col: '#5ad1e6' }, quake: { vfx: 'ring' }, inferno: { col: '#ff8a3a' }, star: { col: '#9ad8ff', vfx: 'nova' } };
 
 const ITEMS = {
   medkit:  { name: 'Med Kit',       price: 25,  w: 1, desc: 'Restore 60 HP.',              use: u => heal(u, 60) },
@@ -342,7 +357,7 @@ function topUpCaps() {
 
 /* ============================== EFFECTS (shared by items and skills) ============================== */
 // `u` is a battle unit, or the hero outside battle (a light wrapper with hp/maxHp/en/maxEn).
-function heal(u, n) { const before = u.hp; u.hp = Math.min(u.maxHp, u.hp + n); pop(u, '+' + (u.hp - before), 'var(--good)'); return `restores ${u.hp - before} HP`; }
+function heal(u, n) { if (u.side) vfx('heal', { ...unitPos(u.side), life: 0.9 }); const before = u.hp; u.hp = Math.min(u.maxHp, u.hp + n); pop(u, '+' + (u.hp - before), 'var(--good)'); return `restores ${u.hp - before} HP`; }
 function restoreEn(u, n) { const before = u.en; u.en = Math.min(u.maxEn, u.en + n); pop(u, '+' + (u.en - before) + ' EN', '#5ad1e6'); return `restores ${u.en - before} EN`; }
 function cleanse(u) { if (u.fx) { delete u.fx.burn; delete u.fx.poison; delete u.fx.weaken; } return 'is purified'; }
 function trueDamage(t, n) { applyDamage(t, n, false); return `deals ${n} damage`; }
@@ -362,7 +377,7 @@ function startBattle(boss) {
   const def = boss ? w.boss : w.foes[Math.floor(Math.random() * w.foes.length)];
   topUpCaps();
   B = { p: heroUnit(), e: enemyUnit(def), boss, log: [], busy: false, over: null, menu: null, fl: [],
-        anim: { pLunge: 0, eLunge: 0, pHit: 0, eHit: 0, flash: 0, eDie: 0, t: 0 }, world: S.world, phase: 1 };
+        anim: { pLunge: 0, eLunge: 0, pHit: 0, eHit: 0, flash: 0, eDie: 0, t: 0 }, vfx: [], world: S.world, phase: 1 };
   U.screen = 'battle';
   log(boss ? `<b>${def.name}</b> blocks your path!` : `A <b>${def.name}</b> appears!`);
   render();
@@ -412,15 +427,24 @@ function addFx(t, fx, turns) {
 // One attack from a to t. Returns total damage dealt.
 async function strike(a, t, o, label) {
   B.anim[a.side + 'Lunge'] = 1;
-  await sleep(180);
+  const pos = unitPos(t.side), tint = a.side === 'p' ? (o.col || '#cfeaff') : ((a.col && a.col[1]) || '#ff8a7a');
+  if (o.type === 'mag' || o.type === 'both') { vfx('bolt', { from: a.side, to: t.side, col: o.col || '#5ad1e6', life: 0.24 }); await sleep(230); }
+  else await sleep(180);
   let total = 0, hits = o.hits || 1, crits = 0, missed = 0;
   for (let i = 0; i < hits; i++) {
     const r = calcHit(a, t, o);
     if (r.miss) { missed++; pop(t, 'MISS', '#a29dcc'); }
-    else { total += applyDamage(t, r.d, r.crit); if (r.crit) crits++; }
+    else {
+      total += applyDamage(t, r.d, r.crit); if (r.crit) crits++;
+      vfx('sparks', { x: pos.x + rnd(-10, 10), y: pos.y + rnd(-14, 14), col: r.crit ? '#ffd27a' : tint, seed: Math.random() * 999, life: 0.45 });
+      if (o.type !== 'mag') vfx('slash', { ...pos, col: tint, dir: a.side === 'p' ? 1 : -1, life: 0.26 });
+    }
     if (hits > 1) await sleep(170);
     if (t.hp <= 0) break;
   }
+  if (total > 0 && o.vfx === 'ring') vfx('ring', { x: pos.x, y: GROUND, col: '#f2b544', life: 0.55 });
+  if (total > 0 && o.vfx === 'nova') vfx('nova', { ...pos, col: '#9ad8ff', life: 0.6 });
+  if (total > 0 && (o.fx === 'burn' || o.fx === 'poison')) vfx('burst', { ...pos, col: o.fx === 'burn' ? '#ff7a2a' : '#8aff5a', life: 0.5 });
   let msg = `${label}${hits > 1 ? ` (${hits} hits)` : ''}: `;
   msg += missed === hits ? 'miss!' : `<b>${total}</b> damage${crits ? ' (critical!)' : ''}.`;
   if (total > 0 && o.fx && t.hp > 0 && Math.random() < (o.chance ?? 1)) { addFx(t, o.fx); msg += ` ${t.name} is ${fxWord(o.fx)}.`; }
@@ -437,6 +461,7 @@ async function tick(u) {
   for (const k of ['burn', 'poison']) if (u.fx[k] && u.hp > 0) {
     const d = Math.max(1, Math.round(u.maxHp * (k === 'burn' ? 0.06 : 0.05)));
     u.hp = Math.max(0, u.hp - d); pop(u, d, k === 'burn' ? '#ff8a3a' : '#9aff5a');
+    vfx('burst', { ...unitPos(u.side), col: k === 'burn' ? '#ff7a2a' : '#8aff5a', life: 0.4 });
     log(`${u.name} takes ${d} ${k} damage.`); render(); await sleep(350);
   }
   delete u.fx.guard;
@@ -468,10 +493,10 @@ async function playerAction(kind, id) {
     log(B.boss ? 'There’s no escape from this fight!' : 'You couldn’t get away!'); render(); await sleep(400);
   }
   else if (kind === 'skill') {
-    const sk = SKILLS[id], r = S.skills[id], prm = sk.p(r, p);
+    const sk = SKILLS[id], r = S.skills[id], prm = { ...sk.p(r, p), ...(SKILL_FX[id] || {}) };
     p.en -= sk.en;
     if (sk.kind === 'atk') await strike(p, e, prm, sk.name);
-    else if (sk.kind === 'shield') { p.fx.shield = { amt: prm.amt, t: 3 }; pop(p, 'SHIELD ' + prm.amt, '#5ad1e6'); log(`${sk.name}: a ${prm.amt}-point shield surrounds you.`); }
+    else if (sk.kind === 'shield') { p.fx.shield = { amt: prm.amt, t: 3 }; vfx('hex', { ...unitPos('p'), life: 0.7 }); pop(p, 'SHIELD ' + prm.amt, '#5ad1e6'); log(`${sk.name}: a ${prm.amt}-point shield surrounds you.`); }
     else if (sk.kind === 'heal') { const m = heal(p, prm.amt); cleanse(p); log(`${sk.name} ${m}.`); }
     else if (sk.kind === 'buff') { addFx(p, prm.fx, prm.turns); log(`${sk.name}! Your damage is boosted for ${prm.turns} turns.`); }
     render(); await sleep(350);
@@ -497,7 +522,7 @@ async function enemyTurn() {
     const mv = e.moves.find(m => Math.random() < m.c);
     if (!mv) await strike(e, p, { type: 'phys', mult: 1 }, e.name + ' attacks');
     else if (mv.heal) { heal(e, Math.round(e.maxHp * mv.heal)); log(`${e.name} uses <b>${mv.n}</b> and recovers.`); render(); await sleep(400); }
-    else if (mv.shield) { e.fx.shield = { amt: mv.shield, t: 3 }; pop(e, 'SHIELD', '#5ad1e6'); log(`${e.name} uses <b>${mv.n}</b>.`); render(); await sleep(400); }
+    else if (mv.shield) { e.fx.shield = { amt: mv.shield, t: 3 }; vfx('hex', { ...unitPos('e'), life: 0.7 }); pop(e, 'SHIELD', '#5ad1e6'); log(`${e.name} uses <b>${mv.n}</b>.`); render(); await sleep(400); }
     else await strike(e, p, { type: 'phys', mult: mv.m, hits: mv.hits, fx: mv.fx, chance: 1, drain: mv.drain }, `${e.name}: ${mv.n}`);
   } else await sleep(400);
   if (await checkEnd()) return;
@@ -563,32 +588,296 @@ async function endBattle(result) {
 /* ============================== RENDERING: CANVAS ============================== */
 
 const W = 720, H = 320, GROUND = 262;
+const DPR = Math.min(2, window.devicePixelRatio || 1);
 function seeded(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
+// Sizes a canvas's backing store for sharp drawing on high-density screens; returns a context in CSS-pixel units.
+function hiDpi(cv, w, h) {
+  const bw = Math.round(w * DPR), bh = Math.round(h * DPR);
+  if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
+  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0); return c;
+}
+
+/* ---------- Battle scenes: a cached back layer (sky), live stars, a cached front layer, then live effects ---------- */
+const SCENES = ['colony', 'hive', 'station', 'forge', 'void'];
+const bgCache = {};
+function layer() { const cv = document.createElement('canvas'); const c = hiDpi(cv, W, H); c.lineJoin = 'round'; return [cv, c]; }
+function skyGrad(c, stops) { const g = c.createLinearGradient(0, 0, 0, GROUND); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(0, 0, W, H); }
+function nebula(c, x, y, r, col) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
+function haze(c, y0, y1, col) { const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col); c.fillStyle = g; c.fillRect(0, y0, W, y1 - y0); }
+// Jagged mountain line from a random walk; optional rim light along the crest.
+function ridge(c, r, base, amp, step, fill, rim) {
+  const pts = []; let n = r();
+  for (let x = -step; x <= W + step; x += step) { n = clamp(n + (r() - 0.5) * 0.75, 0, 1); pts.push(x + (r() - 0.5) * step * 0.4, base - amp * n); }
+  c.beginPath(); c.moveTo(-step, H); for (let i = 0; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.lineTo(W + step, H); c.closePath();
+  c.fillStyle = fill; c.fill();
+  if (rim) { c.beginPath(); c.moveTo(pts[0], pts[1]); for (let i = 2; i < pts.length; i += 2) c.lineTo(pts[i], pts[i + 1]); c.strokeStyle = rim; c.lineWidth = 1.2; c.stroke(); }
+}
+function body(c, x, y, r, lit, dark, glow) {
+  if (glow) nebula(c, x, y, r * 2.2, glow);
+  const g = c.createRadialGradient(x - r * 0.4, y - r * 0.4, r * 0.1, x, y, r); g.addColorStop(0, lit); g.addColorStop(1, dark);
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2); c.fill();
+}
+function groundBand(c, top, bottom) {
+  const g = c.createLinearGradient(0, GROUND, 0, H); g.addColorStop(0, top); g.addColorStop(1, bottom);
+  c.fillStyle = g; c.fillRect(0, GROUND, W, H - GROUND);
+  c.fillStyle = 'rgba(255,255,255,0.06)'; c.fillRect(0, GROUND, W, 1.5);
+}
+function rocks(c, r, n, col, lit, ymin = GROUND + 6) {
+  for (let i = 0; i < n; i++) {
+    const x = r() * W, y = ymin + r() * (H - ymin), s = 3 + r() * 9 * ((y - GROUND) / (H - GROUND) + 0.4);
+    P(c, [x - s, y, x - s * 0.6, y - s * 0.7, x + s * 0.3, y - s * 0.9, x + s, y - s * 0.2, x + s * 0.8, y], col, 0);
+    P(c, [x - s * 0.6, y - s * 0.7, x + s * 0.3, y - s * 0.9, x + s * 0.2, y - s * 0.4], lit, 0);
+  }
+}
+
+function buildScene(i) {
+  const kind = SCENES[i], r = seeded(i * 131 + 7);
+  const [bcv, b] = layer(), [fcv, f] = layer();
+  if (kind === 'colony') {
+    skyGrad(b, ['#140a20', '#3e1d34', '#9a4a3a', '#d27a4a']);
+    nebula(b, 160, 70, 190, 'rgba(255,140,100,0.12)');
+    body(f, 590, 76, 38, '#f2dcc8', '#8a6a6a', 'rgba(255,220,190,0.12)');
+    f.fillStyle = 'rgba(120,80,80,0.35)'; for (const [cx, cy, cr] of [[578, 66, 7], [600, 90, 5], [606, 64, 4], [584, 94, 3]]) { f.beginPath(); f.arc(cx, cy, cr, 0, Math.PI * 2); f.fill(); }
+    f.fillStyle = 'rgba(20,10,20,0.45)'; f.beginPath(); f.arc(604, 84, 38, 0, Math.PI * 2); f.arc(590, 76, 38, 0, Math.PI * 2, true); f.fill('evenodd');
+    ridge(f, r, GROUND - 58, 52, 20, '#5a2834', 'rgba(255,190,150,0.35)');
+    haze(f, GROUND - 110, GROUND - 20, 'rgba(210,122,74,0.35)');
+    const bc = '#2c1520', bl = '#3e2028';
+    for (const [x, w, h, broken] of [[30, 48, 72, 1], [86, 26, 112, 0], [290, 64, 56, 1], [366, 22, 92, 1], [628, 54, 80, 0]]) {
+      const y = GROUND - 22;
+      const top = broken ? [x + w, y - h + 14, x + w * 0.7, y - h, x + w * 0.45, y - h + 10, x + w * 0.2, y - h - 4, x, y - h + 6] : [x + w, y - h, x, y - h];
+      P(f, [x, y, x + w, y, ...top], bc, 0);
+      P(f, [x + w * 0.75, y, x + w, y, ...top.slice(0, 2), x + w * 0.75, y - h + 12], bl, 0);
+      for (let wy = y - h + 18; wy < y - 8; wy += 12) for (let wx = x + 5; wx < x + w - 6; wx += 9) if (r() < 0.3) { f.fillStyle = r() < 0.5 ? 'rgba(255,170,90,0.75)' : 'rgba(255,170,90,0.25)'; f.fillRect(wx, wy, 4, 5); }
+    }
+    L(f, [99, GROUND - 134, 99, GROUND - 176], bc, 2); L(f, [92, GROUND - 160, 106, GROUND - 160], bc, 1.5); L(f, [94, GROUND - 168, 104, GROUND - 168], bc, 1.2);
+    f.strokeStyle = bc; f.lineWidth = 2.4; f.beginPath(); f.arc(500, GROUND - 22, 48, Math.PI, Math.PI * 1.62); f.stroke();
+    f.beginPath(); f.arc(500, GROUND - 22, 48, Math.PI * 1.82, Math.PI * 2); f.stroke();
+    for (const a of [1.1, 1.3, 1.5]) L(f, [500, GROUND - 22, 500 + Math.cos(Math.PI * a) * 48, GROUND - 22 + Math.sin(Math.PI * a) * 48], 'rgba(44,21,32,0.7)', 1.2);
+    ridge(f, r, GROUND - 6, 26, 28, '#2a141c');
+    groundBand(f, '#3a2024', '#170b0f');
+    for (let k = 0; k < 10; k++) { const x = r() * W, y = GROUND + 8 + r() * 40; L(f, [x, y, x + 10 + r() * 14, y + r() * 4 - 2, x + 20 + r() * 20, y + r() * 6], 'rgba(0,0,0,0.35)', 1); }
+    rocks(f, r, 14, '#2a161a', '#4a2a2a');
+  } else if (kind === 'hive') {
+    skyGrad(b, ['#1c1008', '#5e2c14', '#c26a2c', '#f2b46a']);
+    nebula(b, 520, 120, 160, 'rgba(255,200,120,0.25)');
+    body(f, 520, 118, 30, '#fff8e0', '#ffc860', 'rgba(255,190,80,0.35)');
+    body(f, 604, 68, 12, '#fff0d0', '#ffb050', 'rgba(255,190,80,0.25)');
+    f.fillStyle = '#b8682e';
+    f.beginPath(); f.moveTo(0, GROUND - 40); for (let x = 0; x <= W; x += 60) f.quadraticCurveTo(x + 30, GROUND - 70 - r() * 30, x + 60, GROUND - 42 - r() * 10); f.lineTo(W, H); f.lineTo(0, H); f.fill();
+    haze(f, GROUND - 100, GROUND - 30, 'rgba(242,180,106,0.4)');
+    for (const [x, h, w] of [[70, 150, 34], [126, 104, 24], [596, 172, 40], [660, 118, 26], [300, 70, 18]]) {
+      const y = GROUND - 30, sp = '#5a2e16';
+      P(f, [x - w / 2, y, x - w * 0.3, y - h * 0.4, x - w * 0.42, y - h * 0.6, x - w * 0.12, y - h, x + w * 0.1, y - h * 0.95, x + w * 0.36, y - h * 0.55, x + w * 0.26, y - h * 0.35, x + w / 2, y], sp, 0);
+      P(f, [x + w * 0.1, y - h * 0.95, x + w * 0.36, y - h * 0.55, x + w * 0.26, y - h * 0.35, x + w / 2, y, x + w * 0.2, y], '#7a4220', 0);
+      f.fillStyle = '#2a1408'; for (let k = 0; k < 3; k++) { const hy = y - h * (0.25 + k * 0.22); f.beginPath(); f.ellipse(x - w * 0.05, hy, w * 0.1, w * 0.16, 0, 0, Math.PI * 2); f.fill(); }
+    }
+    f.fillStyle = '#8a4c22';
+    f.beginPath(); f.moveTo(0, GROUND - 4); for (let x = 0; x <= W; x += 90) f.quadraticCurveTo(x + 45, GROUND - 24 - r() * 14, x + 90, GROUND - 6); f.lineTo(W, H); f.lineTo(0, H); f.fill();
+    groundBand(f, '#94582a', '#3e2210');
+    for (let k = 0; k < 9; k++) { const y = GROUND + 8 + k * 6.5, o = r() * 40; f.beginPath(); f.moveTo(0, y); for (let x = 0; x <= W; x += 40) f.quadraticCurveTo(x + 20, y - 3, x + 40, y); f.strokeStyle = `rgba(255,220,160,${0.18 - k * 0.015})`; f.lineWidth = 1; f.stroke(); }
+    rocks(f, r, 6, '#5a3216', '#8a5428');
+  } else if (kind === 'station') {
+    skyGrad(b, ['#03041a', '#0e1440', '#22205a', '#2e2a6a']);
+    nebula(b, 190, 90, 240, 'rgba(150,70,255,0.22)'); nebula(b, 470, 50, 200, 'rgba(40,200,230,0.16)'); nebula(b, 320, 160, 160, 'rgba(255,90,190,0.10)');
+    const gx = 600, gy = 112;
+    f.save(); f.translate(gx, gy); f.rotate(-0.25);
+    f.strokeStyle = 'rgba(200,190,255,0.35)'; f.lineWidth = 7; f.beginPath(); f.ellipse(0, 0, 120, 22, 0, Math.PI, Math.PI * 2); f.stroke(); f.restore();
+    body(f, gx, gy, 66, '#d8c0ff', '#3a2a7a', 'rgba(170,140,255,0.15)');
+    f.save(); f.beginPath(); f.arc(gx, gy, 66, 0, Math.PI * 2); f.clip();
+    for (let k = -4; k <= 4; k++) { f.fillStyle = k % 2 ? 'rgba(255,255,255,0.08)' : 'rgba(40,20,90,0.22)'; f.save(); f.translate(gx, gy); f.rotate(-0.25); f.fillRect(-80, k * 14, 160, 8); f.restore(); }
+    f.fillStyle = 'rgba(10,6,30,0.5)'; f.beginPath(); f.arc(gx + 26, gy + 18, 70, 0, Math.PI * 2); f.fill(); f.restore();
+    f.save(); f.translate(gx, gy); f.rotate(-0.25); f.strokeStyle = 'rgba(220,210,255,0.55)'; f.lineWidth = 7; f.beginPath(); f.ellipse(0, 0, 120, 22, 0, 0, Math.PI); f.stroke();
+    f.strokeStyle = 'rgba(255,255,255,0.25)'; f.lineWidth = 2; f.beginPath(); f.ellipse(0, 0, 112, 19, 0, 0, Math.PI); f.stroke(); f.restore();
+    const sc = '#151a3c', sl = '#232a5a';
+    for (const [x, w, h] of [[20, 40, 170], [70, 26, 120], [250, 30, 96], [404, 54, 140], [470, 22, 70]]) {
+      const y = GROUND - 30;
+      P(f, [x, y, x, y - h, x + w * 0.3, y - h - 12, x + w * 0.7, y - h - 12, x + w, y - h, x + w, y], sc, 0);
+      P(f, [x + w * 0.7, y, x + w * 0.7, y - h - 12, x + w, y - h, x + w, y], sl, 0);
+      for (let wy = y - h + 6; wy < y - 6; wy += 9) for (let wx = x + 4; wx < x + w - 4; wx += 7) if (r() < 0.45) { f.fillStyle = r() < 0.3 ? 'rgba(120,230,255,0.85)' : 'rgba(120,230,255,0.25)'; f.fillRect(wx, wy, 3, 4); }
+    }
+    for (let x = 110; x < 250; x += 16) { L(f, [x, GROUND - 92, x + 16, GROUND - 72], sl, 1.2); L(f, [x, GROUND - 72, x + 16, GROUND - 92], sl, 1.2); }
+    L(f, [110, GROUND - 92, 250, GROUND - 92], sl, 2); L(f, [110, GROUND - 72, 250, GROUND - 72], sl, 2);
+    P(f, [0, GROUND - 30, W, GROUND - 30, W, GROUND, 0, GROUND], '#1b2048', 0);
+    groundBand(f, '#2c3260', '#10132e');
+    for (let k = -12; k <= 12; k++) L(f, [W / 2 + k * 34, GROUND, W / 2 + k * 70, H], 'rgba(150,170,255,0.12)', 1);
+    for (const y of [GROUND + 16, GROUND + 38]) L(f, [0, y, W, y], 'rgba(150,170,255,0.1)', 1);
+    f.save(); f.beginPath(); f.rect(0, GROUND, W, 5); f.clip();
+    for (let x = -10; x < W; x += 18) P(f, [x, GROUND + 5, x + 9, GROUND + 5, x + 14, GROUND, x + 5, GROUND], '#f2b544', 0);
+    f.restore();
+  } else if (kind === 'forge') {
+    skyGrad(b, ['#0c0204', '#2e0a08', '#7a1e0c', '#c2400e']);
+    body(f, 340, GROUND - 30, 118, '#ff9a4a', '#a8200a', 'rgba(255,90,30,0.25)');
+    for (const [x, y, rr] of [[130, 80, 70], [220, 50, 60], [600, 40, 80]]) nebula(f, x, y, rr, 'rgba(20,6,6,0.55)');
+    ridge(f, r, GROUND - 52, 50, 22, '#3a0e08', 'rgba(255,120,60,0.45)');
+    P(f, [430, GROUND - 20, 510, GROUND - 150, 528, GROUND - 156, 552, GROUND - 150, 566, GROUND - 158, 690, GROUND - 20], '#2a0a06', 0);
+    P(f, [552, GROUND - 150, 566, GROUND - 158, 690, GROUND - 20, 600, GROUND - 20], '#3e120a', 0);
+    nebula(f, 538, GROUND - 160, 46, 'rgba(255,140,40,0.7)');
+    f.save(); glowOn(f, '#ff7a2a', 10);
+    L(f, [526, GROUND - 150, 512, GROUND - 120, 520, GROUND - 92, 498, GROUND - 60, 506, GROUND - 24], '#ff7a2a', 2.4);
+    L(f, [548, GROUND - 148, 566, GROUND - 110, 556, GROUND - 74, 580, GROUND - 26], '#ff9a3a', 2);
+    f.restore();
+    haze(f, GROUND - 80, GROUND, 'rgba(194,64,14,0.35)');
+    ridge(f, r, GROUND - 4, 22, 30, '#1e0806');
+    groundBand(f, '#2a0c08', '#0e0303');
+    rocks(f, r, 14, '#1a0604', '#3a120a');
+  } else {
+    skyGrad(b, ['#000000', '#05020c', '#0e0618', '#1a0a2a']);
+    nebula(b, 520, 100, 220, 'rgba(160,70,255,0.18)');
+    nebula(f, 520, 100, 70, 'rgba(255,120,220,0.25)');
+    f.save(); f.translate(520, 100); f.rotate(0.18);
+    const dg = f.createLinearGradient(-130, 0, 130, 0); dg.addColorStop(0, 'rgba(160,70,255,0)'); dg.addColorStop(0.3, '#c46aff'); dg.addColorStop(0.5, '#ffd0f4'); dg.addColorStop(0.7, '#ff5aa8'); dg.addColorStop(1, 'rgba(255,90,168,0)');
+    f.strokeStyle = dg; f.lineWidth = 10; f.beginPath(); f.ellipse(0, 0, 120, 20, 0, Math.PI, Math.PI * 2); f.stroke();
+    f.fillStyle = '#000'; f.beginPath(); f.arc(0, 0, 34, 0, Math.PI * 2); f.fill();
+    f.strokeStyle = 'rgba(255,200,240,0.7)'; f.lineWidth = 1.6; f.beginPath(); f.arc(0, 0, 35.5, 0, Math.PI * 2); f.stroke();
+    f.strokeStyle = dg; f.lineWidth = 10; f.beginPath(); f.ellipse(0, 0, 120, 20, 0, 0, Math.PI); f.stroke();
+    f.restore();
+    for (const [x, y, s] of [[60, GROUND - 60, 30], [200, GROUND - 40, 20], [380, GROUND - 50, 26], [650, GROUND - 46, 34]]) {
+      P(f, [x - s, GROUND - 20, x - s * 0.5, y, x, y - s * 0.8, x + s * 0.4, y + 4, x + s, GROUND - 20], '#0c0616', 0);
+      L(f, [x - s * 0.5, y, x, y - s * 0.8, x + s * 0.4, y + 4], 'rgba(196,106,255,0.45)', 1);
+    }
+    groundBand(f, '#120a20', '#030106');
+    for (let k = 0; k < 14; k++) { const x = r() * W, y = GROUND + 6 + r() * 50; L(f, [x, y, x + 30 + r() * 50, y], 'rgba(196,106,255,0.12)', 1); }
+    f.save(); glowOn(f, '#9a4aff', 8);
+    for (let k = 0; k < 4; k++) { const x = 60 + r() * 600, y = GROUND + 12 + r() * 40; L(f, [x, y, x + 12, y + 4, x + 20, y + 1, x + 34, y + 6], 'rgba(170,90,255,0.7)', 1.2); }
+    f.restore();
+  }
+  return { back: bcv, front: fcv };
+}
+
+const PARTICLES = {
+  colony:  { n: 26, col: 'rgba(255,205,170,0.55)', vx: 0.012, vy: 0.002, len: 0 },
+  hive:    { n: 40, col: 'rgba(255,225,170,0.45)', vx: -0.09, vy: 0.004, len: 14 },
+  station: { n: 22, col: 'rgba(130,230,255,0.6)', vx: 0.003, vy: -0.008, len: 0 },
+  forge:   { n: 34, col: '#ffae4a', vx: 0.006, vy: -0.03, len: 0, glow: true },
+  void:    { n: 28, col: 'rgba(196,120,255,0.75)', vx: 0, vy: -0.012, len: 0, glow: true },
+};
 
 function drawBackdrop(c, w, t) {
-  const g = c.createLinearGradient(0, 0, 0, H);
-  g.addColorStop(0, w.sky[0]); g.addColorStop(1, w.sky[1]);
-  c.fillStyle = g; c.fillRect(0, 0, W, H);
-  const r = seeded(PLANETS.indexOf(w) * 97 + 13);
+  const i = PLANETS.indexOf(w), kind = SCENES[i];
+  const sc = bgCache[i] || (bgCache[i] = buildScene(i));
+  c.drawImage(sc.back, 0, 0, W, H);
+  const r = seeded(i * 97 + 13);
   c.fillStyle = '#ffffff';
-  for (let i = 0; i < 70; i++) {
-    const x = r() * W, y = r() * GROUND * 0.8, s = r() * 1.6 + 0.3;
-    c.globalAlpha = 0.25 + 0.5 * Math.abs(Math.sin(t * 0.0015 + i));
+  for (let k = 0; k < 90; k++) {
+    const x = r() * W, y = r() * GROUND * 0.75, s = r() * 1.5 + 0.4, ph = r() * 6;
+    c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.0012 + ph));
     c.fillRect(x, y, s, s);
   }
   c.globalAlpha = 1;
-  // distant planet
-  c.fillStyle = w.globe[0]; c.globalAlpha = 0.35;
-  c.beginPath(); c.arc(W * 0.78, 70, 34, 0, Math.PI * 2); c.fill(); c.globalAlpha = 1;
-  // hills
-  c.fillStyle = w.hills; c.beginPath(); c.moveTo(0, GROUND);
-  for (let x = 0; x <= W; x += 20) c.lineTo(x, GROUND - 40 - 30 * Math.sin(x * 0.012 + 1) - 18 * Math.sin(x * 0.031) - r() * 6);
-  c.lineTo(W, GROUND); c.fill();
-  c.fillStyle = w.ground; c.fillRect(0, GROUND, W, H - GROUND);
-  c.fillStyle = 'rgba(255,255,255,0.05)'; c.fillRect(0, GROUND, W, 2);
+  if (kind === 'void') {
+    for (const [x, y, s, ph] of [[110, 120, 16, 0], [300, 64, 10, 2], [660, 190, 12, 4]]) {
+      const yy = y + Math.sin(t * 0.0012 + ph) * 6;
+      P(c, [x - s, yy, x - s * 0.2, yy - s * 1.1, x + s * 0.8, yy - s * 0.3, x + s * 0.3, yy + s * 0.8], '#140a24', 1);
+      L(c, [x - s * 0.2, yy - s * 1.1, x + s * 0.8, yy - s * 0.3], 'rgba(210,140,255,0.7)', 1.2);
+    }
+  }
+  c.drawImage(sc.front, 0, 0, W, H);
+  if (kind === 'station') for (const [x, y, ph] of [[40, GROUND - 212, 0], [83, GROUND - 162, 1.5], [431, GROUND - 182, 3]]) if (Math.sin(t * 0.004 + ph) > 0.3) { c.save(); glowOn(c, '#ff4a4a', 10); c.fillStyle = '#ff4a4a'; c.fillRect(x - 1.5, y - 1.5, 3, 3); c.restore(); }
+  if (kind === 'forge') {
+    const pulse = 0.4 + 0.3 * Math.sin(t * 0.003);
+    c.save(); c.globalAlpha = pulse; glowOn(c, '#ff6a1a', 12);
+    const rr = seeded(55);
+    for (let k = 0; k < 5; k++) { const x = rr() * W, y = GROUND + 10 + rr() * 44; L(c, [x, y, x + 14, y + 5, x + 26, y + 2, x + 44, y + 8], '#ff7a2a', 1.6); }
+    c.restore();
+  }
+  if (kind === 'void') {
+    c.save(); c.translate(520, 100); c.rotate(0.18); c.globalCompositeOperation = 'lighter';
+    const a0 = (t * 0.0006) % (Math.PI * 2);
+    c.strokeStyle = 'rgba(255,220,250,0.5)'; c.lineWidth = 3; c.beginPath(); c.ellipse(0, 0, 120, 20, 0, a0, a0 + 0.5); c.stroke();
+    c.restore();
+  }
+  const pc = PARTICLES[kind], pr = seeded(i * 11 + 3);
+  c.save(); c.fillStyle = pc.col; c.strokeStyle = pc.col; c.lineWidth = 1;
+  if (pc.glow) glowOn(c, pc.col, 6);
+  for (let k = 0; k < pc.n; k++) {
+    const sx = pr() * W, sy = pr() * H, sp = 0.6 + pr() * 0.8;
+    const x = ((sx + t * pc.vx * sp * 60) % W + W) % W, y = ((sy + t * pc.vy * sp * 60) % H + H) % H;
+    c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + k));
+    if (pc.len) L(c, [x, y, x + pc.len * sp, y], pc.col, 1); else c.fillRect(x, y, 1.6, 1.6);
+  }
+  c.restore();
 }
 
-function shadow(c, x, rx) { c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(x, GROUND + 4, rx, 7, 0, 0, Math.PI * 2); c.fill(); }
+function shadow(c, x, rx) {
+  const g = c.createRadialGradient(x, GROUND + 3, 1, x, GROUND + 3, rx);
+  g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.save(); c.translate(x, GROUND + 3); c.scale(1, 0.22); c.beginPath(); c.arc(0, 0, rx, 0, Math.PI * 2); c.restore(); c.fill();
+}
+
+/* ---------- Combat effects ---------- */
+function unitPos(side) { return side === 'p' ? { x: 200, y: GROUND - 78 } : { x: 520, y: GROUND - 82 * (B && B.e.big ? 1.45 : 1) }; }
+function vfx(type, o) { if (B && B.vfx) B.vfx.push({ type, t: 0, life: 0.4, ...o }); }
+function drawVfx(c, dt) {
+  B.vfx = B.vfx.filter(v => (v.t += dt / 1000) < v.life);
+  for (const v of B.vfx) {
+    const k = v.t / v.life, inv = 1 - k;
+    c.save(); c.globalCompositeOperation = 'lighter';
+    switch (v.type) {
+      case 'slash': {
+        c.translate(v.x, v.y); c.scale(v.dir, 1); c.rotate(-0.6 + k * 0.5);
+        c.globalAlpha = inv; glowOn(c, v.col, 14);
+        c.beginPath(); c.arc(0, 0, 50, -1.3, 1.1); c.arc(-10, 4, 44, 1.1, -1.3, true); c.closePath();
+        c.fillStyle = v.col; c.fill();
+        break;
+      }
+      case 'sparks': {
+        const r = seeded(Math.floor(v.seed) + 1);
+        c.strokeStyle = v.col; c.lineWidth = 1.6; glowOn(c, v.col, 8); c.globalAlpha = inv;
+        for (let i = 0; i < 12; i++) {
+          const a = r() * Math.PI * 2, sp = 30 + r() * 60, x = v.x + Math.cos(a) * sp * k, y = v.y + Math.sin(a) * sp * k + 50 * k * k;
+          L(c, [x, y, x - Math.cos(a) * 7 * inv, y - Math.sin(a) * 7 * inv], v.col, 1.6);
+        }
+        break;
+      }
+      case 'bolt': {
+        const a = unitPos(v.from), b = unitPos(v.to), x = a.x + (b.x - a.x) * k, y = a.y + (b.y - a.y) * k - Math.sin(k * Math.PI) * 18;
+        glowOn(c, v.col, 18); c.fillStyle = v.col;
+        for (let i = 0; i < 6; i++) { const kk = Math.max(0, k - i * 0.04), tx = a.x + (b.x - a.x) * kk, ty = a.y + (b.y - a.y) * kk - Math.sin(kk * Math.PI) * 18; c.globalAlpha = 1 - i / 6; c.beginPath(); c.arc(tx, ty, 7 - i, 0, Math.PI * 2); c.fill(); }
+        c.globalAlpha = 1; c.fillStyle = '#ffffff'; c.beginPath(); c.arc(x, y, 3.5, 0, Math.PI * 2); c.fill();
+        break;
+      }
+      case 'burst': {
+        const rr = 14 + 56 * k, g = c.createRadialGradient(v.x, v.y, 0, v.x, v.y, rr);
+        g.addColorStop(0, `rgba(255,240,200,${inv})`); g.addColorStop(0.4, v.col); g.addColorStop(1, 'rgba(0,0,0,0)');
+        c.globalAlpha = inv; c.fillStyle = g; c.beginPath(); c.arc(v.x, v.y, rr, 0, Math.PI * 2); c.fill();
+        const r = seeded(9);
+        c.fillStyle = v.col;
+        for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (r() - 0.5) * 2.2, len = 30 + r() * 30; P(c, [v.x + Math.cos(a - 0.2) * 10, v.y + Math.sin(a - 0.2) * 10, v.x + Math.cos(a) * len * (0.4 + k), v.y + Math.sin(a) * len * (0.4 + k), v.x + Math.cos(a + 0.2) * 10, v.y + Math.sin(a + 0.2) * 10], v.col, 0); }
+        break;
+      }
+      case 'ring': {
+        c.globalAlpha = inv; c.strokeStyle = v.col; c.lineWidth = 4 * inv + 1; glowOn(c, v.col, 12);
+        c.beginPath(); c.ellipse(v.x, v.y, 20 + 150 * k, 5 + 20 * k, 0, 0, Math.PI * 2); c.stroke();
+        c.lineWidth = 2; c.beginPath(); c.ellipse(v.x, v.y, 10 + 90 * k, 3 + 12 * k, 0, 0, Math.PI * 2); c.stroke();
+        break;
+      }
+      case 'heal': {
+        const r = seeded(4); c.fillStyle = '#8affb0'; glowOn(c, '#6fdc8c', 10);
+        for (let i = 0; i < 10; i++) {
+          const x = v.x - 30 + r() * 60, y = v.y + 40 - (r() * 40 + 70 * k), s = 2 + r() * 2.5;
+          c.globalAlpha = inv * (0.5 + r() * 0.5); c.fillRect(x - s, y - 0.8, s * 2, 1.6); c.fillRect(x - 0.8, y - s, 1.6, s * 2);
+        }
+        break;
+      }
+      case 'hex': {
+        c.globalAlpha = 0.9 * inv; c.strokeStyle = '#5ad1e6'; c.lineWidth = 1.6; glowOn(c, '#5ad1e6', 12);
+        const rr = 56 + 10 * k;
+        for (let ring = 0; ring < 2; ring++) {
+          const rad = rr - ring * 14, pts = [];
+          for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; pts.push(v.x + Math.cos(a) * rad * 0.8, v.y + Math.sin(a) * rad); }
+          P(c, pts, ring ? null : 'rgba(90,209,230,0.12)', 0); L(c, [...pts, pts[0], pts[1]], '#5ad1e6', 1.6);
+        }
+        break;
+      }
+      case 'nova': {
+        c.translate(v.x, v.y); c.rotate(k * 0.6); glowOn(c, v.col, 20); c.globalAlpha = inv;
+        for (let i = 0; i < 8; i++) { const len = (i % 2 ? 50 : 90) * (0.4 + k); c.rotate(Math.PI / 4); P(c, [-4, 0, 0, -len, 4, 0, 0, 6], i % 2 ? v.col : '#ffffff', 0); }
+        break;
+      }
+    }
+    c.restore();
+  }
+}
 
 /* ---------- Art kit: outlined, cel-shaded vector sprites ---------- */
 const INK = '#0b0918';
@@ -626,10 +915,10 @@ const SKIN = ['#f3cfae', '#dfa57c', '#b97a52', '#8a5638', '#5a3624', '#8fb7d0', 
 const HAIR = ['#1c1714', '#5a3a22', '#a8692e', '#e3c46e', '#cfd0d8', '#b8323a', '#3f62c8'];
 const EYES = ['#5ad1e6', '#f2b544', '#6fdc8c', '#ff5a6a', '#c46aff', '#f4f4ff'];
 const LOOK_OPTS = {
-  gear: [['visor', 'Visor helm'], ['knight', 'Open helm'], ['horned', 'Horned helm'], ['crest', 'Plumed helm'], ['hood', 'Hood'], ['none', 'Bare head']],
-  hair: [['short', 'Short'], ['long', 'Long'], ['mohawk', 'Mohawk'], ['tail', 'Ponytail'], ['shaved', 'Shaved']],
-  beard: [['none', 'None'], ['stubble', 'Stubble'], ['full', 'Full']],
-  mark: [['none', 'None'], ['scar', 'Scar'], ['paint', 'War paint']],
+  gear: [['visor', 'Visor helm'], ['knight', 'Open helm'], ['horned', 'Horned helm'], ['crest', 'Plumed helm'], ['hood', 'Hood'], ['circlet', 'Circlet'], ['mask', 'Rebreather'], ['none', 'Bare head']],
+  hair: [['short', 'Short'], ['long', 'Long'], ['mohawk', 'Mohawk'], ['tail', 'Ponytail'], ['braids', 'Braids'], ['topknot', 'Topknot'], ['shaved', 'Shaved']],
+  beard: [['none', 'None'], ['stubble', 'Stubble'], ['goatee', 'Goatee'], ['moustache', 'Moustache'], ['full', 'Full beard']],
+  mark: [['none', 'None'], ['scar', 'Scar'], ['paint', 'War paint'], ['tattoo', 'Circuit tattoo'], ['patch', 'Eye patch']],
 };
 const DEFAULT_LOOK = { gear: 'knight', skin: 1, hair: 'short', hairCol: 1, eyes: 0, beard: 'stubble', mark: 'scar' };
 const pal = (v, list) => typeof v === 'number' ? list[v % list.length] : v;
@@ -651,84 +940,159 @@ function headPath(c) {
   c.lineTo(8.7, -2.6); c.lineTo(10.6, 1); c.lineTo(8.7, 2); c.lineTo(9.1, 3.9); c.lineTo(8.1, 5.1); c.lineTo(8.4, 7);
   c.quadraticCurveTo(7.2, 9.6, 3, 9.6); c.lineTo(-2, 6.6); c.quadraticCurveTo(-6, 4, -7, -3); c.closePath();
 }
+const HAIR_CAP = [-7.6, -2, -8.4, -9, -3.4, -13, 3.5, -12.8, 8.9, -7.4, 7.4, -5.6, 5.6, -7.4, 3.6, -5.8, 1.6, -7.8, -1.2, -6, -3.6, -4.2, -5, -1];
 
 // Head in local space: centre (0,0), facing right, about 22 units tall.
 function drawHead(c, look, A, acc, t) {
   look = { ...DEFAULT_LOOK, ...look };
   const skin = pal(look.skin, SKIN), hair = pal(look.hairCol, HAIR), eye = pal(look.eyes, EYES);
   const g = look.gear, closed = g === 'visor' || g === 'horned', open = g === 'knight' || g === 'crest';
+  const bare = g === 'none' || g === 'circlet' || g === 'mask';
   const sw = Math.sin(t * 0.004) * 1.2;
-  if ((g === 'none' || open) && look.hair === 'long') P(c, [-6, -8, -9.6, 0, -9.4, 10, -6.6, 14.5, -3.2, 13, -4.2, 6, -3, -2], shade(hair, -18));
-  if ((g === 'none' || open) && look.hair === 'tail') {
-    P(c, [-7, -7, -11, -4.5, -15 + sw, 4, -13.6 + sw, 12, -11 + sw, 6, -9, -1, -6, -4], shade(hair, -12));
-    P(c, [-9.8, -5.6, -7.6, -6.8, -7, -4.4, -9.2, -3.4], A.trim, 0.9);
+  const hairDark = shade(hair, -22), hairLit = shade(hair, 45);
+
+  // Hair that hangs behind the head
+  if (bare || open) {
+    if (look.hair === 'long') {
+      P(c, [-6, -8, -9.6, 0, -9.8 + sw * 0.3, 10, -7 + sw * 0.4, 15, -3.2, 13.4, -4.2, 6, -3, -2], hairDark);
+      L(c, [-7.6, -2, -8.2, 6, -6.8 + sw * 0.4, 12.6], shade(hair, 15), 0.6);
+    }
+    if (look.hair === 'tail') {
+      P(c, [-7, -7, -11, -4.5, -15 + sw, 4, -13.6 + sw, 12, -11 + sw, 6, -9, -1, -6, -4], shade(hair, -12));
+      L(c, [-11, -2, -13 + sw, 6], hairLit, 0.6);
+      P(c, [-9.8, -5.6, -7.6, -6.8, -7, -4.4, -9.2, -3.4], A.trim, 0.9);
+    }
+    if (look.hair === 'braids') for (const [ox, len] of [[-6.6, 6], [-3.8, 5]]) {
+      for (let i = 0; i < len; i++) { const y = -1 + i * 2.8, x = ox - i * 0.35 + sw * 0.15 * i; P(c, [x, y - 1.6, x + 1.5, y, x, y + 1.6, x - 1.5, y], i % 2 ? hair : hairDark, 0.7); }
+      P(c, [ox - len * 0.35 - 1, -1 + len * 2.8, ox - len * 0.35 + 1, -1 + len * 2.8, ox - len * 0.35, 1 + len * 2.8], '#c9a24a', 0.6);
+    }
   }
   if (g === 'crest') {
     P(c, [-3, -13, 3, -14.6, -1, -20 + sw * 0.3, -9, -19.6, -17 + sw, -12, -16 + sw, -3.6, -12, -8.6], hair);
-    L(c, [-1, -17.5, -9, -16.5, -14 + sw, -9], shade(hair, 40), 0.8);
+    for (const k of [0, 1, 2]) L(c, [-1 - k * 2, -17.5 + k, -8 - k * 2, -16 + k * 2, -13 + sw - k, -9 + k * 2], k ? hairDark : hairLit, 0.7);
   }
   P(c, [-3, 5, 3, 6, 3.5, 13, -3.5, 13], shade(skin, -30), 1);
-  if (g === 'horned') P(c, [-3, -11, -9, -15, -14, -23, -15.5, -31, -10.6, -22, -6, -17, 0, -13.4], '#d9cdb0');
+  L(c, [2.4, 7, 2.8, 12], shade(skin, -45), 0.6);
+  if (g === 'horned') {
+    P(c, [-3, -11, -9, -15, -14, -23, -15.5, -31, -10.6, -22, -6, -17, 0, -13.4], '#d9cdb0');
+    for (const k of [0, 1, 2]) L(c, [-5 - k * 2.6, -14.4 - k * 2.4, -2.8 - k * 2.6, -16 - k * 2.6], '#a8987a', 0.6);
+  }
 
   if (closed) {
     const helm = [-8.8, -1, -8.8, -9.6, -3.4, -13.8, 4.4, -13.4, 9.8, -7, 10.8, 0, 9.8, 6.6, 5.4, 10.6, -2, 10.4, -6.4, 7];
+    P(c, [-8.2, 5.6, -3, 10, -4.4, 13.2, -10, 9.4], A.dark, 1);
     P(c, helm, A.base);
-    c.save(); P(c, helm, null, 0); c.clip(); c.fillStyle = A.dark; c.fillRect(-10, -15, 7, 28); c.restore();
+    c.save(); P(c, helm, null, 0); c.clip();
+    c.fillStyle = A.dark; c.fillRect(-10, -15, 7, 28);
+    P(c, [3.4, -11, 9.8, -7, 10.8, 0, 9.8, 6.6, 5.4, 10.6, 3, 9, 2.2, 0], shade(A.base, 16), 0);
     P(c, [-1.6, -13, 4.4, -12.8, 9.2, -7.2, 6, -7, 1.6, -10.4], A.light, 0);
+    c.restore();
+    L(c, [-6.4, -12.2, -1, -14.2, 5, -13.6, 9.8, -7], shade(A.light, 25), 1.1);
+    L(c, [3.4, -11, 2.2, 0, 3, 9], A.dark, 0.8);
     L(c, [-8.8, -1, -6.4, 7, -2, 10.4], A.trim, 1.2);
     P(c, helm, null);
-    glowOn(c, eye, 8); P(c, [2.6, -3.8, 10.6, -2.8, 10.6, -0.8, 2.6, -1.2], eye, 0); glowOff(c);
-    for (const gx of [5.6, 7.2, 8.8]) L(c, [gx, 2, gx, 6.4], A.dark, 0.8);
-    if (g === 'horned') P(c, [4, -11.5, 7, -17, 7.6, -24.5, 10, -17, 8.4, -11], '#e8dcc4');
+    P(c, [2.2, -4.4, 10.8, -3.4, 10.9, -0.4, 2.2, -0.8], '#08060e', 0.8);
+    glowOn(c, eye, 10); P(c, [3, -3.4, 10.4, -2.6, 10.4, -1.4, 3, -1.8], eye, 0); glowOff(c);
+    c.fillStyle = '#ffffff'; c.globalAlpha = 0.8; c.fillRect(6.5, -2.9, 2.2, 0.6); c.globalAlpha = 1;
+    c.fillStyle = '#08060e'; for (const [hx, hy] of [[5.8, 2.6], [7.4, 2.4], [9, 2.2], [6, 4.6], [7.6, 4.4], [9.2, 4.2]]) c.fillRect(hx, hy, 0.9, 0.9);
+    c.fillStyle = A.rivet || A.light; c.fillRect(-5.6, -6, 1.3, 1.3); c.fillRect(-3, 4.4, 1.3, 1.3);
+    if (g === 'horned') {
+      P(c, [4, -11.5, 7, -17, 7.6, -24.5, 10, -17, 8.4, -11], '#e8dcc4');
+      for (const k of [0, 1]) L(c, [5.4 + k * 0.6, -14 - k * 3, 8.6 + k * 0.4, -14.4 - k * 3], '#b8aa8c', 0.6);
+    }
     if (acc === 'x_scope') { glowOn(c, '#ff4a4a', 6); P(c, [5, -5, 8.6, -5, 8.6, -1.4, 5, -1.4], 'rgba(255,70,70,0.5)', 0.8); glowOff(c); }
     return;
   }
 
-  // face
+  // Face
   headPath(c); c.fillStyle = skin; c.fill();
   c.save(); headPath(c); c.clip();
   c.fillStyle = shade(skin, -26); c.beginPath(); c.moveTo(-9, -14); c.lineTo(0.5, -14); c.lineTo(-1.5, 12); c.lineTo(-9, 12); c.fill();
-  P(c, [6, -6, 8.4, -5, 8.6, -2.6, 6.2, -3], shade(skin, 18), 0);
+  P(c, [2.6, 4, 8.2, 7.4, 7.6, 9.6, 2, 9.4, -1, 6.6], shade(skin, -14), 0);
+  P(c, [6, -6, 8.4, -5, 8.6, -2.6, 6.2, -3], shade(skin, 20), 0);
+  P(c, [4.6, 0.6, 7.4, 0.4, 6.4, 2.6], shade(skin, 12), 0);
   c.restore();
   headPath(c); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+  L(c, [8.6, -2.4, 9.8, 0.8], shade(skin, -32), 0.6);
+  c.fillStyle = shade(skin, -55); c.fillRect(8.6, 1.1, 0.8, 0.6);
+  P(c, [7.3, 3.8, 9.1, 3.9, 8.6, 4.9, 7.5, 4.8], shade(skin, -38), 0);
   P(c, [-1.4, -2.6, -4, -3, -4.6, 1.6, -2, 2.6], shade(skin, -14), 0.9);
-  P(c, [4, -2.6, 7.4, -2.6, 6.9, -1, 4.4, -1.2], '#f4efe8', 0.7);
-  c.fillStyle = eye; c.fillRect(5.5, -2.5, 1.6, 1.4); c.fillStyle = INK; c.fillRect(6.2, -2.3, 0.7, 1);
-  P(c, [3.6, -4.6, 8.4, -4.9, 8.2, -3.7, 3.8, -3.5], shade(hair, -20), 0);
-  L(c, [7.2, 4.4, 8.8, 4.2], shade(skin, -55), 0.8);
+  L(c, [-2.4, -1.6, -3.4, 0.8], shade(skin, -40), 0.6);
+  if (look.mark === 'patch') {
+    L(c, [3.4, -4.6, -6, -7.4], '#1a1418', 0.9); L(c, [3.6, -0.8, -5.6, 1.2], '#1a1418', 0.9);
+    P(c, [3.6, -3.6, 8, -3.8, 7.6, -0.4, 4, -0.2], '#1a1418', 0.8);
+  } else {
+    P(c, [4, -2.6, 7.4, -2.6, 6.9, -1, 4.4, -1.2], '#f4efe8', 0.6);
+    c.fillStyle = eye; c.fillRect(5.5, -2.5, 1.6, 1.45); c.fillStyle = INK; c.fillRect(6.2, -2.3, 0.7, 1);
+    c.fillStyle = '#ffffff'; c.fillRect(5.6, -2.45, 0.5, 0.5);
+    L(c, [3.8, -2.9, 7.6, -2.8], INK, 0.7);
+  }
+  P(c, [3.6, -4.6, 8.4, -4.9, 8.2, -3.7, 3.8, -3.5], hairDark, 0);
   if (look.mark === 'scar') { L(c, [4.2, -6.6, 7.4, 1.6], shade(skin, -40), 1.1); L(c, [4.4, -6.4, 7.6, 1.4], shade(skin, 35), 0.5); }
-  if (look.mark === 'paint') { P(c, [4.4, 0, 8.2, 0.2, 8, 1.1, 4.6, 0.9], '#c43a3a', 0); P(c, [4, 2, 7.6, 2.3, 7.4, 3.1, 4.2, 2.9], '#c43a3a', 0); }
+  if (look.mark === 'paint') { P(c, [4.4, 0, 8.2, 0.2, 8, 1.1, 4.6, 0.9], '#c43a3a', 0); P(c, [4, 2, 7.6, 2.3, 7.4, 3.1, 4.2, 2.9], '#c43a3a', 0); P(c, [1, -9, 3, -9.4, 2.6, -7.6], '#c43a3a', 0); }
+  if (look.mark === 'tattoo') { c.save(); glowOn(c, eye, 6); L(c, [-1, -9, 1.6, -7, 1.6, -4, 3, -3.4], eye, 0.6); L(c, [3.4, 1.4, 5, 3, 5, 6.4, 3.4, 7.6], eye, 0.6); c.fillStyle = eye; c.fillRect(2.7, -3.9, 1, 1); c.fillRect(3, 7.2, 1, 1); c.restore(); }
   if (look.beard !== 'none') {
-    c.save(); if (look.beard === 'stubble') c.globalAlpha = 0.42;
-    P(c, [8.8, 3.4, 9.1, 7.4, 7, 10.6, 3, 11.4, -1.6, 7.6, -2, 5, 1, 6.4, 4, 6.8, 6.4, 5.6, 7.4, 5.4], shade(hair, -6), look.beard === 'full' ? 1 : 0);
-    c.restore();
+    const bc = shade(hair, -6);
+    if (look.beard === 'stubble') { c.save(); c.globalAlpha = 0.42; P(c, [8.8, 3.4, 9.1, 7.4, 7, 10.6, 3, 11.4, -1.6, 7.6, -2, 5, 1, 6.4, 4, 6.8, 6.4, 5.6, 7.4, 5.4], bc, 0); c.restore(); }
+    if (look.beard === 'full') { P(c, [8.8, 3.4, 9.2, 7.4, 7.4, 11, 3.6, 12.6, -1.6, 8, -2, 5, 1, 6.4, 4, 6.8, 6.4, 5.6, 7.4, 5.4], bc, 1); L(c, [5, 7.6, 4.6, 11], hairDark, 0.6); L(c, [7.4, 6.8, 7.4, 10], hairLit, 0.5); }
+    if (look.beard === 'goatee') P(c, [7.2, 5.6, 8.6, 6.2, 8.6, 9.4, 6.6, 11.2, 5.2, 9.4], bc, 0.8);
+    if (look.beard === 'moustache' || look.beard === 'full' || look.beard === 'goatee') P(c, [6.8, 3.4, 9.2, 2.6, 9.6, 3.8, 8.8, 4.2, 7.2, 4.6, 6.2, 5.6], bc, 0.7);
   }
   if (acc === 'x_scope') { L(c, [4.5, -2, -3, -4], '#2a2a33', 0.8); glowOn(c, '#ff4a4a', 6); P(c, [4.3, -3.6, 7.8, -3.6, 7.8, -0.3, 4.3, -0.3], 'rgba(255,70,70,0.45)', 0.8); glowOff(c); }
 
-  if (g === 'none') {
-    if (look.hair === 'mohawk' || look.hair === 'shaved') {
+  if (bare) {
+    const h = look.hair;
+    if (h === 'mohawk' || h === 'shaved' || h === 'topknot') {
       c.save(); headPath(c); c.clip(); c.globalAlpha = 0.3; c.fillStyle = hair; c.fillRect(-9, -14, 18, 9); c.fillRect(-9, -14, 5, 16); c.restore();
     }
-    if (look.hair === 'mohawk') P(c, [-6.6, -8, -9.4, -14, -4.2, -12, -3.2, -18.4, 0, -13, 2.6, -18, 4.2, -12.4, 8.4, -15, 7.6, -9, 4, -10, 0, -10.6, -4, -9.6], hair);
-    else if (look.hair !== 'shaved') {
-      P(c, [-7.6, -2, -8.4, -9, -3.4, -13, 3.5, -12.8, 8.9, -7.4, 7.4, -5.6, 5.6, -7.4, 3.6, -5.8, 1.6, -7.8, -1.2, -6, -3.6, -4.2, -5, -1], hair);
-      L(c, [-4, -11.4, 2, -11.6, 6, -9], shade(hair, 45), 0.8);
+    if (h === 'mohawk') {
+      P(c, [-6.6, -8, -9.4, -14, -4.2, -12, -3.2, -18.4, 0, -13, 2.6, -18, 4.2, -12.4, 8.4, -15, 7.6, -9, 4, -10, 0, -10.6, -4, -9.6], hair);
+      L(c, [-3.2, -16.6, -2, -12.4], hairLit, 0.6); L(c, [2.6, -16.2, 3, -12], hairLit, 0.6);
+    } else if (h === 'topknot') {
+      P(c, [-5, -12.4, -4.4, -17.4, -1, -19.4, 2.8, -17.6, 2.4, -12.6], hair);
+      P(c, [-4.6, -13.4, 2.6, -13.6, 2.4, -12, -4.4, -11.8], '#c9a24a', 0.7);
+      L(c, [-2.6, -17.6, 0.4, -18.4], hairLit, 0.6);
+    } else if (h !== 'shaved') {
+      P(c, HAIR_CAP, hair);
+      L(c, [-4, -11.4, 2, -11.6, 6, -9], hairLit, 0.8);
+      L(c, [-6, -7, -3, -10.4], hairDark, 0.6); L(c, [0, -8, 3, -11], hairDark, 0.6);
+    }
+    if (g === 'circlet') {
+      P(c, [-7.8, -6.8, 8.6, -7.4, 8.8, -5.6, -7.8, -5], '#e8c25a', 0.8);
+      L(c, [-6, -6.6, 7, -7], '#fff2b8', 0.4);
+      glowOn(c, eye, 8); P(c, [6.4, -8.6, 7.8, -6.5, 6.4, -4.6, 5, -6.5], eye, 0.6); glowOff(c);
+    }
+    if (g === 'mask') {
+      L(c, [3, 2.6, -3.6, -0.6], '#2a2a33', 1);
+      P(c, [4.4, -0.6, 10.8, 0.6, 11.2, 6.2, 8.4, 9.4, 3.4, 8.6, 2.6, 2.4], '#4a4e5a');
+      P(c, [4.4, -0.6, 10.8, 0.6, 11.2, 3, 4, 2], '#7a808e', 0);
+      for (const y of [3.6, 5.2, 6.8]) L(c, [5.4, y, 9.6, y + 0.3], '#22242a', 0.6);
+      P(c, [8.6, 6.6, 12.4, 7.4, 12.2, 10.4, 8.8, 10], '#33363e', 0.8);
+      glowOn(c, eye, 6); c.fillStyle = eye; c.fillRect(10, 8, 1.6, 1.2); glowOff(c);
     }
   } else if (open) {
     const helm = [-8.6, 7, -8.9, -8, -3.4, -13.6, 4.6, -13.2, 9.6, -6.6, 9.4, -4.2, 4.2, -4.6, 3, -3, 3.6, 5, 1, 9.8, -3.6, 9.4];
+    P(c, [-8.8, 5, 1.6, 8.4, 2.6, 13.6, -8.8, 13.4], A.dark, 1);
+    for (let y = 7.6; y <= 13; y += 1.5) for (let x = -8; x <= 1.4; x += 1.6) L(c, [x, y, x + 0.8, y + 0.7, x + 1.6, y], shade(A.dark, 34), 0.4);
     P(c, helm, A.base);
-    c.save(); P(c, helm, null, 0); c.clip(); c.fillStyle = A.dark; c.fillRect(-10, -15, 6.5, 26); c.restore();
+    c.save(); P(c, helm, null, 0); c.clip();
+    c.fillStyle = A.dark; c.fillRect(-10, -15, 6.5, 26);
     P(c, [-2, -12.6, 4.5, -12.4, 8.8, -6.8, 6, -6.6, 2, -10], A.light, 0);
+    c.restore();
+    L(c, [-6.6, -12, -1, -14, 4.6, -13.2, 9.6, -6.6], shade(A.light, 25), 0.9);
     L(c, [9.4, -4.4, 4.2, -4.8, 3, -3, 3.6, 5], A.trim, 1.2);
     P(c, helm, null);
+    P(c, [2.8, -3, 5, -3.4, 5.4, 5.4, 3.4, 8.6, 1.2, 8], A.base, 0.9);
+    L(c, [3.2, -2.4, 4.6, 6], A.light, 0.5);
     P(c, [7.6, -4.8, 8.9, -4.8, 9.4, 1.4, 8.3, 1.6], A.light, 0.9);
-    c.fillStyle = A.rivet || A.light; c.fillRect(-5.5, -6, 1.4, 1.4); c.fillRect(-5.5, 2, 1.4, 1.4);
+    c.fillStyle = A.rivet || A.light; c.fillRect(-5.5, -6, 1.4, 1.4); c.fillRect(-5.5, 2, 1.4, 1.4); c.fillRect(3.6, 0, 1, 1);
   } else if (g === 'hood') {
-    c.save(); headPath(c); c.clip(); c.fillStyle = 'rgba(5,3,12,0.45)'; c.fillRect(-10, -14, 22, 26); c.restore();
-    const hc = A.cape || A.dark;
-    P(c, [-9.6, 11, -10.6, -5, -4.6, -14.6, 4.6, -13.8, 10.6, -7, 10.2, -4, 5, -6.4, 3, -2.4, 3.4, 6, 0.6, 11.4], hc);
-    P(c, [-4.6, -14.6, 4.6, -13.8, 10.6, -7, 7, -8, 1, -11], shade(hc, 28), 0);
-    glowOn(c, eye, 8); c.fillStyle = eye; c.fillRect(5.4, -2.6, 2, 1.5); glowOff(c);
+    c.save(); headPath(c); c.clip(); c.fillStyle = 'rgba(5,3,12,0.3)'; c.fillRect(-10, -14, 22, 26); c.restore();
+    const hc = A.cape || shade(A.base, -8);
+    P(c, [-9.6, 12, -10.8, -5, -4.6, -14.8, 4.8, -14, 10.8, -7, 10.4, -3.8, 5, -6.4, 3, -2.4, 3.4, 6, 0.6, 12], hc);
+    P(c, [-4.6, -14.8, 4.8, -14, 10.8, -7, 7, -8, 1, -11.4], shade(hc, 30), 0);
+    L(c, [10.4, -3.8, 5, -6.4, 3, -2.4, 3.4, 6, 0.6, 12], shade(hc, -35), 1.4);
+    L(c, [-6, -10, -8, 4], shade(hc, -30), 0.8); L(c, [-2, -12, -4, 8], shade(hc, -25), 0.6);
   }
 }
 
@@ -865,6 +1229,7 @@ function drawKnight(c, x, y, s, o, t) {
     P(c, [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3, end - 2, -18 + wv, end + 3, -24 + wv, end - 2, -30 + wv * 1.2, end + 2, -28 + wv, -40, -19, -70], A.cape);
     L(c, [-13, -72, -21 + wv * 0.7, end + 1], shade(A.cape, -28), 1.2);
     L(c, [-6, -74, -12 + wv * 0.4, end], shade(A.cape, 22), 0.9);
+    P(c, [-10, -82 + br, 6, -83 + br, 1, -77, -8, -76.4], shade(A.cape, -40), 0);
   }
   if (A.scarf) P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
   if (o.acc === 'x_boots') {
@@ -903,9 +1268,12 @@ function drawKnight(c, x, y, s, o, t) {
 
   // waist, belt and tassets
   P(c, [-9, -53, 12, -53, 11, -46, -8, -46], A.dark);
+  for (let mx = -7.6; mx < 10.6; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 28), 0.5);
   P(c, [-9.6, -48.4, 12.6, -48.4, 12.6, -44.4, -9.6, -44.4], A.trim);
   if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
   else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
+  P(c, [-10.6, -47.6, -6.4, -47.6, -6.6, -41.4, -10.4, -41.6], '#4a3424', 1);
+  L(c, [-10.4, -45.4, -6.5, -45.4], '#6a4a30', 0.6);
   P(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base);
   P(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
 
@@ -916,6 +1284,7 @@ function drawKnight(c, x, y, s, o, t) {
   if (A.seams) { glowOn(c, A.glow, 8); L(c, [9, -42, 11, -34, 9, -30], A.glow, 1.1); glowOff(c); }
   P(c, [8.6, -6.4, 16.6, -6.4, 23.4, -1.4, 23.4, 0, 8.6, 0], A.base);
   P(c, [10, -6, 16, -6, 20, -3, 10, -3], A.light, 0);
+  L(c, [15.6, -6, 16.6, 0], A.dark, 0.7); L(c, [19.4, -3.8, 20.2, 0], A.dark, 0.7);
 
   // head
   c.save(); c.translate(2, -96.5 + br); drawHead(c, look, A, o.acc, t); c.restore();
@@ -927,7 +1296,9 @@ function drawKnight(c, x, y, s, o, t) {
   c.save(); c.translate(hx, hy); c.rotate(base + (gun ? -swingRot * 0.15 : swingRot)); drawWeapon(c, wpn, A, t); c.restore();
   limb(c, 13, -77 + br, 20, -63 + br, 4.4, 3.8, A.base, A.light);
   limb(c, 20, -63 + br, hx, hy, 3.8, 3.4, A.base, A.light);
+  P(c, [17.2, -65.4 + br, 21.2, -67 + br, 23.4, -62 + br, 19.4, -60 + br], A.light, 1);
   P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
+  L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
   pauldron(c, 12, -80 + br, A, false);
   if (o.acc === 'x_lens') {
     const oy = -104 + Math.sin(t * 0.003) * 3;
@@ -1178,51 +1549,61 @@ function drawEnemy(c, e, x, s, t, swing) {
   c.restore();
 }
 
-function drawPortrait(cv, hl = heroLook()) {
-  const c = cv.getContext('2d'), w = cv.width, h = cv.height;
+function drawPortrait(cv, hl, size, zoom = 34) {
+  const c = hiDpi(cv, size, size), w = size, h = size;
   c.clearRect(0, 0, w, h);
   const g = c.createRadialGradient(w * 0.5, h * 0.4, 2, w * 0.5, h * 0.5, w * 0.7);
   g.addColorStop(0, '#3a3670'); g.addColorStop(1, '#14122c');
   c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.save(); c.translate(w * 0.46, h * 0.56); const k = w / 34; c.scale(k, k);
+  c.save(); c.translate(w * 0.46, h * (zoom > 34 ? 0.6 : 0.56)); const k = w / zoom; c.scale(k, k);
   c.lineJoin = 'round'; c.lineCap = 'round';
   drawHead(c, hl.look, hl.armor, hl.acc, performance.now());
   c.restore();
 }
 
 let raf = 0, last = 0;
+function shieldHex(c, x, y, rad, t) {
+  const pts = []; for (let i = 0; i < 6; i++) { const a = Math.PI / 6 + i * Math.PI / 3; pts.push(x + Math.cos(a) * rad * 0.75, y + Math.sin(a) * rad); }
+  c.save(); c.globalAlpha = 0.35 + 0.15 * Math.sin(t * 0.005); glowOn(c, '#5ad1e6', 10);
+  P(c, pts, 'rgba(90,209,230,0.08)', 0); L(c, [...pts, pts[0], pts[1]], '#5ad1e6', 1.4); c.restore();
+}
 function loop(t) {
   raf = 0;
   const cv = document.getElementById('battleCanvas');
   if (!cv || !B) return;
   const dt = Math.min(50, t - (last || t)); last = t;
-  const c = cv.getContext('2d'), a = B.anim, w = PLANETS[B.world];
+  const c = hiDpi(cv, W, H), a = B.anim, w = PLANETS[B.world];
+  c.save();
+  if (a.flash > 0 && !RM) c.translate((Math.random() - 0.5) * 8 * a.flash, (Math.random() - 0.5) * 6 * a.flash);
   drawBackdrop(c, w, t);
   for (const k of ['pLunge', 'eLunge', 'pHit', 'eHit', 'flash']) a[k] = Math.max(0, a[k] - dt / (k === 'flash' ? 250 : 320));
   const lunge = v => Math.sin(v * Math.PI) * 60;
   const shake = v => Math.sin(v * 40) * 6 * v;
+  const hitFlash = v => { if (v > 0.55 && 'filter' in c) c.filter = 'brightness(2.4) saturate(0.3)'; };
   // hero
   const px = 200 + lunge(a.pLunge) + shake(a.pHit);
-  shadow(c, px, 26);
+  shadow(c, px, 34);
   if (B.p.hp > 0 || B.over?.result !== 'lost') {
-    if (a.pHit > 0.5) c.globalAlpha = 0.6;
+    hitFlash(a.pHit);
     drawKnight(c, px, GROUND, 1.4, { ...heroLook(), swing: a.pLunge }, t);
-    c.globalAlpha = 1;
+    c.filter = 'none';
   }
-  if (B.p.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(px, GROUND - 70, 50, 80, 0, 0, Math.PI * 2); c.stroke(); }
+  if (B.p.fx.shield) shieldHex(c, px, GROUND - 76, 82, t);
   // enemy
   const big = B.e.big ? 1.45 : 1;
   const ex = 520 - lunge(a.eLunge) + shake(a.eHit);
   if (a.eDie > 0) a.eDie = Math.min(1, a.eDie + dt / 700);
-  shadow(c, ex, 34 * big);
-  c.globalAlpha = a.eDie > 0 ? 1 - a.eDie : a.eHit > 0.5 ? 0.6 : 1;
-  if (B.phase === 2) { c.save(); c.shadowColor = '#ff3a8a'; c.shadowBlur = 30; }
+  shadow(c, ex, 44 * big);
+  c.save();
+  c.globalAlpha = a.eDie > 0 ? 1 - a.eDie : 1;
+  hitFlash(a.eHit);
+  if (B.phase === 2) { c.shadowColor = '#ff3a8a'; c.shadowBlur = 30; }
   drawEnemy(c, B.e, ex, 1.25 * big, t, a.eLunge);
-  if (B.phase === 2) c.restore();
-  c.globalAlpha = 1;
-  if (B.e.fx.shield) { c.strokeStyle = 'rgba(90,209,230,0.6)'; c.lineWidth = 2; c.beginPath(); c.ellipse(ex, GROUND - 80 * big, 64 * big, 95 * big, 0, 0, Math.PI * 2); c.stroke(); }
+  c.restore();
+  if (B.e.fx.shield) shieldHex(c, ex, GROUND - 82 * big, 96 * big, t);
+  drawVfx(c, dt);
   // flash + floating numbers
-  if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.35})`; c.fillRect(0, 0, W, H); }
+  if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.3})`; c.fillRect(-10, -10, W + 20, H + 20); }
   c.textAlign = 'center'; c.font = '700 22px "Chakra Petch", sans-serif';
   B.fl = B.fl.filter(f => (f.t += dt / 1000) < 1.1);
   for (const f of B.fl) {
@@ -1231,38 +1612,61 @@ function loop(t) {
     c.lineWidth = 4; c.strokeStyle = 'rgba(0,0,0,0.7)'; c.strokeText(f.text, x, y);
     c.fillStyle = f.color.startsWith('var') ? '#6fdc8c' : f.color; c.fillText(f.text, x, y);
   }
-  c.globalAlpha = 1;
+  c.restore();
   raf = requestAnimationFrame(loop);
 }
 
 let ambient = false;
+const PENDING_KEY = 'starbreaker-look-v1';
+function loadPending() { try { return JSON.parse(localStorage.getItem(PENDING_KEY)) || null; } catch (e) { return null; } }
+function savePending(v) { try { localStorage.setItem(PENDING_KEY, JSON.stringify(v)); } catch (e) {} }
+const OUTFITS = [null, ['a_vest', 'w_rust', null], ['a_alloy', 'w_ion', 'x_scope'], ['a_cara', 'w_lance', 'x_boots'], ['a_aegis', 'w_grav', 'x_heart'], ['a_magma', 'w_nova', 'x_lens'], ['a_void', 'w_star', 'x_sigil']];
+// The hero as the main menu shows it: the game in play, else the saved game, else the look set up for the next game.
+function menuHero() {
+  if (S) return heroLook();
+  const sv = loadSaved();
+  if (sv && sv.equip) return { armor: armorStyle(ARMOR_LOOK[sv.equip.armor] || ARMOR_LOOK.a_vest), weapon: sv.equip.weapon, acc: sv.equip.acc, look: sv.look || DEFAULT_LOOK };
+  return { armor: armorStyle(ARMOR_LOOK.a_vest), weapon: 'w_rust', acc: null, look: (loadPending() || {}).look || DEFAULT_LOOK };
+}
+function draftHero() {
+  const o = OUTFITS[U.outfit || 0];
+  const base = o ? { armor: armorStyle(ARMOR_LOOK[o[0]]), weapon: o[1], acc: o[2] } : menuHero();
+  return { ...base, look: U.draft };
+}
 function ambientLoop() {
   ambient = false;
   const t = performance.now();
   const tc = document.getElementById('titleCanvas');
   if (tc) {
-    const c = tc.getContext('2d'); c.clearRect(0, 0, 420, 210);
+    const c = hiDpi(tc, 420, 210); c.clearRect(0, 0, 420, 210);
     const r = seeded(7); c.fillStyle = '#fff';
     for (let i = 0; i < 60; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + i)); c.fillRect(r() * 420, r() * 210, 1.5, 1.5); }
     c.globalAlpha = 1;
-    const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, '#c46aff55'); g.addColorStop(1, 'transparent');
+    const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, 'rgba(196,106,255,0.33)'); g.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = g; c.fillRect(0, 0, 420, 210);
-    if (!ambientLoop.saved) ambientLoop.saved = loadSaved() || {};
-    const sv = ambientLoop.saved;
-    const hl = sv.equip ? { armor: armorStyle(ARMOR_LOOK[sv.equip.armor] || ARMOR_LOOK.a_vest), weapon: sv.equip.weapon, acc: sv.equip.acc, look: sv.look || DEFAULT_LOOK } : heroLook();
-    drawKnight(c, 150, 200, 1.6, hl, t);
+    if (!ambientLoop.hero) ambientLoop.hero = menuHero();
+    drawKnight(c, 150, 200, 1.6, ambientLoop.hero, t);
   }
   const cc = document.getElementById('createCanvas');
   if (cc && U.draft) {
-    const c = cc.getContext('2d'), w = cc.width, h = cc.height;
-    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#1d1a42'); g.addColorStop(1, '#0e0d22');
+    const w = 240, h = 300, c = hiDpi(cc, w, h);
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#24205a'); g.addColorStop(1, '#0e0d22');
     c.fillStyle = g; c.fillRect(0, 0, w, h);
-    c.fillStyle = 'rgba(0,0,0,0.35)'; c.beginPath(); c.ellipse(118, h - 16, 50, 8, 0, 0, Math.PI * 2); c.fill();
-    const hl = { ...heroLook(), look: U.draft };
+    nebula(c, 120, 120, 140, 'rgba(196,106,255,0.12)');
+    const sg = c.createRadialGradient(112, h - 16, 1, 112, h - 16, 60); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = sg; c.fillRect(40, h - 40, 150, 40);
+    const hl = draftHero();
     drawKnight(c, 104, h - 18, 2.3, hl, t);
-    const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl);
+    const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl, 150, 44);
   }
-  if ((tc || cc) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  const hc = document.getElementById('hubHero');
+  if (hc && S) {
+    const c = hiDpi(hc, 96, 120); c.clearRect(0, 0, 96, 120);
+    const sg = c.createRadialGradient(44, 112, 1, 44, 112, 36); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = sg; c.fillRect(0, 96, 96, 24);
+    drawKnight(c, 42, 112, 0.86, heroLook(), t);
+  }
+  if ((tc || cc || hc) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 /* ============================== RENDERING: DOM ============================== */
@@ -1281,20 +1685,24 @@ function hud() {
   return `<div class="hud">
     <div class="who"><canvas class="portrait" data-portrait width="80" height="80" aria-hidden="true"></canvas><span>${esc(heroName())}<small>LV ${S.lvl}</small></span></div>
     <div class="bars">${bar('HP', hp, st.maxHp, 'var(--hp)')}${bar('EN', en, st.maxEn, 'var(--en)')}${bar('XP', S.xp, xpNext(S.lvl), 'var(--xp)')}</div>
-    <div class="credits num">${S.cr.toLocaleString()} cr</div>
+    <div class="hud-end"><span class="credits num">${S.cr.toLocaleString()} cr</span>
+      <button class="btn small" data-a="main-menu" ${B && !B.over ? 'disabled title="Finish the battle first"' : ''}>Main menu</button></div>
   </div>`;
 }
 const globeStyle = w => `background: radial-gradient(circle at 35% 35%, ${w.globe[0]}, ${w.globe[1]}); --glow:${w.glow}`;
 
 function screenTitle() {
-  const has = !!loadSaved();
+  const sv = loadSaved();
+  const sub = sv ? `${esc(sv.name || 'Kael')} \u00B7 Level ${sv.lvl} \u00B7 ${esc(PLANETS[sv.world || 0].name)}` : 'No saved game yet';
   return `<div class="panel title-card">
     <canvas id="titleCanvas" width="420" height="210" aria-hidden="true"></canvas>
     <h1>Starbreaker<span>Saga</span></h1>
     <p>A disgraced knight. Five worlds. One darkness at the edge of the stars. Fight turn-based battles, level up, gear up and win back your honour.</p>
-    <div class="row" style="justify-content:center">
-      ${has ? `<button class="btn primary" data-a="continue">Continue</button>` : ''}
-      <button class="btn ${has ? '' : 'primary'}" data-a="new">New game</button>
+    <span class="label">${sub}</span>
+    <div class="menu-col">
+      ${sv ? `<button class="btn primary" data-a="continue">Continue</button>` : ''}
+      <button class="btn ${sv ? '' : 'primary'}" data-a="new">New game</button>
+      <button class="btn" data-a="look-open">Appearance</button>
     </div>
     ${U.confirmNew ? `<div class="row" style="justify-content:center"><span class="dim">This replaces your saved game.</span><button class="btn small" data-a="new-yes">Start over</button><button class="btn small" data-a="new-no">Keep my save</button></div>` : ''}
     <details style="max-width:420px;width:100%;text-align:left"><summary class="dim" style="cursor:pointer">Load a save code</summary>
@@ -1302,33 +1710,54 @@ function screenTitle() {
   </div>`;
 }
 
+const COLOUR_NAMES = {
+  skin: ['Fair', 'Light', 'Tan', 'Brown', 'Deep', 'Azure', 'Jade'],
+  hairCol: ['Black', 'Brown', 'Auburn', 'Blonde', 'Silver', 'Crimson', 'Cobalt'],
+  eyes: ['Cyan', 'Amber', 'Green', 'Red', 'Violet', 'White'],
+};
+const LOOK_ROWS = [['gear', 'Headgear'], ['hair', 'Hair'], ['hairCol', 'Hair colour'], ['skin', 'Skin'], ['eyes', 'Eyes and visor glow'], ['beard', 'Beard'], ['mark', 'Face mark']];
+const lookList = k => k === 'skin' ? SKIN : k === 'hairCol' ? HAIR : k === 'eyes' ? EYES : LOOK_OPTS[k];
+function cycleLook(k, d) {
+  if (k === 'outfit') { U.outfit = ((U.outfit || 0) + d + OUTFITS.length) % OUTFITS.length; return; }
+  const list = lookList(k), colour = k in COLOUR_NAMES;
+  const i = colour ? U.draft[k] : list.findIndex(o => o[0] === U.draft[k]);
+  const n = ((i < 0 ? 0 : i) + d + list.length) % list.length;
+  U.draft[k] = colour ? n : list[n][0];
+}
 function screenCreate() {
-  const d = U.draft, ed = U.editing;
-  const sw = (key, list, label) => `<div class="opt"><span class="label">${label}</span><div class="swatches">${list.map((col, i) =>
-    `<button class="swatch" data-a="look" data-k="${key}" data-v="${i}" aria-label="${label} ${i + 1}" aria-pressed="${d[key] === i}" style="background:${col}"></button>`).join('')}</div></div>`;
-  const opts = (key, label, note) => `<div class="opt"><span class="label">${label}</span><div class="tabs">${LOOK_OPTS[key].map(([v, l]) =>
-    `<button class="tab" data-a="look" data-k="${key}" data-v="${v}" aria-pressed="${d[key] === v}">${l}</button>`).join('')}</div>${note ? `<span class="dim note">${note}</span>` : ''}</div>`;
-  const hairNote = d.gear === 'none' ? '' : (d.gear === 'knight' || d.gear === 'crest') ? 'Long hair and ponytails show under an open helm.' : 'Hair is hidden under this headgear.';
+  const d = U.draft, mode = U.editing;
+  const row = (k, label) => {
+    const list = lookList(k), colour = k in COLOUR_NAMES;
+    const i = colour ? d[k] : Math.max(0, list.findIndex(o => o[0] === d[k]));
+    const name = colour ? COLOUR_NAMES[k][i] : list[i][1];
+    return `<div class="cyc"><span class="label">${label}</span><div class="cyc-ctl">
+      <button class="btn small arrow" data-a="cyc" data-k="${k}" data-d="-1" aria-label="Previous ${label.toLowerCase()}">\u25C0</button>
+      <span class="cyc-val">${colour ? `<i class="chip" style="background:${list[i]}"></i>` : ''}${name}<small>${i + 1}/${list.length}</small></span>
+      <button class="btn small arrow" data-a="cyc" data-k="${k}" data-d="1" aria-label="Next ${label.toLowerCase()}">\u25B6</button></div></div>`;
+  };
+  const oi = U.outfit || 0, outfitName = oi ? GEAR[OUTFITS[oi][0]].name + ' set' : (S || loadSaved() ? 'Your current gear' : 'Starting gear');
+  const hairNote = ['none', 'circlet', 'mask'].includes(d.gear) ? '' : (d.gear === 'knight' || d.gear === 'crest') ? 'Long hair, ponytails and braids show under an open helm.' : 'Hair is hidden under this headgear.';
+  const title = mode === 'new' ? 'Create your knight' : 'Appearance';
+  const note = mode === 'pending' ? 'No saved game yet. This look is used when you start a new game.' : mode === 'saved' ? 'Changes apply to your saved game.' : '';
   return `<div class="panel">
-    <div class="row between"><h2>${ed ? 'Change appearance' : 'Create your knight'}</h2>${ed ? '<button class="btn small" data-a="back">← Back</button>' : ''}</div>
+    <div class="row between"><h2>${title}</h2><button class="btn small" data-a="back">\u2190 Back</button></div>
+    ${note ? `<p class="dim">${note}</p>` : ''}
     <div class="creator">
       <div class="preview">
-        <canvas id="createCanvas" width="240" height="300" aria-label="Preview of your knight"></canvas>
-        <canvas id="createPortrait" class="portrait-big" width="120" height="120" aria-hidden="true"></canvas>
+        <canvas id="createCanvas" width="240" height="300" aria-label="Your knight, full body"></canvas>
+        <canvas id="createPortrait" class="portrait-big" width="150" height="150" aria-label="Close-up of your knight's head"></canvas>
       </div>
       <div class="opts">
         <div class="opt"><label class="label" for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" value="${esc(U.draftName)}"></div>
-        ${opts('gear', 'Headgear')}
-        ${sw('skin', SKIN, 'Skin')}
-        ${opts('hair', 'Hair', hairNote)}
-        ${sw('hairCol', HAIR, 'Hair colour')}
-        ${sw('eyes', EYES, 'Eyes and visor glow')}
-        ${opts('beard', 'Beard')}
-        ${opts('mark', 'Face mark')}
+        ${LOOK_ROWS.map(([k, l]) => row(k, l) + (k === 'hair' && hairNote ? `<span class="dim note">${hairNote}</span>` : '')).join('')}
+        <div class="cyc outfit"><span class="label">Preview outfit</span><div class="cyc-ctl">
+          <button class="btn small arrow" data-a="cyc" data-k="outfit" data-d="-1" aria-label="Previous outfit">\u25C0</button>
+          <span class="cyc-val">${outfitName}<small>${oi + 1}/${OUTFITS.length}</small></span>
+          <button class="btn small arrow" data-a="cyc" data-k="outfit" data-d="1" aria-label="Next outfit">\u25B6</button></div></div>
+        <span class="dim note">Outfit preview only changes this picture. In the game, your look follows the gear you equip.</span>
       </div>
     </div>
-    <p class="dim">Your armour, weapon and accessory change how you look as you buy new gear.</p>
-    <div class="row"><button class="btn primary" data-a="create-done">${ed ? 'Save appearance' : 'Begin'}</button><button class="btn" data-a="look-random">Randomise</button></div>
+    <div class="row"><button class="btn primary" data-a="create-done">${mode === 'new' ? 'Begin' : 'Save appearance'}</button><button class="btn" data-a="look-random">Randomise</button><button class="btn" data-a="look-reset">Reset</button></div>
   </div>`;
 }
 
@@ -1343,7 +1772,7 @@ function screenStory() {
 
 function screenMap() {
   return `${hud()}<div class="panel">
-    <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
+    <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="look-open">Appearance</button><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
     ${S.done ? `<p style="color:var(--gold)">The Hollow Dark is gone. You can keep exploring and fighting on any world.</p>` : ''}
     <div class="worlds">${PLANETS.map((w, i) => {
       const locked = i >= S.unlocked;
@@ -1364,7 +1793,8 @@ function screenHub() {
   return `${hud()}<div class="panel">
     <div class="hub-head"><div class="globe" style="${globeStyle(w)}"></div>
       <div style="min-width:0;display:flex;flex-direction:column;gap:6px"><h2>${esc(w.name)}</h2><span class="dim">${esc(w.sub)} · recommended LV ${w.lv}</span>
-      <div class="progress" aria-label="Patrol progress"><div style="width:${Math.min(100, S.wins[i] / WINS_FOR_BOSS * 100)}%"></div></div></div></div>
+      <div class="progress" aria-label="Patrol progress"><div style="width:${Math.min(100, S.wins[i] / WINS_FOR_BOSS * 100)}%"></div></div></div>
+      <button class="hub-hero" data-a="look-open" aria-label="Change appearance"><canvas id="hubHero" width="96" height="120" aria-hidden="true"></canvas></button></div>
     <div class="grid3">
       <button class="btn primary" data-a="patrol" ${S.hp <= 0 ? 'disabled' : ''}>Patrol<span class="sub">Fight a random enemy</span></button>
       <button class="btn" data-a="boss" ${!ready || S.hp <= 0 ? 'disabled' : ''}>${S.bosses[i] ? 'Rematch boss' : 'Boss'}<span class="sub">${ready ? esc(w.boss.name) : `${WINS_FOR_BOSS - S.wins[i]} more patrols`}</span></button>
@@ -1508,9 +1938,9 @@ function render() {
   app.innerHTML = view();
   if (keep) { const fresh = document.getElementById('battleCanvas'); fresh.replaceWith(keep); }
   if (sc === 'battle' && !raf) raf = requestAnimationFrame(loop);
-  for (const cv of app.querySelectorAll('canvas[data-portrait]')) drawPortrait(cv);
-  if (sc === 'title') ambientLoop.saved = null;
-  if ((sc === 'title' || sc === 'create') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  for (const cv of app.querySelectorAll('canvas[data-portrait]')) drawPortrait(cv, heroLook(), 40);
+  if (sc === 'title') ambientLoop.hero = null;
+  if ((sc === 'title' || sc === 'create' || sc === 'hub') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 function toast(msg) {
@@ -1535,18 +1965,30 @@ app.addEventListener('click', ev => {
   const go = s => { if (['status', 'skills', 'create'].includes(s) && !['status', 'skills', 'create'].includes(U.screen)) prevScreen = U.screen; U.screen = s; render(); scrollTo(0, 0); };
   switch (a) {
     case 'new': if (loadSaved() && !U.confirmNew) { U.confirmNew = true; render(); break; } // falls through when no save exists
-    case 'new-yes': U.confirmNew = false; S = null; U.draft = { ...DEFAULT_LOOK }; U.draftName = 'Kael'; U.editing = false; go('create'); break;
-    case 'look': U.draft[el.dataset.k] = el.dataset.k in { skin: 1, hairCol: 1, eyes: 1 } ? +el.dataset.v : el.dataset.v; render(); break;
+    case 'new-yes': { U.confirmNew = false; S = null; const pend = loadPending() || {}; U.draft = { ...DEFAULT_LOOK, ...pend.look }; U.draftName = pend.name || 'Kael'; U.editing = 'new'; U.outfit = 0; go('create'); break; }
+    case 'look-open': {
+      const sv = S ? null : loadSaved(), src = S || sv || loadPending() || {};
+      U.editing = S ? 'game' : sv ? 'saved' : 'pending';
+      U.draft = { ...DEFAULT_LOOK, ...src.look }; U.draftName = src.name || 'Kael'; U.outfit = 0; go('create'); break;
+    }
+    case 'cyc': cycleLook(el.dataset.k, +el.dataset.d); render(); app.querySelector(`[data-a="cyc"][data-k="${el.dataset.k}"][data-d="${el.dataset.d}"]`)?.focus(); break;
+    case 'look-reset': U.draft = { ...DEFAULT_LOOK }; render(); break;
+    case 'main-menu': if (B && !B.over) break; B = null; if (S) save(); S = null; U.confirmNew = false; go('title'); break;
     case 'look-random': {
       const pick = l => l[Math.floor(Math.random() * l.length)], n = l => Math.floor(Math.random() * l.length);
       U.draft = { gear: pick(LOOK_OPTS.gear)[0], skin: n(SKIN), hair: pick(LOOK_OPTS.hair)[0], hairCol: n(HAIR), eyes: n(EYES), beard: pick(LOOK_OPTS.beard)[0], mark: pick(LOOK_OPTS.mark)[0] };
       render(); break;
     }
-    case 'edit-look': U.draft = { ...DEFAULT_LOOK, ...S.look }; U.draftName = S.name; U.editing = true; go('create'); break;
+    case 'edit-look': U.draft = { ...DEFAULT_LOOK, ...S.look }; U.draftName = S.name; U.editing = 'game'; U.outfit = 0; go('create'); break;
     case 'create-done': {
       const name = (U.draftName || '').trim().slice(0, 16) || 'Kael';
-      if (U.editing) { S.look = { ...U.draft }; S.name = name; save(); toast('Appearance saved'); go(prevScreen); break; }
-      S = fresh(); S.look = { ...U.draft }; S.name = name; topUpCaps(); save();
+      const look = { ...U.draft };
+      if (U.editing === 'game') { S.look = look; S.name = name; save(); }
+      else if (U.editing === 'saved') { const sv = loadSaved(); if (sv) { sv.look = look; sv.name = name; try { localStorage.setItem(SAVE_KEY, JSON.stringify(sv)); } catch (e) {} } }
+      else if (U.editing === 'pending') savePending({ look, name });
+      if (U.editing !== 'new') { toast('Appearance saved'); go(prevScreen); break; }
+      savePending({ look, name });
+      S = fresh(); S.look = look; S.name = name; topUpCaps(); save();
       showStory('Prologue', STORY_OPEN, () => { U.screen = 'map'; render(); }, 'Answer the beacon'); break;
     }
     case 'new-no': U.confirmNew = false; render(); break;
@@ -1560,7 +2002,7 @@ app.addEventListener('click', ev => {
     case 'go-status': go('status'); break;
     case 'go-skills': go('skills'); break;
     case 'go-save': go('save'); break;
-    case 'back': go(prevScreen); break;
+    case 'back': go(U.screen === 'create' && U.editing === 'new' ? 'title' : prevScreen); break;
     case 'tab': U.tab = id; render(); break;
     case 'patrol': startBattle(false); break;
     case 'boss': startBattle(true); break;
