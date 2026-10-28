@@ -25,8 +25,8 @@ function screenTitle() {
   const sv = loadSaved();
   const sub = sv ? `${esc(sv.name || 'Kael')} \u00B7 Level ${sv.lvl} \u00B7 ${esc(PLANETS[sv.world || 0].name)}` : 'No saved game yet';
   return `<div class="panel title-card">
-    <canvas id="titleCanvas" width="420" height="210" aria-hidden="true"></canvas>
-    <h1>Starbreaker<span>Saga</span></h1>
+    <canvas id="titleCanvas" width="720" height="360" aria-hidden="true"></canvas>
+    <h1 class="sr-only">Starbreaker Saga</h1>
     <p>A disgraced Sweeper Knight. A master who lied. Five worlds and one darkness at the edge of the stars. Fight, level up, gear up and win back your name.</p>
     <span class="label">${sub}</span>
     <div class="menu-col">

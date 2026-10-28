@@ -1309,16 +1309,8 @@ function drawEnemyPosed(c, e, x, y, s, t, ps = {}) {
   c.restore();
 }
 
-function drawPortrait(cv, hl, size, zoom = 34) {
-  const c = hiDpi(cv, size, size), w = size, h = size;
-  c.clearRect(0, 0, w, h);
-  const g = c.createRadialGradient(w * 0.5, h * 0.4, 2, w * 0.5, h * 0.5, w * 0.7);
-  g.addColorStop(0, '#3a3670'); g.addColorStop(1, '#14122c');
-  c.fillStyle = g; c.fillRect(0, 0, w, h);
-  c.save(); c.translate(w * 0.46, h * (zoom > 34 ? 0.6 : 0.56)); const k = w / zoom; c.scale(k, k);
-  c.lineJoin = 'round'; c.lineCap = 'round';
-  drawHead(c, hl.look, hl.armor, hl.acc, performance.now());
-  c.restore();
+function drawPortrait(cv, hl, size) {
+  paintBust(cv, bustFromLook(hl), size, size, performance.now(), size <= 64 ? 'face' : null);
 }
 
 let raf = 0, last = 0;
@@ -1413,26 +1405,29 @@ function ambientLoop() {
   const t = performance.now();
   const tc = document.getElementById('titleCanvas');
   if (tc) {
-    const c = hiDpi(tc, 420, 210); c.clearRect(0, 0, 420, 210);
-    const r = seeded(7); c.fillStyle = '#fff';
-    for (let i = 0; i < 60; i++) { c.globalAlpha = 0.2 + 0.6 * Math.abs(Math.sin(t * 0.001 + i)); c.fillRect(r() * 420, r() * 210, 1.5, 1.5); }
-    c.globalAlpha = 1;
-    const g = c.createRadialGradient(300, 210, 10, 300, 210, 200); g.addColorStop(0, 'rgba(196,106,255,0.33)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-    c.fillStyle = g; c.fillRect(0, 0, 420, 210);
-    if (!ambientLoop.hero) ambientLoop.hero = menuHero();
-    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 1.6, ambientLoop.hero, t), { x: 150, y: 200, w: 300, h: 240, ax: 130, ay: 226, rim: '#d49aff' });
+    const w = 720, h = 360, c = hiDpi(tc, w, h);
+    runeBg(c, w, h, t);
+    c.save(); c.translate(424, 0); c.scale(0.9, 0.9); drawBust(c, bustSpec('lyra'), t); c.restore();
+    const fade = c.createLinearGradient(380, 0, 470, 0); fade.addColorStop(0, 'rgba(5,3,5,0.7)'); fade.addColorStop(1, 'rgba(5,3,5,0)');
+    c.save(); c.textAlign = 'left';
+    const tg = c.createLinearGradient(0, 120, 0, 186); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.45, '#c9cdd8'); tg.addColorStop(0.55, '#7d8294'); tg.addColorStop(1, '#eef0f6');
+    c.font = '700 64px "Chakra Petch", sans-serif'; c.lineWidth = 6; c.strokeStyle = '#2a0008'; c.strokeText('STARBREAKER', 36, 180);
+    c.fillStyle = tg; c.fillText('STARBREAKER', 36, 180);
+    glowOn(c, '#d4142e', 12); c.fillStyle = '#d4142e'; c.fillRect(40, 192, 360, 3); P(c, [400, 190, 418, 193.5, 400, 197], '#d4142e', 0); glowOff(c);
+    c.font = '600 18px "Chakra Petch", sans-serif'; c.fillStyle = '#ff4a5e'; c.fillText('S  A  G  A', 42, 222);
+    c.restore();
   }
   const cc = document.getElementById('createCanvas');
   if (cc && U.draft) {
     const w = 240, h = 300, c = hiDpi(cc, w, h);
-    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#24205a'); g.addColorStop(1, '#0e0d22');
+    const g = c.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#2a0a12'); g.addColorStop(1, '#070508');
     c.fillStyle = g; c.fillRect(0, 0, w, h);
     nebula(c, 120, 120, 140, 'rgba(196,106,255,0.12)');
     const sg = c.createRadialGradient(112, h - 16, 1, 112, h - 16, 60); sg.addColorStop(0, 'rgba(0,0,0,0.5)'); sg.addColorStop(1, 'rgba(0,0,0,0)');
     c.fillStyle = sg; c.fillRect(40, h - 40, 150, 40);
     const hl = draftHero();
     renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 2.0, hl, t), { x: 104, y: h - 16, w: 240, h: 300, ax: 104, ay: 284, rim: '#c8b8ff', outline: 2.4 });
-    const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl, 150, 44);
+    const pc = document.getElementById('createPortrait'); if (pc) drawPortrait(pc, hl, 150);
   }
   const hc = document.getElementById('hubHero');
   if (hc && S) {

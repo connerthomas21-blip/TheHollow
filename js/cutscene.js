@@ -112,6 +112,8 @@ function csLoop(t) {
       c.restore();
     }
   }
+  const pc = document.getElementById('csPortrait');
+  if (pc) { const id = pc.dataset.id; paintBust(pc, bustSpec(id), 150, 170, t, null, id === 'kolDark' ? '#9a3aff' : null); }
   // typewriter text
   const el = document.getElementById('csText');
   if (el && cs.say) {
@@ -121,16 +123,32 @@ function csLoop(t) {
   csRaf = requestAnimationFrame(csLoop);
 }
 
+// Which portrait goes with each speaker.
+function speakerPortrait(cs) {
+  const s = cs.say && cs.say[0];
+  if (!s) return null;
+  if (s === '{name}') return 'hero';
+  if (s === 'Lyra') return 'lyra';
+  if (s === 'Hooded stranger') return 'lyraHood';
+  if (s === 'Hooded figure') return 'kolHood';
+  if (s === 'Master Kol') return (cs.cast.kol && cs.cast.kol.who === 'kolDark') || cs.id === 'w4_in' ? 'kolDark' : 'kol';
+  if (s === 'Grand Master') return 'gm';
+  if (s === 'Admiral Vex') return 'vex';
+  return null;
+}
 function screenCutscene() {
-  const cs = U.cs, sc = CUTSCENES[cs.id], who = cs.say && cs.say[0] ? fmt(cs.say[0]) : '';
+  const cs = U.cs, sc = CUTSCENES[cs.id], who = cs.say && cs.say[0] ? fmt(cs.say[0]) : '', por = speakerPortrait(cs);
   const line = fmt(cs.say ? cs.say[1] : '');
   return `<div class="panel cs">
     <div class="row between"><span class="label">${esc(sc.title)}</span><button class="btn small" data-a="cs-skip">Skip scene</button></div>
     <canvas id="csCanvas" width="${W}" height="${H}" data-a="cs-next" aria-label="Cutscene"></canvas>
-    <div class="cs-box${who ? '' : ' narration'}">
+    <div class="cs-box${who ? '' : ' narration'}${por ? ' has-portrait' : ''}">
+      ${por ? `<canvas id="csPortrait" class="cs-portrait" width="150" height="170" data-id="${por}" aria-hidden="true"></canvas>` : ''}
+      <div class="cs-words">
       ${who ? `<div class="cs-who">${esc(who)}</div>` : ''}
       <p id="csText" class="cs-text" data-n="0" aria-hidden="true"></p>
       <p class="sr-only" aria-live="polite">${who ? esc(who) + ': ' : ''}${esc(line)}</p>
+      </div>
     </div>
     <div class="row cs-actions">${cs.choice
       ? cs.choice.map(([l, v]) => `<button class="btn primary" data-a="cs-choose" data-id="${v}">${esc(l)}</button>`).join('')

@@ -45,6 +45,12 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Art: posable knights (arm, lean, crouch/kneel, walk), curvy build option, swing smears, sprite renderer with bold silhouette outline + scene rim light + hit flash + afterimages, hall and burning-Veyra backdrops.
 - Attack choreography: wind-up, dash, swing, impact freeze, knockback, crit zoom, recovery; leaping slam, charged casts, ranged muzzle flash and tracers; enemy squash-and-stretch; death dissolve.
 
+## Session A.2 — Flash-anime style (done)
+- `js/portrait.js`: anime bust portraits (heavy ink, flat cel shading, glossy eyes, spiky hair) over crimson rune rings, after the look of the old Flash title cards. Specs for Lyra (crossed arms, sweetheart breastplate), Kol, dark Kol, hooded figures, the Grand Master, Vex, and the player (built from their appearance).
+- Portraits next to dialogue in cutscenes, in the HUD and the Appearance close-up; title screen key art with Lyra and a metallic logo.
+- Interface palette moved to black and crimson.
+- `node test/portraits.js <dir>` renders every portrait, the title and a cutscene.
+
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
 
