@@ -282,6 +282,40 @@ function drawBackdrop(c, w, t) {
   c.restore();
 }
 
+// Foreground silhouettes at the bottom corners of each scene, plus a vignette, for depth in front of the actors.
+function drawForeground(c, i, t) {
+  const kind = SCENES[i], rim = SCENE_RIM[i], dk = '#07050a';
+  const edge = pts => { P(c, pts, dk, 0); L(c, pts.slice(0, pts.length - 4), rim, 1.2); };
+  c.save(); c.globalAlpha = 0.95;
+  if (kind === 'colony' || kind === 'fire') {
+    edge([0, 300, 18, 286, 40, 290, 62, 304, 80, 320, 0, 320]);
+    edge([720, 296, 700, 288, 676, 296, 660, 312, 650, 320, 720, 320]);
+    plate(c, [24, 292, 70, 284, 72, 290, 26, 298], '#2a1a1c', '#4a2a2a', '#100608', 1);
+    if (kind === 'fire') { c.save(); glowOn(c, '#ff7a2a', 12); for (const [x, h] of [[36, 16], [690, 20]]) { const f = Math.sin(t * 0.012 + x) * 3; P(c, [x - 6, 292, x, 292 - h - f, x + 6, 292], 'rgba(255,140,40,0.8)', 0); } c.restore(); }
+  } else if (kind === 'hive') {
+    edge([0, 302, 40, 292, 90, 300, 120, 320, 0, 320]);
+    edge([720, 298, 680, 292, 640, 304, 620, 320, 720, 320]);
+    for (let k = 0; k < 9; k++) { const x = 8 + k * 9, sw = Math.sin(t * 0.002 + k) * 2; L(c, [x, 300, x - 3 + sw, 284 - (k % 3) * 4], '#3a2410', 1.2); }
+  } else if (kind === 'station') {
+    for (const x of [14, 64, 114]) plate(c, [x, 320, x + 6, 320, x + 6, 270, x, 270], '#1a1e3a', '#3a4270', '#0a0c1c', 1);
+    L(c, [0, 276, 130, 276], '#3a4270', 3); L(c, [0, 292, 130, 292], '#2a3058', 2);
+    plate(c, [640, 320, 640, 282, 700, 278, 720, 286, 720, 320], '#141834', '#2a3060', '#08091a', 1.2);
+    c.save(); glowOn(c, '#5ad1e6', 8); c.fillStyle = '#5ad1e6'; c.fillRect(656, 292, 18, 3); c.restore();
+  } else if (kind === 'forge') {
+    edge([0, 296, 30, 282, 64, 290, 90, 320, 0, 320]);
+    edge([720, 290, 690, 280, 660, 292, 640, 320, 720, 320]);
+    c.save(); glowOn(c, '#ff6a1a', 10); c.globalAlpha = 0.6 + 0.3 * Math.sin(t * 0.004); L(c, [20, 300, 34, 306, 50, 302], '#ff7a2a', 1.6); L(c, [670, 300, 690, 296, 704, 304], '#ff7a2a', 1.6); c.restore();
+  } else if (kind === 'void') {
+    for (const [x, h, w] of [[16, 46, 10], [34, 28, 8], [690, 52, 12], [668, 30, 8]]) { P(c, [x - w, 320, x, 320 - h, x + w, 320], dk, 0); c.save(); glowOn(c, '#c46aff', 8); L(c, [x - w, 320, x, 320 - h, x + w * 0.4, 320 - h * 0.6], '#c46aff', 1.2); c.restore(); }
+  } else if (kind === 'hall') {
+    for (const x of [0, 690]) { plate(c, [x, 320, x, 280, x + 30, 280, x + 30, 320], '#2a2236', '#4a4060', '#120e1a', 1.2); plate(c, [x - 4, 280, x + 34, 280, x + 34, 272, x - 4, 272], '#3a3248', '#5a5070', '#1a1424', 1); }
+  }
+  c.restore();
+  const vg = c.createRadialGradient(W / 2, H * 0.55, H * 0.35, W / 2, H * 0.55, W * 0.62);
+  vg.addColorStop(0, 'rgba(0,0,0,0)'); vg.addColorStop(1, 'rgba(0,0,0,0.42)');
+  c.fillStyle = vg; c.fillRect(0, 0, W, H);
+}
+
 function shadow(c, x, rx) {
   const g = c.createRadialGradient(x, GROUND + 3, 1, x, GROUND + 3, rx);
   g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -616,105 +650,139 @@ function drawHead(c, look, A, acc, t) {
 
 
 // Weapons are drawn around the grip, blade pointing up (-y). The caller rotates.
+// Each has a bevelled build and its own moving detail.
+function grip(c, y0, y1, col, wrap) {
+  plate(c, [-1.7, y0, 1.7, y0, 1.7, y1, -1.7, y1], col, shade(col, 40), shade(col, -40), 1);
+  for (let y = y0 + 1.6; y < y1 - 0.6; y += 2) L(c, [-1.7, y, 1.7, y - 1.2], wrap, 0.7);
+}
 function drawWeapon(c, id, A, t) {
   switch (id) {
-    case 'w_ion':
-      P(c, [-1.8, -4, 1.8, -4, 1.8, 6, -1.8, 6], '#3a3f4a');
-      for (const y of [-1, 1.5, 4]) L(c, [-1.8, y, 1.8, y], '#8a93a3', 0.6);
-      P(c, [-2.8, -7, 2.8, -7, 2.2, -4, -2.2, -4], '#9aa3b3');
-      glowOn(c, '#5ad1e6', 14);
-      P(c, [-1.9, -7.5, 1.9, -7.5, 1.9, -50, 0, -54, -1.9, -50], '#5ad1e6', 0);
-      glowOff(c);
-      P(c, [-0.7, -7.5, 0.7, -7.5, 0.7, -50, 0, -52, -0.7, -50], '#effcff', 0);
-      break;
-    case 'w_lance':
-      P(c, [-1.3, 24, 1.3, 24, 1.3, -56, -1.3, -56], '#3e434e');
-      for (const y of [-6, -2, 2, 6]) L(c, [-1.3, y, 1.3, y - 1.4], '#c9a24a', 0.8);
-      P(c, [-3.2, -56, 3.2, -56, 2.2, -61, -2.2, -61], '#c9a24a');
-      P(c, [-2.4, -61, -7, -67, -5.4, -59], '#d4dbe6', 1); P(c, [2.4, -61, 7, -67, 5.4, -59], '#d4dbe6', 1);
-      P(c, [0, -82, 4.6, -69, 2.4, -61, -2.4, -61, -4.6, -69], '#dfe6f0');
-      P(c, [0, -82, 4.6, -69, 2.4, -61, 0, -62], '#ffffff', 0);
-      glowOn(c, '#fff27a', 10);
-      for (let i = 0; i < 3; i++) {
-        const a0 = Math.random() * Math.PI * 2;
-        L(c, [0, -72, Math.cos(a0) * 6, -72 + Math.sin(a0) * 6, Math.cos(a0 + 0.6) * 11, -72 + Math.sin(a0 + 0.6) * 11], '#fff27a', 0.9);
-      }
-      glowOff(c);
-      break;
-    case 'w_grav':
-      P(c, [-1.6, -2, 1.6, -2, 1.6, 8, -1.6, 8], '#2a2a33');
-      P(c, [-4.4, -4.6, 4.4, -4.6, 4.4, -1, -4.4, -1], '#5a5a6a');
-      P(c, [-3, -4.6, 10, -6.6, 13.6, -44, 4, -51, -3.4, -46], '#555b70');
-      P(c, [10, -6.6, 13.6, -44, 11.2, -44.4, 7.8, -7.4], '#c0c8e0', 0);
-      L(c, [-1, -8, 0, -44], '#3a3f52', 1);
-      glowOn(c, '#b48cff', 10);
-      for (const y of [-14, -25, -36]) P(c, [4, y - 3, 6.4, y, 4, y + 3, 1.6, y], '#c9a8ff', 0);
-      glowOff(c);
-      break;
-    case 'w_nova': {
-      P(c, [-1.6, -3, 1.6, -3, 1.6, 8, -1.6, 8], '#2a1a1a');
-      for (const y of [-1, 2, 5]) L(c, [-1.6, y, 1.6, y + 2], '#c9a24a', 0.6);
-      P(c, [-3.6, -4.4, 0, -6, 3.6, -4.4, 0, -2.8], '#c9a24a');
-      const g = c.createLinearGradient(0, -5, 0, -54); g.addColorStop(0, '#ff6a2a'); g.addColorStop(0.6, '#ffc46a'); g.addColorStop(1, '#ffffff');
-      glowOn(c, '#ff9a3a', 14);
-      c.beginPath(); c.moveTo(-1.8, -5); c.quadraticCurveTo(-2.4, -32, 7, -55); c.lineTo(5, -49); c.quadraticCurveTo(1.6, -30, 1.8, -5); c.closePath();
-      c.fillStyle = g; c.fill(); glowOff(c); c.lineWidth = 1; c.strokeStyle = INK; c.stroke();
+    case 'w_ion': {
+      grip(c, -4, 7, '#2e333e', '#8a93a3');
+      plate(c, [-2.6, 7, 2.6, 7, 2, 9.6, -2, 9.6], '#9aa3b3', '#d0d6e0', '#4a505c', 0.9);
+      plate(c, [-3.2, -9, 3.2, -9, 2.6, -4, -2.6, -4], '#9aa3b3', '#d8dee8', '#4a505c', 1);
+      for (const y of [-7.6, -6]) L(c, [-3, y, 3, y], '#3a3f4a', 0.6);
+      c.save(); glowOn(c, '#5ad1e6', 6); c.fillStyle = '#5ad1e6'; c.fillRect(-0.6, -2, 1.2, 4); c.restore();
+      const fl = 1 + Math.sin(t * 0.04) * 0.04;
+      c.save(); glowOn(c, '#5ad1e6', 16);
+      P(c, [-2.1, -9.5, 2.1, -9.5, 2.1 * fl, -51, 0, -55, -2.1 * fl, -51], '#5ad1e6', 0);
+      c.restore();
+      P(c, [-0.8, -9.5, 0.8, -9.5, 0.8, -51, 0, -53, -0.8, -51], '#effcff', 0);
       break;
     }
-    case 'w_star':
-      P(c, [-1.8, -3, 1.8, -3, 1.8, 10, -1.8, 10], '#26264a');
-      P(c, [-2.6, 10, 2.6, 10, 0, 14], '#3a8aff', 1);
-      P(c, [-11, -6.6, -4, -3.6, 4, -3.6, 11, -6.6, 8.6, -1, 0, -2, -8.6, -1], '#e8c25a');
-      P(c, [-11, -6.6, -14, -11, -7, -5.4], '#e8c25a', 1); P(c, [11, -6.6, 14, -11, 7, -5.4], '#e8c25a', 1);
-      P(c, [-3.4, -4, 3.4, -4, 3.8, -54, 0, -64, -3.8, -54], '#dfe6f2');
-      P(c, [0, -4, 3.4, -4, 3.8, -54, 0, -64], '#ffffff', 0);
-      glowOn(c, '#9ad8ff', 12); P(c, [-0.9, -9, 0.9, -9, 0.9, -50, -0.9, -50], '#9ad8ff', 0); glowOff(c);
-      P(c, [0, -6, 1.8, -4, 0, -2, -1.8, -4], '#3a8aff', 0.8);
+    case 'w_lance': {
+      plate(c, [-1.4, 26, 1.4, 26, 1.4, -56, -1.4, -56], '#3e434e', '#6a707e', '#1e2128', 1.1);
+      for (const y of [-8, -4, 0, 4, 8]) L(c, [-1.4, y, 1.4, y - 1.4], '#c9a24a', 0.9);
+      plate(c, [-2.4, 26, 2.4, 26, 1.4, 30, -1.4, 30], '#c9a24a', '#f2d68a', '#7a5a1a', 0.9);
+      plate(c, [-3.4, -56, 3.4, -56, 2.4, -62, -2.4, -62], '#c9a24a', '#f2d68a', '#7a5a1a', 1);
+      plate(c, [-2.4, -61, -7.6, -68, -5.4, -59], '#d4dbe6', '#ffffff', '#8a94a8', 1);
+      plate(c, [2.4, -61, 7.6, -68, 5.4, -59], '#d4dbe6', '#ffffff', '#8a94a8', 1);
+      plate(c, [0, -84, 4.8, -70, 2.4, -61, -2.4, -61, -4.8, -70], '#dfe6f0', '#ffffff', '#8a94a8', 1.2);
+      L(c, [0, -82, 0, -63], '#8a94a8', 0.7);
+      // spinning containment rings around the tip
+      c.save(); glowOn(c, '#fff27a', 8); c.strokeStyle = '#fff27a'; c.lineWidth = 0.8;
+      for (let i = 0; i < 2; i++) { const yy = -66 - i * 6, ph = t * 0.012 + i * 2; c.beginPath(); c.ellipse(0, yy, 6.4 - i, 1.6, 0, ph, ph + Math.PI * 1.3); c.stroke(); }
+      for (let i = 0; i < 3; i++) { const a0 = Math.random() * Math.PI * 2; L(c, [0, -74, Math.cos(a0) * 6, -74 + Math.sin(a0) * 6, Math.cos(a0 + 0.6) * 11, -74 + Math.sin(a0 + 0.6) * 11], '#fff27a', 0.9); }
+      c.restore();
       break;
-    case 'gun':
-      P(c, [-3, 4, 3, 4, 3.6, 13, -2.6, 12], '#2a2d34');
-      P(c, [-2.8, 6, 2.8, 6, 2.8, -22, -2.8, -22], '#3a3e48');
-      P(c, [-2.8, 6, -1, 6, -1, -22, -2.8, -22], '#5a606e', 0);
-      P(c, [2.8, -10, 7.4, -8, 7, -2, 2.8, -3], '#22252c');
-      P(c, [-1.1, -22, 1.1, -22, 1.1, -36, -1.1, -36], '#1e2026');
-      P(c, [-6.4, -16, -2.8, -16, -2.8, -6, -6.4, -6], '#22252c');
-      glowOn(c, A.trim, 6); c.fillStyle = A.trim; c.fillRect(-5.8, -14.6, 2.4, 2); glowOff(c);
+    }
+    case 'w_grav': {
+      grip(c, -2, 9, '#2a2a33', '#5a5a6a');
+      plate(c, [-5, -5, 5, -5, 5, -1, -5, -1], '#5a5a6a', '#8a8a9a', '#2a2a33', 1);
+      const blade = [-3, -5, 10, -7, 14, -45, 4, -52, -3.6, -47];
+      plate(c, blade, '#555b70', '#8a90a8', '#2a2e3c', 1.3);
+      plate(c, [10, -7, 14, -45, 11.4, -45, 8, -8], '#c0c8e0', '#ffffff', '#8a90a8', 0);
+      // rune channel that pulses down the blade
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.005);
+      c.save(); glowOn(c, '#b48cff', 10 + 6 * pulse);
+      L(c, [1.6, -9, 3, -24, 1.6, -40], '#b48cff', 1.4);
+      for (const y of [-14, -25, -36]) P(c, [3.4, y - 3, 6, y, 3.4, y + 3, 0.8, y], '#d8c0ff', 0);
+      c.restore();
+      for (let i = 0; i < 3; i++) {
+        const yy = -18 - i * 12 + Math.sin(t * 0.004 + i) * 2, xx = 18 + Math.sin(t * 0.003 + i * 2) * 2;
+        plate(c, [xx, yy - 2.6, xx + 2.6, yy, xx, yy + 2.6, xx - 2.6, yy], '#555b70', '#8a90a8', '#2a2e3c', 0.8);
+      }
       break;
-    case 'axe':
-      P(c, [-1.4, 16, 1.4, 16, 1.4, -46, -1.4, -46], '#4a3424');
-      P(c, [-1, -41, -7, -38, -1, -35], '#5a5a62');
-      P(c, [1, -46, 8, -52, 15.6, -45, 16.6, -34, 9, -28, 1, -32], '#4a4a52');
-      P(c, [8, -50, 14.6, -44.6, 15.4, -35, 12, -36, 10, -46], '#7a7a86', 0);
-      glowOn(c, A.glow || '#d8d8e0', 10); L(c, [8, -52, 15.6, -45, 16.6, -34, 9, -28], A.glow || '#d8d8e0', 1.6); glowOff(c);
+    }
+    case 'w_nova': {
+      grip(c, -3, 8, '#2a1a1a', '#c9a24a');
+      plate(c, [-4, -4.6, 0, -6.6, 4, -4.6, 0, -2.6], '#c9a24a', '#f2d68a', '#7a5a1a', 1);
+      const g = c.createLinearGradient(0, -5, 0, -56); g.addColorStop(0, '#ff5a1a'); g.addColorStop(0.55, '#ffc46a'); g.addColorStop(1, '#ffffff');
+      c.save(); glowOn(c, '#ff9a3a', 16);
+      c.beginPath(); c.moveTo(-1.9, -5); c.quadraticCurveTo(-2.6, -32, 7.4, -57); c.lineTo(5.2, -50); c.quadraticCurveTo(1.8, -30, 1.9, -5); c.closePath();
+      c.fillStyle = g; c.fill(); c.restore();
+      c.lineWidth = 1; c.strokeStyle = INK; c.stroke();
+      c.strokeStyle = '#ffffff'; c.lineWidth = 0.7; c.beginPath(); c.moveTo(-1, -8); c.quadraticCurveTo(-1.4, -30, 6, -52); c.stroke();
+      // embers peeling off the edge
+      c.save(); glowOn(c, '#ff9a3a', 8); c.fillStyle = '#ffd08a';
+      for (let i = 0; i < 4; i++) { const k = ((t * 0.0016 + i * 0.25) % 1); c.globalAlpha = 1 - k; c.fillRect(-4 - k * 8, -14 - i * 10 - k * 6, 1.6, 1.6); }
+      c.restore();
       break;
+    }
+    case 'w_star': {
+      grip(c, -3, 11, '#26264a', '#9ad8ff');
+      plate(c, [-2.8, 11, 2.8, 11, 0, 15.6], '#3a8aff', '#9ad8ff', '#1a3a8a', 1);
+      plate(c, [-12, -7, -4, -3.6, 4, -3.6, 12, -7, 9.4, -0.6, 0, -1.8, -9.4, -0.6], '#e8c25a', '#fff2b8', '#8a6a2a', 1.1);
+      for (const sx of [-1, 1]) {
+        plate(c, [sx * 12, -7, sx * 16, -13, sx * 14, -6, sx * 18, -9, sx * 9, -2.6], '#e8c25a', '#fff2b8', '#8a6a2a', 1);
+      }
+      plate(c, [-3.6, -4, 3.6, -4, 4, -55, 0, -66, -4, -55], '#dfe6f2', '#ffffff', '#8a94b4', 1.2);
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.004);
+      c.save(); glowOn(c, '#9ad8ff', 10 + 8 * pulse); P(c, [-1, -9, 1, -9, 1, -51, -1, -51], '#c8ecff', 0); c.restore();
+      for (let i = 0; i < 3; i++) { const yy = -14 - ((t * 0.02 + i * 14) % 38); c.save(); glowOn(c, '#ffffff', 8); c.fillStyle = '#ffffff'; c.globalAlpha = 0.9; P(c, [0, yy - 1.6, 0.8, yy, 0, yy + 1.6, -0.8, yy], '#ffffff', 0); c.restore(); }
+      plate(c, [0, -6.4, 2, -4, 0, -1.6, -2, -4], '#3a8aff', '#9ad8ff', '#1a3a8a', 0.8);
+      break;
+    }
+    case 'gun': {
+      plate(c, [-3, 4, 3, 4, 3.8, 13.6, -2.6, 12.6], '#2a2d34', '#4a4e58', '#14161a', 1.1);
+      plate(c, [-2.9, 6, 2.9, 6, 2.9, -22, -2.9, -22], '#3a3e48', '#5a606e', '#1a1c22', 1.2);
+      for (const y of [-18, -14, -10]) L(c, [-2.9, y, 2.9, y], '#1a1c22', 0.6);
+      plate(c, [2.9, -10, 7.6, -8, 7.2, -1.6, 2.9, -2.6], '#22252c', '#3a3e48', '#0e1014', 1);
+      plate(c, [-1.2, -22, 1.2, -22, 1.2, -37, -1.2, -37], '#1e2026', '#3a3e48', '#0e1014', 1);
+      plate(c, [-1.8, -37, 1.8, -37, 1.8, -39, -1.8, -39], '#2a2d34', '#4a4e58', '#14161a', 0.8);
+      plate(c, [-6.6, -17, -2.9, -17, -2.9, -5, -6.6, -5], '#22252c', '#3a3e48', '#0e1014', 1);
+      c.save(); glowOn(c, A.trim, 6); c.fillStyle = A.trim; c.fillRect(-6, -15.6, 2.4, 2); c.restore();
+      break;
+    }
+    case 'axe': {
+      plate(c, [-1.5, 18, 1.5, 18, 1.5, -47, -1.5, -47], '#4a3424', '#6a4a30', '#2a1a10', 1.1);
+      for (const y of [6, 10, 14]) L(c, [-1.5, y, 1.5, y - 1.2], '#2a1a10', 0.7);
+      plate(c, [-1, -42, -8, -39, -1, -35], '#5a5a62', '#8a8a96', '#2a2a30', 1);
+      plate(c, [1, -47, 8, -54, 16.6, -46, 17.6, -34, 9, -27, 1, -32], '#4a4a52', '#7a7a86', '#22222a', 1.3);
+      c.save(); glowOn(c, A.glow || '#d8d8e0', 12); L(c, [8, -54, 16.6, -46, 17.6, -34, 9, -27], A.glow || '#d8d8e0', 1.8); c.restore();
+      c.save(); glowOn(c, A.glow || '#d8d8e0', 6); L(c, [6, -46, 9, -40, 6, -36], A.glow || '#c8c8d0', 0.8); c.restore();
+      break;
+    }
     case 'sword': {
       const bl = A.blade || '#c9ccd6';
-      P(c, [-1.6, -3, 1.6, -3, 1.6, 7, -1.6, 7], '#2a2a33');
-      P(c, [-7, -4.6, 7, -4.6, 6, -2, -6, -2], A.trim);
-      P(c, [-2.6, -4.6, 2.6, -4.6, 2.8, -48, 0, -55, -2.8, -48], bl);
-      P(c, [0, -4.6, 2.6, -4.6, 2.8, -48, 0, -55], shade(bl, 30), 0);
-      if (A.glow) { glowOn(c, A.glow, 10); L(c, [0, -8, 0, -46], A.glow, 1); glowOff(c); }
+      grip(c, -3, 7, '#2a2a33', A.trim);
+      plate(c, [-2.6, 7, 2.6, 7, 0, 10.4], A.trim, shade(A.trim, 40), shade(A.trim, -40), 0.9);
+      plate(c, [-7.6, -4.8, 7.6, -4.8, 6.4, -2, -6.4, -2], A.trim, shade(A.trim, 40), shade(A.trim, -40), 1);
+      plate(c, [-2.8, -4.8, 2.8, -4.8, 3, -49, 0, -56, -3, -49], bl, shade(bl, 40), shade(bl, -40), 1.2);
+      L(c, [0, -8, 0, -46], shade(bl, -36), 0.9);
+      if (A.glow) { c.save(); glowOn(c, A.glow, 10); L(c, [0, -8, 0, -46], A.glow, 1); c.restore(); }
       break;
     }
     case 'staff': {
-      P(c, [-1.3, 34, 1.3, 34, 1.3, -58, -1.3, -58], '#6a4a2a');
-      for (const y of [-4, 0, 4]) L(c, [-1.3, y, 1.3, y - 1.2], '#c9a24a', 0.8);
-      P(c, [-4, -58, 4, -58, 2.6, -62, -2.6, -62], '#c9a24a');
-      const st = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 3 : 8, an = -Math.PI / 2 + i * Math.PI / 8; st.push(Math.cos(an) * r, -70 + Math.sin(an) * r); }
-      glowOn(c, '#fff0b0', 14); P(c, st, '#e8c25a', 1); P(c, [0, -73, 2.4, -70, 0, -67, -2.4, -70], '#ffffff', 0); glowOff(c);
+      plate(c, [-1.4, 36, 1.4, 36, 1.4, -58, -1.4, -58], '#6a4a2a', '#8a6a44', '#3a2a16', 1.1);
+      for (const y of [-6, -2, 2, 6]) L(c, [-1.4, y, 1.4, y - 1.2], '#c9a24a', 0.8);
+      plate(c, [-4, -58, 4, -58, 2.6, -62, -2.6, -62], '#c9a24a', '#f2d68a', '#7a5a1a', 1);
+      const st = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 3 : 8.6, an = -Math.PI / 2 + i * Math.PI / 8 + t * 0.0008; st.push(Math.cos(an) * r, -71 + Math.sin(an) * r); }
+      c.save(); glowOn(c, '#fff0b0', 14); P(c, st, '#e8c25a', 1); P(c, [0, -74, 2.6, -71, 0, -68, -2.6, -71], '#ffffff', 0); c.restore();
       break;
     }
-    default: // w_rust
-      P(c, [-1.6, 5, 1.6, 5, 2.2, 7.6, 0, 9, -2.2, 7.6], '#6a5a3a', 1);
-      P(c, [-1.4, -2, 1.4, -2, 1.4, 5, -1.4, 5], '#4a3424', 1);
-      P(c, [-6, -3.6, 6, -3.6, 5, -1.6, -5, -1.6], '#7a6a5a', 1);
-      P(c, [-1.9, -3.6, 1.9, -3.6, 2.1, -36, 0, -41, -2.1, -36], '#958a7f', 1.2);
-      P(c, [0, -4, 1.9, -4, 2.1, -36, 0, -41], '#b9aea0', 0);
-      P(c, [-1.9, -14, 0, -15, 0.5, -11, -1.9, -10], '#8a4a24', 0);
-      P(c, [0.5, -26, 2, -27, 2, -23, 1, -23], '#8a4a24', 0);
-      P(c, [2.2, -20, 0.6, -19, 2.2, -18], INK, 0);
+    default: { // w_rust: chipped and rusted
+      plate(c, [-1.6, 5, 1.6, 5, 2.2, 7.6, 0, 9, -2.2, 7.6], '#6a5a3a', '#8a7a5a', '#3a2e1a', 1);
+      grip(c, -2, 5, '#4a3424', '#2a1a10');
+      plate(c, [-6, -3.6, 6, -3.6, 5, -1.6, -5, -1.6], '#7a6a5a', '#9a8a7a', '#4a3a2e', 1);
+      const blade = [-1.9, -3.6, 1.9, -3.6, 2.1, -18, 1, -19.4, 2.1, -21, 2.1, -36, 0, -41, -2.1, -36, -2.1, -28, -1, -27, -2.1, -26];
+      plate(c, blade, '#958a7f', '#c8bcae', '#5a5046', 1.2);
+      for (const pp of [[-1.9, -14, 0, -15, 0.5, -11, -1.9, -10], [0.5, -30, 2, -31, 2, -27, 1, -27], [-1.9, -34, -0.4, -35, -0.4, -32]]) P(c, pp, '#8a4a24', 0);
+      break;
+    }
   }
 }
+
 
 // Glow colour and blade length per weapon, used for swing smears and effects.
 const WEAPON_GLOW = { w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
@@ -1303,202 +1371,306 @@ function heroLook() {
   return { armor: armorStyle(ARMOR_LOOK[eq.armor] || ARMOR_LOOK.a_vest), weapon: eq.weapon, acc: eq.acc, look: s.look || DEFAULT_LOOK };
 }
 
-/* ---------- Enemies (all face left, toward the hero) ---------- */
+/* ---------- Enemies (all face left, toward the hero) ----------
+   Each kind is built from bevelled plates over a darker body, with glowing details.
+   e.variant picks a distinct build within a kind (scrap/sentinel drones, dust/scout/spitter crawlers, void/abyss wraiths, golem/pyrelord). */
+function eyeGlow(c, x, y, r, col) { c.save(); glowOn(c, col, 10); P(c, [x - r, y, x, y - r * 0.8, x + r, y, x, y + r * 0.8], col, 0); c.restore(); c.fillStyle = '#ffffff'; c.fillRect(x - r * 0.3, y - r * 0.3, r * 0.5, r * 0.4); }
 function drawEnemy(c, e, x, s, t, swing, gy) {
   const G = gy ?? GROUND;
-  const [a, b] = e.col || ['#666666', '#ffffff'], k = e.kind, bob = Math.sin(t * 0.004) * 3;
-  if (k === 'humanoid') { drawKnight(c, x, G, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, swing }, t); return; }
+  const [a, b] = e.col || ['#666666', '#ffffff'], k = e.kind, v = e.variant, bob = Math.sin(t * 0.004) * 3;
+  const al = shade(a, 40), ad = shade(a, -38);
+  if (k === 'humanoid') { drawKnight(c, x, G, s * 1.05, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, swing }, t); return; }
   c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
   switch (k) {
     case 'drone': {
       c.translate(x, G - 92 * s + bob * 2); c.scale(s, s);
-      const fl = 12 + Math.random() * 5, g = c.createLinearGradient(0, 10, 0, 10 + fl * 2);
-      g.addColorStop(0, b); g.addColorStop(1, 'rgba(0,0,0,0)');
-      P(c, [-6, 10, 6, 10, 2, 10 + fl * 2, -2, 10 + fl * 2], g, 0);
-      for (const sx of [-1, 1]) {
-        P(c, [sx * 10, -12, sx * 28, -20, sx * 30, -16, sx * 12, -6], shade(a, -30));
-        const sp = Math.sin(t * 0.06 + sx);
-        P(c, [sx * 29 - 15 * sp, -24, sx * 29 + 15 * sp, -22, sx * 29 + 15 * sp, -20.6, sx * 29 - 15 * sp, -22.6], 'rgba(220,230,240,0.5)', 0);
-        P(c, [sx * 29 - 2.4, -27, sx * 29 + 2.4, -27, sx * 29 + 2.4, -18, sx * 29 - 2.4, -18], shade(a, -45));
+      const sent = v === 'sentinel';
+      // thruster
+      const fl = 12 + Math.random() * 5, tg = c.createLinearGradient(0, 12, 0, 12 + fl * 2);
+      tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.3, b); tg.addColorStop(1, 'rgba(0,0,0,0)');
+      P(c, [-6, 12, 6, 12, 2, 12 + fl * 2, -2, 12 + fl * 2], tg, 0);
+      plate(c, [-7, 9, 7, 9, 5, 15, -5, 15], ad, a, shade(ad, -30), 1.1);
+      if (sent) {
+        // orbiting shield ring, the far half behind the hull
+        c.save(); glowOn(c, b, 10); c.strokeStyle = b; c.lineWidth = 1.4; c.globalAlpha = 0.6;
+        const r0 = t * 0.002;
+        for (let i = 0; i < 6; i++) { const a0 = r0 + i * Math.PI / 3; if (Math.sin(a0) < 0) { c.beginPath(); c.ellipse(0, 0, 40, 12, -0.2, a0, a0 + 0.6); c.stroke(); } }
+        c.restore();
       }
-      const hull = [-24, -2, -16, -16, 6, -20, 22, -10, 22, 6, 8, 16, -12, 14];
-      P(c, hull, a);
-      P(c, [-16, -16, 6, -20, 22, -10, 10, -8, -8, -8], shade(a, 30), 0);
-      P(c, [-12, 14, 8, 16, 22, 6, 14, 4, -4, 8], shade(a, -35), 0);
-      P(c, hull, null);
-      L(c, [-8, -8, -5, 10], shade(a, -50), 1); L(c, [10, -8, 13, 8], shade(a, -50), 1);
-      P(c, [-20, 7, -35, 7, -35, 11, -20, 12], '#2a2d34');
-      P(c, [-22, -8, -16, -12.4, -9, -11, -6, -4, -10, 2, -18, 2], '#15151c');
-      glowOn(c, b, 14); P(c, [-19, -7, -15, -9, -11, -7, -11, -3, -15, -1, -19, -3], b, 0); glowOff(c);
-      P(c, [-15.5, -8, -14.6, -8, -14.6, -2, -15.5, -2], INK, 0);
-      L(c, [8, -19, 12, -32], shade(a, -30), 1.4);
-      if (Math.sin(t * 0.006) > 0) { glowOn(c, b, 8); c.fillStyle = b; c.fillRect(10.6, -34.6, 3, 3); glowOff(c); }
+      // rotor arms
+      for (const sx of [-1, 1]) {
+        const droop = !sent && sx > 0 ? 6 : 0;
+        plate(c, [sx * 10, -12, sx * 28, -20 + droop, sx * 30, -15 + droop, sx * 12, -5], ad, a, shade(ad, -30), 1.1);
+        const sp = Math.sin(t * 0.06 + sx);
+        c.save(); c.globalAlpha = 0.45; P(c, [sx * 29 - 16 * sp, -24 + droop, sx * 29 + 16 * sp, -22 + droop, sx * 29 + 16 * sp, -20.4 + droop, sx * 29 - 16 * sp, -22.4 + droop], '#e8eef4', 0); c.restore();
+        plate(c, [sx * 29 - 2.6, -28 + droop, sx * 29 + 2.6, -28 + droop, sx * 29 + 2.6, -18 + droop, sx * 29 - 2.6, -18 + droop], shade(ad, -10), a, shade(ad, -40), 1);
+      }
+      const hull = sent ? [-26, 0, -18, -15, 4, -20, 22, -11, 24, 4, 10, 15, -14, 13] : [-24, -2, -16, -16, 6, -20, 22, -10, 22, 6, 8, 16, -12, 14];
+      plate(c, hull, a, al, ad, 1.4);
+      c.save(); P(c, hull, null, 0); c.clip();
+      P(c, [-30, 4, 30, 2, 30, 20, -30, 20], 'rgba(0,0,0,0.22)', 0);
+      if (sent) { c.save(); glowOn(c, b, 8); L(c, [-18, -6, 0, -12, 20, -6], b, 1.2); L(c, [-14, 6, 6, 8, 20, 2], b, 0.9); c.restore(); }
+      else { P(c, [4, -14, 14, -14, 15, -6, 5, -6], '#8a4a24', 0); P(c, [-6, 4, 2, 4, 3, 10, -5, 10], '#7a3a1c', 0); for (const [x0, y0] of [[-4, -12], [12, 0]]) { P(c, [x0, y0, x0 + 6, y0, x0 + 6, y0 + 5, x0, y0 + 5], '#9a9a9a', 0.7); L(c, [x0, y0, x0 + 6, y0 + 5], '#5a5a5a', 0.6); L(c, [x0 + 6, y0, x0, y0 + 5], '#5a5a5a', 0.6); } }
+      c.restore();
+      L(c, [-8, -8, -5, 10], shade(a, -55), 1); L(c, [10, -8, 13, 8], shade(a, -55), 1);
+      for (const [rx, ry] of [[-10, -12], [16, -8], [16, 6]]) rivet(c, rx, ry, al);
+      // weapons and eye
+      if (sent) { for (const yy of [8, 12]) plate(c, [-20, yy - 1.6, -36, yy - 1.2, -36, yy + 1.2, -20, yy + 1.6], '#e8eef4', '#ffffff', '#8a94a8', 1); c.save(); glowOn(c, b, 8); c.fillStyle = b; c.fillRect(-38, 6, 2, 8); c.restore(); }
+      else plate(c, [-20, 7, -35, 7, -35, 11, -20, 12], '#2a2d34', '#4a4e58', '#14161a', 1.1);
+      plate(c, [-22, -8, -16, -12.4, -9, -11, -6, -4, -10, 2, -18, 2], '#15151c', '#2a2a34', '#08080c', 1.2);
+      const flick = sent || Math.sin(t * 0.03) > -0.8;
+      if (flick) { c.save(); glowOn(c, b, 14); P(c, sent ? [-20, -6, -8, -7, -8, -3, -20, -2] : [-19, -7, -15, -9, -11, -7, -11, -3, -15, -1, -19, -3], b, 0); c.restore(); }
+      if (!sent) { P(c, [-15.5, -8, -14.6, -8, -14.6, -2, -15.5, -2], INK, 0); c.strokeStyle = '#2a2a2a'; c.lineWidth = 0.9; c.beginPath(); c.moveTo(4, 14); c.quadraticCurveTo(8, 28, 2, 32 + Math.sin(t * 0.005) * 2); c.stroke(); if (Math.random() < 0.2) { c.save(); glowOn(c, '#ffe08a', 8); c.fillStyle = '#ffe08a'; c.fillRect(1, 31, 2, 2); c.restore(); } }
+      L(c, [8, -19, sent ? 14 : 12, -34], shade(a, -30), 1.4);
+      if (Math.sin(t * 0.006) > 0) { c.save(); glowOn(c, b, 8); c.fillStyle = b; c.fillRect(sent ? 12.4 : 10.6, -36, 3, 3); c.restore(); }
+      if (sent) { c.save(); glowOn(c, b, 10); c.strokeStyle = b; c.lineWidth = 1.6; const r0 = t * 0.002; for (let i = 0; i < 6; i++) { const a0 = r0 + i * Math.PI / 3; if (Math.sin(a0) >= 0) { c.beginPath(); c.ellipse(0, 0, 40, 12, -0.2, a0, a0 + 0.6); c.stroke(); } } c.restore(); }
       break;
     }
     case 'crawler': case 'queen': {
-      const q = k === 'queen', sc = s * (q ? 1.5 : 1.05);
+      const q = k === 'queen', scout = v === 'scout', spit = v === 'spitter', sc = s * (q ? 1.5 : 1.05);
       c.translate(x, G); c.scale(sc, sc);
-      // Legs splay out: front pair reaches forward, back pair trails behind.
+      const lift = scout ? 8 : 0, legL = scout ? 1.35 : 1;
       const reach = [-17, -3, 13];
-      const leg = (jx, jy, i, ph, col) => {
-        const w = Math.sin(t * 0.01 + ph) * 1.6, r = reach[i], kx = jx + r * 0.45, ky = jy - 9 + w * 0.5, fx = jx + r + w;
-        limb(c, jx, jy, kx, ky, 2.6, 2.1, col); limb(c, kx, ky, fx, 0, 2.1, 0.6, col);
-        P(c, [kx - 1.6, ky - 1.6, kx + 1.6, ky - 1.6, kx + 1.6, ky + 1.6, kx - 1.6, ky + 1.6], shade(col, 20), 0.8);
+      const leg = (jx, jy, i, ph, col, lit) => {
+        const w = Math.sin(t * 0.01 + ph) * 1.6, r = reach[i] * legL, kx = jx + r * 0.45, ky = jy - 10 * legL - lift + w * 0.5, fx = jx + r + w;
+        limb(c, jx, jy, kx, ky, 2.6, 2.1, col, lit); limb(c, kx, ky, fx, 0, 2.1, 0.5, col, lit);
+        plate(c, [kx - 2, ky - 2, kx + 2, ky - 2, kx + 2, ky + 2, kx - 2, ky + 2], shade(col, 26), shade(col, 50), col, 0.8);
       };
-      for (let i = 0; i < 3; i++) leg(-4 + i * 9, -15, i, i, shade(a, -45));
+      for (let i = 0; i < 3; i++) leg(-4 + i * 9, -15 - lift, i, i, shade(a, -48), null);
       if (q) {
-        c.save(); c.globalAlpha = 0.4 + 0.1 * Math.sin(t * 0.02);
-        P(c, [4, -30, 30, -64, 48, -60, 20, -28], '#d8e8ff', 1); P(c, [10, -28, 46, -46, 52, -36, 18, -24], '#d8e8ff', 1);
+        c.save(); c.globalAlpha = 0.45 + 0.1 * Math.sin(t * 0.02);
+        for (const [p0, p1] of [[[4, -30, 30, -66, 50, -62, 20, -28], [8, -30, 40, -60]], [[10, -28, 48, -48, 54, -38, 18, -24], [14, -27, 46, -42]]]) { P(c, p0, '#d8e8ff', 1); L(c, p1, '#8aa0c0', 0.8); }
         c.restore();
       }
-      const abd = [4, -20, 14, -33, 32, -34, 44, -24, 42, -12, 30, -6, 10, -8];
-      P(c, abd, shade(a, -10));
-      P(c, [14, -33, 32, -34, 40, -28, 20, -28], shade(a, 22), 0);
-      for (let i = 0; i < 3; i++) L(c, [18 + i * 8, -33.6, 15 + i * 8, -7], shade(a, -45), 1.1);
-      P(c, abd, null);
-      P(c, [22, -33.6, 25, -41, 28, -33.8], shade(a, 30)); P(c, [32, -33, 36, -39, 38, -29], shade(a, 30));
-      if (q) { glowOn(c, b, 10); for (const [ex, ey] of [[20, -18], [28, -16], [36, -20], [26, -24]]) P(c, [ex - 2.4, ey, ex, ey - 2.4, ex + 2.4, ey, ex, ey + 2.4], b, 0); glowOff(c); }
-      P(c, [-10, -16, -4, -30, 8, -31, 12, -20, 6, -10, -6, -10], a);
-      P(c, [-4, -30, 8, -31, 9, -25, -2, -24], shade(a, 30), 0);
-      P(c, [-28, -20, -22, -31, -10, -30, -6, -18, -14, -12, -25, -14], shade(a, 10));
-      P(c, [-22, -31, -10, -30, -9, -25, -20, -25], shade(a, 36), 0);
+      // abdomen: segmented plates; the spitter's is a swollen acid sac
+      const abd = spit ? [2, -20, 12, -40, 36, -44, 50, -28, 46, -10, 28, -4, 8, -8] : [4, -20 - lift, 14, -33 - lift, 32, -34 - lift, 44, -24 - lift, 42, -12 - lift, 30, -6 - lift, 10, -8 - lift];
+      plate(c, abd, shade(a, -10), a, ad, 1.3);
+      if (spit) {
+        c.save(); P(c, abd, null, 0); c.clip();
+        const g = c.createRadialGradient(30, -26, 2, 30, -26, 22); g.addColorStop(0, '#f4ffb0'); g.addColorStop(0.5, b); g.addColorStop(1, shade(b, -80));
+        c.globalAlpha = 0.85; c.fillStyle = g; c.fillRect(0, -50, 56, 50);
+        c.globalAlpha = 0.7; c.fillStyle = '#f8ffd0';
+        for (let i = 0; i < 5; i++) { const yy = -10 - ((t * 0.02 + i * 9) % 30); c.beginPath(); c.arc(18 + i * 6, yy, 1.4 + (i % 2), 0, Math.PI * 2); c.fill(); }
+        c.restore();
+        for (let i = 0; i < 3; i++) L(c, [16 + i * 10, -42 + i * 2, 14 + i * 10, -6], ad, 1.6);
+        P(c, abd, null, 1.3);
+      } else {
+        for (let i = 0; i < 3; i++) L(c, [18 + i * 8, -33.6 - lift, 15 + i * 8, -7 - lift], ad, 1.2);
+        P(c, [14, -33 - lift, 32, -34 - lift, 40, -28 - lift, 20, -28 - lift], al, 0);
+        for (const [sx, sy] of [[22, -33.6], [32, -33]]) plate(c, [sx, sy - lift, sx + 3, sy - 8 - lift, sx + 6, sy - lift], shade(a, 34), shade(a, 60), a, 1);
+      }
+      if (q) { c.save(); glowOn(c, b, 10); for (const [ex, ey] of [[20, -18], [28, -16], [36, -20], [26, -24], [32, -28]]) P(c, [ex - 2.6, ey, ex, ey - 2.6, ex + 2.6, ey, ex, ey + 2.6], b, 0.6); c.restore(); }
+      // thorax and head
+      plate(c, [-10, -16 - lift, -4, -30 - lift, 8, -31 - lift, 12, -20 - lift, 6, -10 - lift, -6, -10 - lift], a, al, ad, 1.3);
+      L(c, [-4, -26 - lift, 8, -26 - lift], ad, 0.9);
+      plate(c, [-28, -20 - lift, -22, -31 - lift, -10, -30 - lift, -6, -18 - lift, -14, -12 - lift, -25, -14 - lift], shade(a, 8), shade(a, 46), ad, 1.3);
       const m = Math.sin(t * 0.008) * 1.5;
-      P(c, [-26, -16, -36, -14 + m, -40, -8 + m, -34, -10 + m, -27, -12], '#e6dcc4', 1);
-      P(c, [-27, -22, -38, -24 - m, -42, -18 - m, -35, -19 - m, -28, -19], '#b8ae96', 1);
-      glowOn(c, b, 8);
-      for (const [ex, ey] of [[-20, -26], [-15.6, -27], [-23, -22]]) P(c, [ex - 1.6, ey, ex, ey - 1.6, ex + 1.6, ey, ex, ey + 1.6], b, 0);
-      glowOff(c);
-      if (q) for (let i = 0; i < 3; i++) P(c, [-23 + i * 5, -30.5, -21 + i * 5, -41 + (i === 1 ? -4 : 0), -19 + i * 5, -30.5], b, 1);
-      for (let i = 0; i < 3; i++) leg(-2 + i * 9, -12, i, i + 1.5, shade(a, -15));
+      plate(c, [-26, -16 - lift, -36, -14 + m - lift, -41, -7 + m - lift, -34, -10 + m - lift, -27, -12 - lift], '#e6dcc4', '#ffffff', '#a8987a', 1);
+      plate(c, [-27, -22 - lift, -38, -24 - m - lift, -43, -17 - m - lift, -35, -19 - m - lift, -28, -19 - lift], '#c8bea2', '#efe6cc', '#8a7a5c', 1);
+      for (const [ex, ey, r] of [[-20, -26, 1.8], [-15.6, -27, 1.6], [-23, -22, 1.4], [-18, -21.4, 1.1]]) eyeGlow(c, ex, ey - lift, r, b);
+      // antennae
+      L(c, [-22, -30 - lift, -30, -44 - lift - (scout ? 8 : 0), -38, -46 - lift - (scout ? 10 : 0)], ad, 1);
+      L(c, [-18, -31 - lift, -22, -46 - lift - (scout ? 8 : 0), -28, -52 - lift - (scout ? 10 : 0)], ad, 1);
+      if (spit) { c.save(); glowOn(c, b, 8); const d = (t * 0.03) % 14; P(c, [-34, -10 + d, -32.6, -7 + d, -34, -5 + d, -35.4, -7 + d], b, 0); c.restore(); }
+      if (q) for (let i = 0; i < 3; i++) plate(c, [-23 + i * 5, -30.5, -21 + i * 5, -42 + (i === 1 ? -5 : 0), -19 + i * 5, -30.5], b, shade(b, 50), shade(b, -50), 1);
+      for (let i = 0; i < 3; i++) leg(-2 + i * 9, -12 - lift, i, i + 1.5, shade(a, -18), shade(a, 14));
+      if (scout) {
+        // mantis blades on the forelegs
+        const sw2 = Math.sin(t * 0.006) * 3;
+        limb(c, -8, -24 - lift, -20, -40 - lift + sw2, 2.6, 2, a, al);
+        plate(c, [-20, -40 - lift + sw2, -38, -30 - lift + sw2, -40, -26 - lift + sw2, -21, -35 - lift + sw2], '#e6dcc4', '#ffffff', '#8a7a5c', 1.1);
+        L(c, [-22, -38 - lift + sw2, -38, -29 - lift + sw2], '#ffffff', 0.6);
+      }
       break;
     }
     case 'wyrm': {
       c.translate(x, G); c.scale(s, s);
-      P(c, [-20, 0, -8, -10, 24, -16, 52, -8, 64, 0], shade(a, -40), 1.2);
+      // sand thrown up where it breaches
+      c.save(); c.fillStyle = shade(a, -10);
+      for (let i = 0; i < 10; i++) { const kk = ((t * 0.0012 + i * 0.1) % 1); c.globalAlpha = 0.6 * (1 - kk); c.fillRect(-10 + i * 7 + kk * (i - 5) * 3, -kk * 30 - 2, 2.4, 2.4); }
+      c.restore();
+      P(c, [-22, 0, -8, -12, 24, -18, 54, -9, 66, 0], shade(a, -40), 1.2);
       const pts = [];
       for (let i = 0; i <= 10; i++) { const u = i / 10; pts.push([34 - u * 56 + Math.sin(t * 0.003 + u * 4) * 4, -4 - u * 92 - Math.sin(u * Math.PI) * 8]); }
       for (let i = 0; i < 10; i++) {
         const [x1, y1] = pts[i], [x2, y2] = pts[i + 1], w1 = 15 - i * 0.8, w2 = 15 - (i + 1) * 0.8;
         const dx = x2 - x1, dy = y2 - y1, ln = Math.hypot(dx, dy), nx = -dy / ln, ny = dx / ln;
-        P(c, [x1 + nx * w1, y1 + ny * w1, (x1 + x2) / 2 + nx * (w1 + 9), (y1 + y2) / 2 + ny * (w1 + 9), x2 + nx * w2, y2 + ny * w2], shade(b, -25), 1);
-        limb(c, x1, y1, x2, y2, w1, w2, i % 2 ? a : shade(a, -12), shade(a, 26));
-        L(c, [x1 - nx * w1 * 0.6, y1 - ny * w1 * 0.6, x2 - nx * w2 * 0.6, y2 - ny * w2 * 0.6], shade(a, 45), 1.4);
+        plate(c, [x1 + nx * w1, y1 + ny * w1, (x1 + x2) / 2 + nx * (w1 + 10), (y1 + y2) / 2 + ny * (w1 + 10), x2 + nx * w2, y2 + ny * w2], shade(b, -20), b, shade(b, -60), 1);
+        const segp = [x1 + nx * w1, y1 + ny * w1, x2 + nx * w2, y2 + ny * w2, x2 - nx * w2, y2 - ny * w2, x1 - nx * w1, y1 - ny * w1];
+        plate(c, segp, i % 2 ? a : shade(a, -12), al, ad, 1.2);
+        // pale belly scutes
+        plate(c, [x1 - nx * w1 * 0.95, y1 - ny * w1 * 0.95, x2 - nx * w2 * 0.95, y2 - ny * w2 * 0.95, x2 - nx * w2 * 0.45, y2 - ny * w2 * 0.45, x1 - nx * w1 * 0.45, y1 - ny * w1 * 0.45], shade(a, 50), shade(a, 70), shade(a, 20), 0.8);
       }
-      P(c, [-14, 0, -4, -6, 14, -8, 30, -4, 40, 0], shade(a, -25), 1.2);
+      P(c, [-16, 0, -4, -7, 14, -9, 30, -5, 42, 0], shade(a, -25), 1.2);
       const [hx, hy] = pts[10]; c.translate(hx, hy);
       const jo = 3 + Math.sin(t * 0.004) * 2;
-      P(c, [2, -9, 15, -21, 8, -7], shade(b, -15)); P(c, [-4, -11, 4, -23, 2, -10], shade(b, -5));
+      for (const [p, col] of [[[4, -9, 22, -24, 10, -6], shade(b, -15)], [[-2, -11, 10, -28, 4, -9], b], [[-8, -11, -2, -24, -2, -10], shade(b, 10)]]) plate(c, p, col, shade(col, 40), shade(col, -40), 1);
       P(c, [-26, -1, -8, 0, -8, 3 + jo, -24, 4 + jo * 1.5], '#2a0a0a', 0);
-      P(c, [6, 4, -8, 2 + jo, -27, 4 + jo * 1.6, -12, 10 + jo, 6, 10], shade(a, -15));
+      P(c, [-22, 2 + jo * 0.8, -12, 1.6 + jo * 0.6, -10, 3 + jo, -20, 3.6 + jo * 1.2], '#c43a4a', 0);
+      plate(c, [6, 4, -8, 2 + jo, -27, 4 + jo * 1.6, -12, 10 + jo, 6, 10], shade(a, -15), a, ad, 1.2);
       for (let i = 0; i < 4; i++) P(c, [-25 + i * 4.4, 3.4 + jo * 1.2, -23.4 + i * 4.4, -0.6 + jo, -21.6 + i * 4.4, 3.4 + jo * 1.1], '#f1ead8', 0.7);
-      P(c, [8, -6, -4, -12, -24, -8, -31, -2, -10, 0, 8, 4], shade(a, 8));
-      P(c, [-4, -12, -24, -8, -26, -5, -4, -8], shade(a, 34), 0);
+      plate(c, [8, -6, -4, -12, -24, -8, -31, -2, -10, 0, 8, 4], shade(a, 8), al, ad, 1.3);
+      L(c, [-4, -10, -22, -6], al, 0.8);
       for (let i = 0; i < 5; i++) P(c, [-29 + i * 4.4, -1.6, -27.4 + i * 4.4, 3.6, -25.6 + i * 4.4, -1.4], '#f1ead8', 0.7);
-      glowOn(c, b, 10); P(c, [-13, -8, -8, -10, -5.6, -7, -10, -5.6], b, 0); glowOff(c);
+      eyeGlow(c, -10, -7.6, 3, b);
       break;
     }
     case 'mech': {
       c.translate(x, G); c.scale(s, s);
-      const leg = (ox, col) => {
-        limb(c, ox, -58, ox + 14, -34, 7, 6, col); limb(c, ox + 14, -34, ox + 4, -6, 6, 5, col);
-        P(c, [ox - 9, -7, ox + 14, -7, ox + 18, 0, ox - 13, 0], shade(col, -20));
-        P(c, [ox + 9, -39, ox + 19, -39, ox + 20, -30, ox + 10, -29], shade(col, 25));
+      const legM = (ox, col) => {
+        limb(c, ox, -58, ox + 14, -34, 7, 6, col, shade(col, 26)); limb(c, ox + 14, -34, ox + 4, -6, 6, 5, col, shade(col, 26));
+        L(c, [ox + 2, -54, ox + 12, -36], '#d8dce4', 1.8); L(c, [ox + 12, -32, ox + 5, -10], '#d8dce4', 1.8);
+        plate(c, [ox - 10, -8, ox + 14, -8, ox + 19, 0, ox - 14, 0], shade(col, -20), col, shade(col, -50), 1.2);
+        plate(c, [ox + 9, -40, ox + 19, -40, ox + 20, -29, ox + 10, -28], shade(col, 25), shade(col, 50), col, 1.1);
       };
-      leg(8, shade(a, -40));
-      P(c, [-18, -66, 20, -66, 16, -54, -14, -54], shade(a, -28));
+      legM(8, shade(a, -40));
+      L(c, [20, -96 + bob, 30, -80 + bob, 26, -64 + bob], '#2a2a30', 2.2);
+      plate(c, [-18, -67, 20, -67, 16, -54, -14, -54], shade(a, -28), a, shade(a, -55), 1.2);
       const hull = [-34, -112 + bob, 22, -118 + bob, 38, -98 + bob, 30, -64 + bob, -26, -62 + bob, -40, -84 + bob];
-      P(c, hull, a);
-      P(c, [-30, -108 + bob, 20, -114 + bob, 32, -100 + bob, -20, -97 + bob], shade(a, 30), 0);
-      P(c, [-26, -62 + bob, 30, -64 + bob, 34, -76 + bob, -34, -74 + bob], shade(a, -30), 0);
-      P(c, hull, null);
-      const plate = [14, -92 + bob, 30, -92 + bob, 29, -76 + bob, 13, -76 + bob];
-      c.save(); P(c, plate, null, 0); c.clip();
+      plate(c, hull, a, al, ad, 1.5);
+      c.save(); P(c, hull, null, 0); c.clip();
+      P(c, [-26, -62 + bob, 30, -64 + bob, 34, -76 + bob, -34, -74 + bob], 'rgba(0,0,0,0.3)', 0);
+      for (const [p0, p1] of [[[-20, -86 + bob, 8, -88 + bob], [-20, -70 + bob, 8, -72 + bob]]]) { L(c, p0, ad, 1); L(c, p1, ad, 1); }
+      L(c, [8, -116 + bob, 10, -64 + bob], ad, 1.1);
+      c.restore();
+      for (const [rx, ry] of [[-28, -104], [16, -110], [26, -72], [-20, -68]]) rivet(c, rx, ry + bob, al);
+      const plateZ = [14, -92 + bob, 30, -92 + bob, 29, -76 + bob, 13, -76 + bob];
+      c.save(); P(c, plateZ, null, 0); c.clip();
       for (let i = -2; i < 6; i++) P(c, [12 + i * 6, -76 + bob, 16 + i * 6, -76 + bob, 22 + i * 6, -92 + bob, 18 + i * 6, -92 + bob], i % 2 ? b : INK, 0);
-      c.restore(); P(c, plate, null);
-      P(c, [-38, -98 + bob, -22, -104 + bob, -6, -102 + bob, -8, -90 + bob, -30, -86 + bob], '#14161c');
-      glowOn(c, b, 12); P(c, [-34, -96 + bob, -22, -100 + bob, -10, -99 + bob, -11, -94 + bob, -30, -91 + bob], b, 0); glowOff(c);
+      c.restore(); P(c, plateZ, null);
+      plate(c, [-38, -98 + bob, -22, -104 + bob, -6, -102 + bob, -8, -90 + bob, -30, -86 + bob], '#14161c', '#2a2e38', '#08080c', 1.3);
+      c.save(); glowOn(c, b, 12); P(c, [-34, -96 + bob, -22, -100 + bob, -10, -99 + bob, -11, -94 + bob, -30, -91 + bob], b, 0); c.restore();
+      P(c, [-30, -97 + bob, -24, -99.4 + bob, -22, -96 + bob], 'rgba(255,255,255,0.6)', 0);
       const scan = -30 + ((t * 0.02) % 18); c.fillStyle = 'rgba(255,255,255,0.7)'; c.fillRect(scan, -98 + bob, 2, 6);
-      P(c, [-8, -133 + bob, 22, -135 + bob, 24, -116 + bob, -6, -114 + bob], shade(a, -15));
-      for (let i = 0; i < 4; i++) { P(c, [-4 + i * 7, -130 + bob, 1 + i * 7, -130 + bob, 1 + i * 7, -123 + bob, -4 + i * 7, -123 + bob], '#1a1a20', 0.8); c.fillStyle = '#ff4a3a'; c.fillRect(-3 + i * 7, -128 + bob, 3, 2); }
-      limb(c, -10, -86 + bob, -24, -70 + bob, 6, 5, shade(a, -20));
-      P(c, [-22, -77 + bob, -64, -75 + bob, -64, -66 + bob, -22, -63 + bob], '#3a3d46');
-      for (const rx of [-34, -46, -56]) L(c, [rx, -76 + bob, rx, -65 + bob], '#22242a', 1.2);
-      glowOn(c, b, 10); c.fillStyle = b; c.fillRect(-67, -73 + bob, 3, 5); glowOff(c);
-      L(c, [16, -117 + bob, 24, -140 + bob], shade(a, -30), 1.4);
-      leg(-12, shade(a, -12));
+      plate(c, [-8, -134 + bob, 22, -136 + bob, 24, -116 + bob, -6, -114 + bob], shade(a, -15), a, ad, 1.3);
+      for (let i = 0; i < 4; i++) { P(c, [-4 + i * 7, -131 + bob, 1 + i * 7, -131 + bob, 1 + i * 7, -123 + bob, -4 + i * 7, -123 + bob], '#1a1a20', 0.8); c.fillStyle = '#ff4a3a'; c.fillRect(-3 + i * 7, -129 + bob, 3, 2); }
+      if (Math.sin(t * 0.008) > 0.2) { c.save(); glowOn(c, '#ffb02e', 10); c.fillStyle = '#ffb02e'; c.fillRect(19, -122 + bob, 3, 3); c.fillRect(-38, -84 + bob, 3, 3); c.restore(); }
+      limb(c, -10, -86 + bob, -24, -70 + bob, 6, 5, shade(a, -20), a);
+      plate(c, [-22, -78 + bob, -66, -76 + bob, -66, -65 + bob, -22, -62 + bob], '#3a3d46', '#5a5e6a', '#1a1c22', 1.3);
+      for (const rx of [-34, -46, -56]) plate(c, [rx - 2, -79 + bob, rx + 2, -79 + bob, rx + 2, -62 + bob, rx - 2, -62 + bob], '#2a2c34', '#4a4e58', '#14161a', 0.8);
+      c.save(); glowOn(c, b, 10); c.fillStyle = b; c.fillRect(-69, -74 + bob, 3, 6); c.restore();
+      L(c, [16, -118 + bob, 24, -142 + bob], shade(a, -30), 1.4);
+      if (Math.sin(t * 0.006) > 0) { c.save(); glowOn(c, '#ff4a3a', 8); c.fillStyle = '#ff4a3a'; c.fillRect(22.6, -144 + bob, 3, 3); c.restore(); }
+      legM(-12, shade(a, -12));
       break;
     }
     case 'wraith': {
+      const abyss = v === 'abyss';
       c.translate(x, G - 46 + bob * 2); c.scale(s, s);
-      const g = c.createLinearGradient(0, -96, 0, 40); g.addColorStop(0, a); g.addColorStop(0.7, shade(a, -25)); g.addColorStop(1, 'rgba(0,0,0,0)');
-      const pts = [-4, -100, 10, -92, 18, -72, 24, -40, 28, 8];
+      if (abyss) {
+        // tendrils from the back
+        for (let i = 0; i < 4; i++) {
+          let px = 10, py = -70 + i * 10, w = 5;
+          for (let j = 0; j < 5; j++) { const an = -0.4 + i * 0.25 + Math.sin(t * 0.004 + i + j) * 0.4, nx = px + Math.cos(an) * 10, ny = py + Math.sin(an) * 8 - 4; limb(c, px, py, nx, ny, w, w - 0.9, shade(a, 10), shade(a, 30)); px = nx; py = ny; w -= 0.9; }
+          eyeGlow(c, px, py, 1.6, b);
+        }
+      }
+      const gr = c.createLinearGradient(0, -96, 0, 40); gr.addColorStop(0, shade(a, 20)); gr.addColorStop(0.6, a); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      const pts = abyss ? [-8, -88, 12, -86, 22, -64, 26, -30, 28, 10] : [-4, -100, 10, -92, 18, -72, 24, -40, 28, 8];
       for (let i = 1; i <= 6; i++) pts.push(28 - i * 9, (i % 2 ? 36 : 14) + Math.sin(t * 0.008 + i) * 5);
       pts.push(-26, -30, -22, -66, -14, -88);
-      P(c, pts, g, 1.2);
-      L(c, [6, -70, 12, -20, 14, 20], shade(a, -40), 1); L(c, [-8, -60, -12, -10, -10, 24], shade(a, -40), 1);
-      P(c, [-14, -86, -6, -94, 4, -88, 2, -70, -8, -64, -16, -72], '#05030a', 0);
-      glowOn(c, b, 14); P(c, [-12.6, -79, -8, -81, -7, -77.6, -11.6, -76.6], b, 0); P(c, [-3, -80, 1.4, -81, 1, -77.4, -3, -76.4], b, 0); glowOff(c);
+      P(c, pts, gr, 1.3);
+      c.save(); P(c, pts, null, 0); c.clip();
+      for (const [x0, x1] of [[6, 14], [-8, -10], [16, 22]]) L(c, [x0, -74, x1, 30], shade(a, -40), 1.2);
+      P(c, [8, -90, 24, -60, 22, 20, 12, 20], 'rgba(0,0,0,0.25)', 0);
+      c.restore();
+      if (abyss) {
+        // a jagged maw and a cluster of eyes
+        plate(c, [-18, -80, -4, -90, 10, -82, 8, -60, -6, -54, -20, -64], shade(a, 6), shade(a, 30), shade(a, -30), 1.3);
+        P(c, [-16, -70, 4, -72, 2, -60, -12, -58], '#05030a', 0);
+        for (let i = 0; i < 5; i++) { P(c, [-15 + i * 4, -71.6, -13 + i * 4, -66, -11 + i * 4, -71.8], '#f1ead8', 0.6); P(c, [-13 + i * 3.4, -58.4, -11.4 + i * 3.4, -63, -10 + i * 3.4, -58.6], '#f1ead8', 0.6); }
+        for (const [ex, ey, r] of [[-12, -82, 2], [-4, -84, 2.4], [4, -80, 1.8], [-8, -77, 1.4], [2, -75, 1.4]]) eyeGlow(c, ex, ey, r, b);
+      } else {
+        plate(c, [-16, -86, -6, -96, 6, -90, 4, -70, -8, -64, -18, -72], shade(a, 14), shade(a, 40), a, 1.3);
+        P(c, [-14, -84, -6, -92, 2, -86, 1, -71, -8, -66, -15, -73], '#05030a', 0);
+        eyeGlow(c, -10, -78, 2.4, b); eyeGlow(c, -2, -79, 2.4, b);
+        // chains wrapped around the robe
+        c.strokeStyle = '#8a8496'; c.lineWidth = 1.1;
+        for (let i = 0; i < 9; i++) { const xx = -20 + i * 5, yy = -40 + i * 2.4 + Math.sin(t * 0.004 + i) * 0.6; c.beginPath(); c.ellipse(xx, yy, 2.6, 1.4, 0.3, 0, Math.PI * 2); c.stroke(); }
+      }
       const r = Math.sin(t * 0.004) * 3;
       for (const [oy, len] of [[0, 1], [16, 0.8]]) {
-        P(c, [-12, -64 + oy, -30, -56 + oy + r, -34, -47 + oy + r, -18, -48 + oy], shade(a, -12));
-        L(c, [-32, -52 + oy + r, -40 * len - 2, -56 + oy + r], '#d8d0c0', 1.8);
-        for (const [dx, dy] of [[-8, -6], [-10, 0], [-8, 5]]) L(c, [-40 * len - 2, -56 + oy + r, -40 * len - 2 + dx, -56 + oy + r + dy], '#e8e0d0', 1.1);
+        plate(c, [-12, -64 + oy, -30, -56 + oy + r, -34, -47 + oy + r, -18, -48 + oy], shade(a, -12), a, shade(a, -40), 1.1);
+        L(c, [-32, -52 + oy + r, -40 * len - 2, -56 + oy + r], '#d8d0c0', 2);
+        for (const [dx, dy] of [[-10, -7], [-12, 0], [-10, 6]]) { L(c, [-40 * len - 2, -56 + oy + r, -40 * len - 2 + dx, -56 + oy + r + dy], '#e8e0d0', 1.3); P(c, [-40 * len - 2 + dx, -56 + oy + r + dy - 1, -40 * len - 6 + dx, -56 + oy + r + dy, -40 * len - 2 + dx, -56 + oy + r + dy + 1], '#ffffff', 0); }
       }
-      c.globalAlpha = 0.35;
-      for (let i = 0; i < 4; i++) { const yy = -((t * 0.04 + i * 30) % 120); L(c, [-10 + i * 8, yy, -14 + i * 8, yy - 10], b, 1); }
+      c.globalAlpha = 0.4;
+      for (let i = 0; i < 5; i++) { const yy = -((t * 0.04 + i * 30) % 120); L(c, [-10 + i * 8, yy, -14 + i * 8, yy - 10], b, 1); }
       c.globalAlpha = 1;
       break;
     }
     case 'golem': {
+      const pyre = v === 'pyrelord';
       c.translate(x, G); c.scale(s, s);
-      const rock = (pts, lit) => { P(c, pts, a); if (lit) P(c, lit, shade(a, 24), 0); P(c, pts, null); };
+      const rock = (pts, lit) => { plate(c, pts, a, al, ad, 1.4); if (lit) P(c, lit, shade(a, 24), 0); P(c, pts, null, 1.4); };
       rock([44, -110 + bob, 62, -104 + bob, 66, -70 + bob, 58, -50 + bob, 42, -56 + bob]);
       rock([-30, -46, -10, -48, -8, 0, -34, 0, -37, -22], [-30, -46, -10, -48, -11, -36, -28, -38]);
       rock([6, -48, 26, -46, 30, -22, 28, 0, 4, 0], [6, -48, 26, -46, 25, -38, 8, -38]);
       rock([-46, -104 + bob, -20, -128 + bob, 22, -126 + bob, 46, -100 + bob, 38, -50, -36, -46], [-20, -128 + bob, 22, -126 + bob, 40, -104 + bob, 0, -110 + bob]);
-      L(c, [-40, -78 + bob, 30, -84 + bob], shade(a, -30), 1);
+      if (pyre) {
+        // obsidian plates bolted over the rock, and an exposed molten heart
+        for (const pp of [[-44, -100 + bob, -24, -122 + bob, -10, -116 + bob, -26, -92 + bob], [24, -120 + bob, 44, -98 + bob, 36, -86 + bob, 18, -104 + bob]]) plate(c, pp, '#14100e', '#3a302c', '#000000', 1.2);
+        const pulse = 0.7 + 0.3 * Math.sin(t * 0.005);
+        c.save(); glowOn(c, b, 24 * pulse);
+        P(c, [-12, -100 + bob, 10, -102 + bob, 14, -82 + bob, -2, -72 + bob, -16, -82 + bob], '#3a0e04', 1.4);
+        const mg = c.createRadialGradient(-1, -88 + bob, 2, -1, -88 + bob, 14); mg.addColorStop(0, '#fff2c0'); mg.addColorStop(0.5, b); mg.addColorStop(1, '#c43a0a');
+        P(c, [-9, -98 + bob, 8, -99 + bob, 11, -84 + bob, -2, -76 + bob, -13, -84 + bob], mg, 0);
+        c.restore();
+      }
+      L(c, [-40, -78 + bob, 30, -84 + bob], ad, 1);
       rock([-16, -144 + bob, 4, -148 + bob, 14, -132 + bob, 6, -120 + bob, -14, -122 + bob], [-16, -144 + bob, 4, -148 + bob, 10, -138 + bob, -10, -136 + bob]);
-      glowOn(c, b, 12);
+      if (pyre) {
+        for (let i = 0; i < 5; i++) {
+          const fx = -14 + i * 7, fh = 12 + (i === 2 ? 10 : i % 2 ? 4 : 7) + Math.sin(t * 0.015 + i) * 3;
+          const fg = c.createLinearGradient(0, -146 + bob, 0, -146 - fh + bob); fg.addColorStop(0, b); fg.addColorStop(1, 'rgba(255,240,180,0)');
+          c.save(); glowOn(c, b, 12); P(c, [fx - 3, -144 + bob, fx, -146 - fh + bob, fx + 3, -144 + bob], fg, 0); c.restore();
+        }
+        for (const [hx0, dir] of [[-12, -1], [8, 1]]) plate(c, [hx0, -140 + bob, hx0 + dir * 10, -154 + bob, hx0 + dir * 4, -138 + bob], '#14100e', '#3a302c', '#000000', 1);
+      }
+      c.save(); glowOn(c, b, 12);
       P(c, [-12, -135 + bob, -6, -136 + bob, -6, -133 + bob, -12, -132 + bob], b, 0); P(c, [-3, -136 + bob, 2, -136.4 + bob, 2, -133 + bob, -3, -133 + bob], b, 0);
       L(c, [-28, -110 + bob, -16, -96 + bob, -22, -84 + bob, -8, -70 + bob], b, 2.2);
       L(c, [14, -116 + bob, 6, -98 + bob, 18, -80 + bob], b, 2);
       L(c, [-22, -40, -18, -24, -24, -10], b, 1.6); L(c, [16, -42, 20, -26], b, 1.6);
-      P(c, [-2, -100 + bob, 4, -94 + bob, -2, -88 + bob, -8, -94 + bob], b, 0);
-      glowOff(c);
+      if (!pyre) P(c, [-2, -100 + bob, 4, -94 + bob, -2, -88 + bob, -8, -94 + bob], b, 0);
+      c.restore();
       rock([-66, -108 + bob, -44, -114 + bob, -38, -80 + bob, -48, -46 + bob, -70, -52 + bob, -74, -84 + bob], [-66, -108 + bob, -44, -114 + bob, -42, -96 + bob, -64, -94 + bob]);
-      glowOn(c, b, 10); L(c, [-62, -96 + bob, -52, -84 + bob, -58, -70 + bob], b, 1.8); glowOff(c);
+      c.save(); glowOn(c, b, 10); L(c, [-62, -96 + bob, -52, -84 + bob, -58, -70 + bob], b, 1.8); c.restore();
+      if (pyre) { c.save(); glowOn(c, b, 10); const d = (t * 0.03) % 20; P(c, [-60, -48 + bob + d, -58, -44 + bob + d, -60, -41 + bob + d, -62, -44 + bob + d], b, 0); c.restore(); }
       c.fillStyle = b;
-      for (let i = 0; i < 5; i++) { const yy = (t * 0.03 + i * 37) % 80; c.globalAlpha = 1 - yy / 80; c.fillRect(-30 + i * 14, -112 - yy + bob, 2, 2); }
+      for (let i = 0; i < 7; i++) { const yy = (t * 0.03 + i * 37) % 80; c.globalAlpha = 1 - yy / 80; c.fillRect(-36 + i * 12, -112 - yy + bob, 2, 2); }
       c.globalAlpha = 1;
       break;
     }
     case 'imp': {
       c.translate(x, G); c.scale(s, s);
       const fl = Math.sin(t * 0.012) * 6;
-      P(c, [6, -62, 30, -94 - fl, 34, -72 - fl, 44, -76 - fl, 37, -57 - fl * 0.5, 41, -50, 14, -50], shade(a, -32));
-      L(c, [10, -58, 30, -92 - fl], shade(a, -55), 1); L(c, [12, -54, 34, -72 - fl], shade(a, -55), 1);
-      L(c, [10, -32, 26, -26, 36, -18, 42, -32], shade(a, -20), 2.4);
-      P(c, [40, -32, 46, -38, 44, -28], shade(a, -20));
+      const wing = [6, -62, 30, -96 - fl, 34, -74 - fl, 46, -78 - fl, 38, -58 - fl * 0.5, 44, -50, 14, -50];
+      P(c, wing, shade(a, -32));
+      c.save(); P(c, wing, null, 0); c.clip(); P(c, [10, -60, 30, -96 - fl, 34, -74 - fl, 20, -54], shade(a, -14), 0); c.restore();
+      for (const [x1, y1] of [[30, -94 - fl], [34, -74 - fl], [44, -77 - fl]]) L(c, [10, -58, x1, y1], shade(a, -55), 1.1);
+      P(c, wing, null, 1.3);
+      c.strokeStyle = shade(a, -20); c.lineWidth = 2.6; c.beginPath(); c.moveTo(10, -32); c.quadraticCurveTo(30, -20, 42, -32 + Math.sin(t * 0.006) * 3); c.stroke();
+      c.save(); glowOn(c, b, 12); const tf = Math.random() * 2; P(c, [40, -34, 46, -42 - tf, 48, -30], b, 0.8); c.restore();
       limb(c, 4, -34, 12, -20, 4, 3.4, shade(a, -25)); limb(c, 12, -20, 6, -1, 3.4, 2.4, shade(a, -25));
       P(c, [0, -2, 9, -2, 10, 0, -2, 0], '#2a1a1a', 1);
       limb(c, -6, -34, -14, -20, 4, 3.4, a, shade(a, 25)); limb(c, -14, -20, -10, -1, 3.4, 2.4, a, shade(a, 25));
       P(c, [-16, -2, -7, -2, -6, 0, -18, 0], '#2a1a1a', 1);
+      for (const cx of [-17, -13]) P(c, [cx, -1, cx - 3, 0.6, cx, 0.6], '#f1ead8', 0.5);
       const torso = [-10, -36, 10, -34, 12, -56, 0, -66, -14, -58];
-      P(c, torso, a);
-      P(c, [-10, -36, 2, -35, -2, -52, -12, -54], shade(a, 25), 0);
-      P(c, torso, null);
-      P(c, [-2, -72, 12, -80, 3, -65], shade(a, -10));
-      P(c, [-22, -66, -16, -77, -4, -77, 2, -66, -4, -58, -16, -58], shade(a, 8));
-      P(c, [-16, -77, -4, -77, -2, -70, -14, -70], shade(a, 30), 0);
-      P(c, [-14, -76, -19, -89, -10, -78], '#3a2020'); P(c, [-7, -77, -5, -91, -1, -77], '#3a2020');
+      plate(c, torso, a, al, ad, 1.3);
+      for (let i = 0; i < 3; i++) plate(c, [-8 + i * 0.6, -54 + i * 6, 0, -55 + i * 6, -0.6, -50 + i * 6, -8.6 + i * 0.6, -49 + i * 6], shade(a, 30), shade(a, 50), a, 0.8);
+      plate(c, [-2, -72, 12, -82, 3, -65], shade(a, -10), a, ad, 1.1);
+      plate(c, [-22, -66, -16, -77, -4, -77, 2, -66, -4, -58, -16, -58], shade(a, 8), shade(a, 44), ad, 1.3);
+      plate(c, [-14, -76, -20, -90, -16, -94, -10, -78], '#3a2020', '#6a4040', '#1a0a0a', 1); plate(c, [-7, -77, -6, -92, -2, -95, -1, -77], '#3a2020', '#6a4040', '#1a0a0a', 1);
       L(c, [-21, -63, -10, -61], INK, 1);
-      for (let i = 0; i < 3; i++) P(c, [-19 + i * 3, -62.4, -17.6 + i * 3, -60, -16.4 + i * 3, -62], '#f1ead8', 0);
-      glowOn(c, b, 10); P(c, [-18, -71, -13, -72, -14, -69.4], b, 0); P(c, [-9, -72, -5, -72, -6, -69.6], b, 0); glowOff(c);
-      limb(c, -8, -56, -22, -46, 3, 2.6, a); limb(c, -22, -46, -30, -52, 2.6, 2, a);
-      for (const dy of [-4, 0, 4]) L(c, [-30, -52, -35, -52 + dy], '#f1ead8', 1);
-      glowOn(c, b, 14); const ff = Math.random() * 3;
-      P(c, [-36, -54, -32, -60 - ff, -30, -66 - ff * 2, -27, -58, -30, -52], b, 0); glowOff(c);
-      P(c, [-34, -55, -31, -60, -29, -56], '#fff6c0', 0);
+      for (let i = 0; i < 4; i++) P(c, [-20 + i * 2.6, -62.6, -18.8 + i * 2.6, -60, -17.6 + i * 2.6, -62.2], '#f1ead8', 0);
+      eyeGlow(c, -16, -70.8, 2, b); eyeGlow(c, -7, -71, 2, b);
+      limb(c, -8, -56, -22, -46, 3, 2.6, a, al); limb(c, -22, -46, -30, -52, 2.6, 2, a, al);
+      for (const dy of [-4, 0, 4]) L(c, [-30, -52, -36, -52 + dy], '#f1ead8', 1.1);
+      c.save(); glowOn(c, b, 16); const ff = Math.random() * 3;
+      P(c, [-37, -54, -33, -62 - ff, -30, -70 - ff * 2, -26, -60, -29, -52], b, 0); c.restore();
+      P(c, [-34, -55, -31, -62, -29, -56], '#fff6c0', 0);
       break;
     }
     case 'eye': {
@@ -1509,35 +1681,42 @@ function drawEnemy(c, e, x, s, t, swing, gy) {
           const a2 = ang + Math.sin(t * 0.003 + i + j * 0.8) * 0.32;
           const nx = px + Math.cos(a2) * 13, ny = py + Math.sin(a2) * 13;
           limb(c, px, py, nx, ny, w, w - 1.3, j % 2 ? shade(a, 12) : a, shade(a, 34));
+          c.fillStyle = shade(b, -30); c.beginPath(); c.arc((px + nx) / 2, (py + ny) / 2, Math.max(0.6, w * 0.25), 0, Math.PI * 2); c.fill();
           px = nx; py = ny; w -= 1.3;
         }
-        const a3 = ang + Math.sin(t * 0.003 + i + 4) * 0.32;
-        P(c, [px + Math.cos(a3 + 1.5) * 2, py + Math.sin(a3 + 1.5) * 2, px + Math.cos(a3) * 10, py + Math.sin(a3) * 10, px + Math.cos(a3 - 1.5) * 2, py + Math.sin(a3 - 1.5) * 2], b, 1);
+        eyeGlow(c, px, py, 2.6, b);
       }
       const oct = r => { const p = []; for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; p.push(Math.cos(an) * r, Math.sin(an) * r); } return p; };
-      for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4; P(c, [Math.cos(an - 0.2) * 44, Math.sin(an - 0.2) * 44, Math.cos(an) * 56, Math.sin(an) * 56, Math.cos(an + 0.2) * 44, Math.sin(an + 0.2) * 44], shade(a, 20), 1); }
-      P(c, oct(47), a);
-      P(c, [-30, -34, 0, -47, 30, -34, 0, -30], shade(a, 28), 0);
-      for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; L(c, [Math.cos(an) * 38, Math.sin(an) * 38, Math.cos(an) * 47, Math.sin(an) * 47], shade(a, -30), 1); }
-      P(c, oct(47), null);
+      for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4; plate(c, [Math.cos(an - 0.2) * 44, Math.sin(an - 0.2) * 44, Math.cos(an) * 58, Math.sin(an) * 58, Math.cos(an + 0.2) * 44, Math.sin(an + 0.2) * 44], shade(a, 20), shade(a, 50), ad, 1.2); }
+      plate(c, oct(48), a, al, ad, 1.6);
+      for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; L(c, [Math.cos(an) * 38, Math.sin(an) * 38, Math.cos(an) * 48, Math.sin(an) * 48], ad, 1.1); rivet(c, Math.cos(an + 0.2) * 43, Math.sin(an + 0.2) * 43, al); }
+      plate(c, oct(40), shade(a, -20), a, shade(a, -50), 1.2);
       const blink = (t % 5200) < 180 ? 1 : 0;
-      P(c, [-36, 0, -18, -21 + blink * 20, 18, -21 + blink * 20, 36, 0, 18, 21 - blink * 20, -18, 21 - blink * 20], '#e9dfe6', 1.4);
+      const scl = [-36, 0, -18, -21 + blink * 20, 18, -21 + blink * 20, 36, 0, 18, 21 - blink * 20, -18, 21 - blink * 20];
+      const sg = c.createRadialGradient(0, 0, 4, 0, 0, 36); sg.addColorStop(0, '#fff6f8'); sg.addColorStop(1, '#c8b0bc');
+      P(c, scl, sg, 1.4);
       if (!blink) {
-        L(c, [-28, -4, -20, -8, -16, -6], '#c4506a', 0.8); L(c, [26, 6, 20, 10, 15, 8], '#c4506a', 0.8);
+        c.save(); P(c, scl, null, 0); c.clip();
+        for (const vp of [[-34, -2, -24, -6, -18, -4, -14, -8], [32, 4, 22, 8, 16, 6], [-30, 8, -22, 12, -16, 10], [28, -6, 20, -10]]) L(c, vp, '#c4506a', 0.9);
         const lx = Math.sin(t * 0.0013) * 8 - 6;
-        glowOn(c, b, 16);
-        const ir = []; for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; ir.push(lx + Math.cos(an) * 14, Math.sin(an) * 14); }
-        P(c, ir, b, 0); glowOff(c);
-        P(c, [lx - 2, -11, lx + 2, -11, lx + 2.6, 0, lx + 2, 11, lx - 2, 11, lx - 2.6, 0], INK, 0);
-        P(c, [lx + 5, -8, lx + 9, -8, lx + 7, -4], 'rgba(255,255,255,0.8)', 0);
+        c.save(); glowOn(c, b, 16);
+        const ir = []; for (let i = 0; i < 8; i++) { const an = Math.PI / 8 + i * Math.PI / 4; ir.push(lx + Math.cos(an) * 15, Math.sin(an) * 15); }
+        const ig = c.createRadialGradient(lx, 0, 2, lx, 0, 15); ig.addColorStop(0, shade(b, 60)); ig.addColorStop(1, shade(b, -40));
+        P(c, ir, ig, 1); c.restore();
+        for (let i = 0; i < 8; i++) { const an = i * Math.PI / 4; L(c, [lx + Math.cos(an) * 6, Math.sin(an) * 6, lx + Math.cos(an) * 13, Math.sin(an) * 13], shade(b, -50), 0.8); }
+        P(c, [lx - 2, -12, lx + 2, -12, lx + 2.8, 0, lx + 2, 12, lx - 2, 12, lx - 2.8, 0], INK, 0);
+        P(c, [lx + 5, -9, lx + 10, -9, lx + 7.4, -4], 'rgba(255,255,255,0.85)', 0);
+        P(c, [-36, -24, 36, -24, 36, -14, -36, -10], 'rgba(0,0,0,0.25)', 0);
+        c.restore();
       }
-      P(c, [-38, 0, -18, -24, 18, -24, 38, 0, 18, -19, -18, -19], shade(a, -15), 1.2);
-      P(c, [-38, 0, -18, 24, 18, 24, 38, 0, 18, 19, -18, 19], shade(a, -15), 1.2);
+      plate(c, [-40, 0, -18, -25, 18, -25, 40, 0, 18, -19, -18, -19], shade(a, -15), a, shade(a, -50), 1.3);
+      plate(c, [-40, 0, -18, 25, 18, 25, 40, 0, 18, 19, -18, 19], shade(a, -15), a, shade(a, -50), 1.3);
       break;
     }
   }
   c.restore();
 }
+
 
 // The Hollow Dark: a crowned titan of black armour around a starless void. Faces left; about 250 units tall.
 // ps.arm swings the greatsword (negative raises it, positive brings it down). e.p2 = armour broken open.
@@ -1729,6 +1908,7 @@ function loop(t) {
     ghosts: ea.ghost ? ea.trail.slice(1, 5).map(d => d - ea.dx) : null, ghostCol: (B.e.col && B.e.col[1]) || '#ff8a7a' });
   if (B.e.fx.shield && die === 0) { const u = unitPos('e'); shieldHex(c, u.x, u.y, B.e.kind === 'titan' ? 150 : 96 * (B.e.big ? 1.45 : 1), t); }
   drawVfx(c, dt);
+  drawForeground(c, B.world, t);
   if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.28})`; c.fillRect(-20, -20, W + 40, H + 40); }
   // floating numbers pop in, then rise and fade
   c.textAlign = 'center';

@@ -62,6 +62,12 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Sprite hooks in `js/art.js`: `styleBack`, `styleTorso`, `styleSkirt`, `stylePauldron`, `helmAccent`; portraits in `js/portrait.js`: `bustStyled`, `bustHalo`, `bustHelmAccent`. Armour without `style` (story characters) keeps the plate look.
 - `node test/tiers.js <dir>` renders all six tiers as sprites and portraits for both builds.
 
+## Session A.5 — Enemies, weapons, depth (done)
+- Every enemy rebuilt from bevelled plates with glowing details, and variants within a kind (`e.variant`): scrap vs sentinel drones, dust/scout/spitter crawlers, void vs abyss wraiths, golem vs pyrelord. Wyrm belly scutes and frills, Warden pistons/cables/warning lights, imp wing membranes and flaming tail, Null Horror armoured rim and veined eye.
+- Enemy knights use armour styles: troopers/mercs munition, Vex paladin, Ash Knight juggernaut, Shade Knight and corrupted Kol void.
+- Weapons rebuilt: wrapped grips, bevelled metal, and moving detail (ion saber flicker, lance rings and arcs, cleaver rune pulse and floating fragments, nova embers, Oathkeeper winged guard and rising starlight).
+- `drawForeground`: per-scene foreground silhouettes and a vignette in battles and cutscenes.
+
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
 

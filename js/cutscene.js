@@ -97,6 +97,7 @@ function csLoop(t) {
   drawBackdrop(c, cs.bg, t);
   const rim = SCENE_RIM[cs.bg];
   for (const a of Object.values(cs.cast)) drawActor(c, a, t, now, rim);
+  drawForeground(c, cs.bg, t);
   c.restore();
   if (cs.fade && now - cs.fade < 700) { c.fillStyle = `rgba(0,0,0,${1 - (now - cs.fade) / 700})`; c.fillRect(0, 0, W, H); }
   if (cs.flash && now - cs.flash < 500) { c.fillStyle = `rgba(255,255,255,${0.85 * (1 - (now - cs.flash) / 500)})`; c.fillRect(0, 0, W, H); }
