@@ -14,6 +14,30 @@ function path(c, k) {
   }
 }
 function fp(c, k, fill, w = 2.6) { path(c, k); if (fill) { c.fillStyle = fill; c.fill(); } if (w) { c.lineWidth = w; c.strokeStyle = INK; c.stroke(); } }
+// A bevelled shape: lit sliver on the upper-left edge, shadowed sliver on the lower-right, then the ink outline.
+function bevel(c, k, base, lit, dk, w = 2.6) {
+  c.save(); path(c, k); c.clip();
+  path(c, k); c.fillStyle = dk || shade(base, -40); c.fill();
+  c.save(); c.translate(-2.2, -3.2); path(c, k); c.fillStyle = lit || shade(base, 44); c.fill(); c.restore();
+  c.save(); c.translate(1.6, 2.4); path(c, k); c.clip(); c.translate(-3.8, -5.6); path(c, k); c.fillStyle = base; c.fill(); c.restore();
+  c.restore();
+  if (w) { path(c, k); c.lineWidth = w; c.strokeStyle = INK; c.stroke(); }
+}
+function prv(c, x, y, col) { c.fillStyle = INK; c.beginPath(); c.arc(x, y, 3, 0, Math.PI * 2); c.fill(); c.fillStyle = col; c.beginPath(); c.arc(x - 0.4, y - 0.4, 1.8, 0, Math.PI * 2); c.fill(); }
+// Per-set surface detail on the portrait breastplate.
+function bustMotif(c, A, f) {
+  const m = A.motif, cy = f ? 290 : 286;
+  if (m === 'rivet') for (const [x, y] of [[112, 266], [196, 266], [112, 322], [196, 322]]) prv(c, x, y, shade(A.base, 55));
+  if (m === 'stitch') { c.save(); c.setLineDash([4, 4]); for (const y of [276, 306]) L(c, [100, y, 208, y], shade(A.base, 40), 1.4); c.restore(); }
+  if (m === 'ridge') { c.strokeStyle = shade(A.base, 36); c.lineWidth = 2; for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(104 + i * 4, cy - 16 + i * 16); c.quadraticCurveTo(152, cy - 34 + i * 16, 204 - i * 4, cy - 14 + i * 16); c.stroke(); } }
+  if (m === 'filigree') {
+    const g = A.rivet || '#e8c25a';
+    L(c, [112, cy - 30, 152, cy - 8, 192, cy - 30], g, 2.2); L(c, [118, cy - 22, 152, cy - 2, 186, cy - 22], shade(g, -40), 1.2);
+    fp(c, ['M', 152, cy - 18, 'L', 160, cy - 8, 'L', 152, cy + 2, 'L', 144, cy - 8, 'Z'], A.trim, 1.8);
+    fp(c, ['M', 152, cy - 15, 'L', 156, cy - 9, 'L', 152, cy - 8, 'Z'], '#ffffff', 0);
+  }
+  if (m === 'rune') { c.save(); glowOn(c, A.glow, 12); L(c, [132, cy - 10, 142, cy - 22, 152, cy - 10, 162, cy - 22, 172, cy - 10], A.glow, 1.8); L(c, [138, cy + 4, 166, cy + 4], A.glow, 1.8); c.restore(); }
+}
 // A tapered, curved lock of hair from root to tip.
 function lock(c, x0, y0, x1, y1, w, bend, fill) {
   const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
@@ -63,11 +87,17 @@ function bustFace(c, sp) {
   // the cheek turning away from us falls into shadow
   fp(c, ['M', 220, 40, 'L', 198, 40, 'Q', 206, 128, 188, 182, 'L', 164, 216, 'L', 220, 216, 'Z'], sh, 0);
   fp(c, ['M', 150, 196, 'Q', 166, 202, 182, 194, 'L', 182, 216, 'L', 150, 216, 'Z'], sh, 0);
+  fp(c, ['M', 98, 148, 'Q', 112, 164, 134, 168, 'Q', 112, 174, 98, 162, 'Z'], shade(skin, -14), 0);
+  fp(c, ['M', 192, 104, 'Q', 204, 116, 200, 132, 'L', 196, 120, 'Z'], shade(skin, 18), 0);
   if (f) { for (let i = 0; i < 3; i++) L(c, [110 + i * 6, 162, 115 + i * 6, 155], PINK, 1.8); for (let i = 0; i < 2; i++) L(c, [180 + i * 5, 160, 184 + i * 5, 154], PINK, 1.5); }
   c.restore();
   // nose: a small wedge on the centre line, shadowed on the side away from the light
   fp(c, ['M', 163, 147, 'L', 171, 160, 'L', 163, 162, 'Z'], shade(skin, -24), 0);
   L(c, [163, 145, 171, 160, 164, 162], shade(skin, -62), 1.8);
+  L(c, [158, 118, 161, 140], shade(skin, 26), 1.4);
+  L(c, [156, 196, 168, 196], shade(skin, -22), 1.6);
+  L(c, [120, 238, 138, 233], shade(skin, -40), 1.4); L(c, [168, 233, 186, 238], shade(skin, -40), 1.4);
+  if (!f) L(c, [149, 220, 151, 230], shade(skin, -40), 1.4);
   if (f) { L(c, [154, 183, 171, 181], shade(skin, -82), 2.2); L(c, [157, 189, 167, 189], shade(skin, -34), 1.4); }
   else L(c, sp.expr === 'grim' ? [150, 187, 176, 186] : [151, 186, 176, 183], shade(skin, -82), 2.4);
   return face;
@@ -86,6 +116,7 @@ function animeEye(c, cx, cy, w, h, col, sp, far, mirror) {
   c.fillStyle = g; c.beginPath(); c.ellipse(ix, iy, rx, ry, 0, 0, Math.PI * 2); c.fill();
   c.lineWidth = 1.4; c.strokeStyle = shade(col, -110); c.stroke();
   c.fillStyle = shade(col, -120); c.beginPath(); c.ellipse(ix, iy + ry * 0.05, rx * 0.42, ry * 0.5, 0, 0, Math.PI * 2); c.fill();
+  c.globalAlpha = 0.55; c.strokeStyle = shade(col, 60); c.lineWidth = 1.2; c.beginPath(); c.ellipse(ix, iy + ry * 0.1, rx * 0.7, ry * 0.74, 0, 0.2, Math.PI - 0.2); c.stroke(); c.globalAlpha = 1;
   c.fillStyle = 'rgba(0,0,0,0.22)'; c.fillRect(-w, -h, w * 2, h * 0.58);
   c.fillStyle = '#ffffff'; c.beginPath(); c.ellipse(ix - rx * 0.35 * look, iy - ry * 0.32, rx * 0.36, ry * 0.24, -0.4 * look, 0, Math.PI * 2); c.fill();
   c.beginPath(); c.arc(ix + rx * 0.42 * look, iy + ry * 0.45, rx * 0.15, 0, Math.PI * 2); c.fill();
@@ -94,6 +125,8 @@ function animeEye(c, cx, cy, w, h, col, sp, far, mirror) {
   fp(c, ['M', -w / 2 - 1, 1, 'Q', -w * 0.1, -h * 0.66, w / 2 + 3, -h * 0.32, 'L', w / 2 + (f ? 10 : 5), -h * 0.44, 'L', w / 2 + 2, -h * 0.16, 'Q', -w * 0.1, -h * 0.5 + lt, -w / 2 + 1, 2, 'Z'], INK, 0);
   if (f) L(c, [w * 0.34, -h * 0.4, w * 0.48, -h * (far ? 0.56 : 0.64)], INK, far ? 1.4 : 1.8);
   L(c, [w * 0.42, h * 0.3, w * 0.05, h * 0.46], INK, 1.3);
+  c.strokeStyle = 'rgba(90,40,30,0.55)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-w * 0.36, -h * 0.6); c.quadraticCurveTo(0, -h * 0.92, w * 0.46, -h * 0.5); c.stroke();
+  c.strokeStyle = 'rgba(120,60,50,0.3)'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(-w * 0.3, h * 0.5); c.quadraticCurveTo(0, h * 0.62, w * 0.36, h * 0.4); c.stroke();
   // brow: inner end (toward the nose) is at -x
   const by = -h * (sp.angry ? 0.66 : 0.8), bc = shade(sp.hair, -60);
   if (sp.angry) fp(c, ['M', -w * 0.5, by + 6, 'L', w * 0.58, by - 6, 'L', w * 0.54, by - 2, 'L', -w * 0.5, by + 10, 'Z'], bc, 1);
@@ -133,6 +166,10 @@ function bustMarks(c, sp) {
 
 function bustHairBack(c, sp, t) {
   const h = sp.hair, hd = shade(h, -38), sw = Math.sin(t * 0.0018) * 3;
+  if (!['shaved', 'mohawk', 'topknot'].includes(sp.style)) {
+    fp(c, ['M', 86, 92, 'Q', 64, 150, 74, 198, 'L', 88, 178, 'L', 92, 206, 'L', 104, 180, 'L', 106, 120, 'Z'], hd, 2.4);
+    fp(c, ['M', 212, 92, 'Q', 230, 140, 222, 186, 'L', 212, 166, 'L', 204, 120, 'Z'], hd, 2.4);
+  }
   if (sp.style === 'tail') {
     fp(c, ['M', 122, 44, 'Q', 60, 16, 32, 78 + sw, 'Q', 4, 150, 24 + sw, 240, 'L', 40, 198, 'L', 48, 250 + sw, 'L', 62, 192, 'L', 80, 232, 'Q', 74, 150, 92, 104, 'Q', 104, 76, 122, 70, 'Z'], h, 2.6);
     for (const k of [0, 1, 2]) L(c, [100 - k * 10, 50 + k * 4, 46 - k * 6 + sw, 120 + k * 30, 40 + k * 8 + sw, 200 + k * 10], k === 1 ? shade(h, 40) : hd, 1.4);
@@ -168,8 +205,14 @@ function bustHairFront(c, sp, face) {
   for (let i = 0; i < spikes.length; i += 2) cap.push('L', spikes[i], spikes[i + 1]);
   cap.push('Z');
   fp(c, cap, h, 2.8);
+  // clumps of shadow running from the crown into the spikes
+  c.save(); path(c, cap); c.clip();
+  for (let i = 0; i + 3 < spikes.length; i += 4) P(c, [152 + (spikes[i] - 152) * 0.15, 30, spikes[i] - 4, spikes[i + 1] - 14, spikes[i + 2], spikes[i + 3]], shade(h, -22), 0);
+  c.restore();
+  path(c, cap); c.lineWidth = 2.8; c.strokeStyle = INK; c.stroke();
   fp(c, ['M', 104, 60, 'Q', 150, 36, 200, 56, 'L', 194, 68, 'L', 184, 58, 'L', 174, 70, 'L', 162, 58, 'L', 150, 70, 'L', 138, 58, 'L', 126, 70, 'L', 114, 60, 'L', 108, 70, 'Z'], hl, 0);
   for (const [x0, x1] of [[150, 140], [176, 168], [124, 116], [196, 190]]) L(c, [x0, 32, x1 + 2, 74, x1, 100], hd, 1.4);
+  for (const [x0, y0, x1, y1] of [[128, 46, 120, 62], [170, 44, 176, 58]]) L(c, [x0, y0, x1, y1], shade(h, 70), 1.4);
   if (f || st === 'long' || st === 'tail' || st === 'braids') {
     lock(c, 206, 98, 206, f ? 240 : 196, 8, -8, h);
     lock(c, 214, 100, 222, f ? 206 : 170, 5, -6, h);
@@ -189,44 +232,58 @@ function bustOutfit(c, sp, t) {
     for (const x of [128, 172]) fp(c, ['M', x - 10, 244, 'L', x + 10, 250, 'L', x + 6, 400, 'L', x - 12, 400, 'Z'], A.trim, 2.2);
     return;
   }
-  fp(c, ['M', 112, 224, 'L', 190, 224, 'L', 206, 250, 'L', 98, 250, 'Z'], sp.coat ? A.trim : A.base, 2.4);
+  for (const y of [244, 256]) L(c, [62 + (y - 244), y + 10, 98, y - 6], shade(under, 26), 1.4);
+  bevel(c, ['M', 112, 224, 'L', 190, 224, 'L', 206, 250, 'L', 98, 250, 'Z'], sp.coat ? A.trim : A.base, null, null, 2.4);
+  if (!sp.coat) L(c, [108, 236, 196, 236], shade(A.base, -40), 1.4);
   if (sp.f) {
     // fitted breastplate over a dark suit
     const chest = ['M', 92, 256, 'Q', 150, 248, 210, 256, 'L', 216, 340, 'Q', 150, 350, 88, 340, 'Z'];
     fp(c, ['M', 94, 330, 'L', 208, 330, 'L', 216, 400, 'L', 86, 400, 'Z'], A.base, 2.6);
     fp(c, ['M', 94, 330, 'L', 126, 330, 'L', 120, 400, 'L', 86, 400, 'Z'], A.dark, 0);
     L(c, [100, 366, 210, 366], A.trim, 2.4);
-    fp(c, chest, A.base, 2.8);
+    bevel(c, chest, A.base, A.light, A.dark, 2.8);
     c.save(); path(c, chest); c.clip();
     fp(c, ['M', 80, 240, 'L', 128, 240, 'L', 120, 350, 'L', 80, 350, 'Z'], A.dark, 0);
+    for (const y of [312, 326]) L(c, [88, y, 216, y], shade(A.base, -30), 1.6);
     fp(c, ['M', 176, 262, 'L', 204, 262, 'L', 210, 312, 'L', 188, 300, 'Z'], A.light, 0);
     c.restore();
     L(c, [152, 254, 150, 340], A.dark, 2);
     L(c, [94, 262, 150, 254, 208, 262], A.trim, 2.2);
+    L(c, [96, 268, 150, 260, 206, 268], shade(A.trim, 40), 1);
+    bustMotif(c, A, true);
   } else {
-    fp(c, ['M', 98, 250, 'L', 204, 250, 'L', 216, 400, 'L', 86, 400, 'Z'], A.base, 2.6);
+    bevel(c, ['M', 98, 250, 'L', 204, 250, 'L', 216, 400, 'L', 86, 400, 'Z'], A.base, A.light, A.dark, 2.6);
     fp(c, ['M', 98, 250, 'L', 132, 250, 'L', 124, 400, 'L', 86, 400, 'Z'], A.dark, 0);
     fp(c, ['M', 170, 256, 'L', 198, 256, 'L', 204, 300, 'L', 182, 290, 'Z'], A.light, 0);
-    if (!sp.coat) { L(c, [152, 254, 150, 398], A.dark, 2); L(c, [100, 310, 212, 310], A.trim, 2.4); }
+    if (!sp.coat) {
+      bevel(c, ['M', 96, 318, 'Q', 152, 306, 212, 318, 'L', 216, 400, 'L', 88, 400, 'Z'], shade(A.base, -12), A.light, A.dark, 2.4);
+      L(c, [152, 254, 151, 316], A.dark, 2); L(c, [100, 312, 212, 312], A.trim, 2.4);
+      bustMotif(c, A, false);
+    }
     else { for (const y of [272, 300, 328, 356]) { c.fillStyle = '#e8c25a'; c.beginPath(); c.arc(160, y, 3.4, 0, Math.PI * 2); c.fill(); } L(c, [150, 250, 150, 400], A.trim, 3); }
   }
   if (sp.sigil) { const st = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 3.4 : 9, an = -Math.PI / 2 + i * Math.PI / 8; st.push(150 + Math.cos(an) * r, (sp.f ? 382 : 282) + Math.sin(an) * r); } P(c, st, sp.sigil, 1.6); }
   if (A.seams) { c.save(); glowOn(c, A.glow, 12); L(c, [120, 262, 132, 290, 122, 316, 136, 352, 128, 392], A.glow, 2.4); L(c, [186, 262, 178, 296, 190, 330, 184, 380], A.glow, 2.2); c.restore(); }
   // shoulders
-  fp(c, ['M', 108, 240, 'Q', 60, 236, 40, 270, 'L', 46, 306, 'Q', 74, 296, 96, 270, 'Z'], sp.coat ? A.trim : A.dark, 2.6);
-  fp(c, ['M', 192, 240, 'Q', 246, 232, 268, 268, 'L', 262, 308, 'Q', 232, 296, 206, 270, 'Z'], sp.coat ? A.trim : A.base, 2.6);
+  if (!sp.coat) bevel(c, ['M', 92, 268, 'Q', 66, 284, 48, 304, 'L', 52, 322, 'Q', 74, 306, 98, 292, 'Z'], shade(A.dark, -10), A.base, null, 2.4);
+  bevel(c, ['M', 108, 240, 'Q', 60, 236, 40, 270, 'L', 46, 306, 'Q', 74, 296, 96, 270, 'Z'], sp.coat ? A.trim : A.dark, sp.coat ? null : A.base, null, 2.6);
+  if (!sp.coat) bevel(c, ['M', 208, 268, 'Q', 238, 284, 262, 300, 'L', 258, 320, 'Q', 234, 306, 206, 290, 'Z'], shade(A.base, -10), A.light, A.dark, 2.4);
+  bevel(c, ['M', 192, 240, 'Q', 246, 232, 268, 268, 'L', 262, 308, 'Q', 232, 296, 206, 270, 'Z'], sp.coat ? A.trim : A.base, sp.coat ? null : A.light, A.dark, 2.6);
+  if (!sp.coat && (A.rivet || A.motif === 'rivet')) { prv(c, 216, 252, A.rivet || shade(A.base, 55)); prv(c, 246, 262, A.rivet || shade(A.base, 55)); }
   if (sp.coat) for (let i = 0; i < 6; i++) L(c, [214 + i * 9, 286 + i * 2, 212 + i * 9, 304 + i * 2], '#e8c25a', 2);
   else {
     fp(c, ['M', 200, 244, 'Q', 240, 238, 258, 262, 'L', 236, 262, 'Q', 222, 250, 204, 252, 'Z'], A.light, 0);
     L(c, [210, 278, 236, 290, 262, 300], A.glow || A.trim, 2.4);
     if (A.pauldron === 'layered') { L(c, [206, 262, 236, 274, 264, 284], A.dark, 1.8); }
-    if (A.pauldron === 'spiky') { fp(c, ['M', 222, 240, 'L', 236, 200, 'L', 242, 242, 'Z'], A.spike || A.light, 2.2); fp(c, ['M', 244, 244, 'L', 262, 214, 'L', 260, 254, 'Z'], A.spike || A.light, 2.2); }
+    if (A.pauldron === 'spiky') { bevel(c, ['M', 222, 240, 'L', 236, 200, 'L', 242, 242, 'Z'], A.spike || A.light, null, null, 2.2); bevel(c, ['M', 244, 244, 'L', 262, 214, 'L', 260, 254, 'Z'], A.spike || A.light, null, null, 2.2); }
   }
+  if (sp.cape) { fp(c, ['M', 186, 238, 'L', 196, 228, 'L', 206, 238, 'L', 196, 248, 'Z'], '#e8c25a', 2); c.fillStyle = A.trim; c.beginPath(); c.arc(196, 238, 3, 0, Math.PI * 2); c.fill(); }
   if (sp.arms === 'crossed') {
     // forearms folded under the chest, far arm beneath
     fp(c, ['M', 42, 300, 'Q', 52, 344, 92, 352, 'Q', 150, 346, 204, 358, 'L', 202, 390, 'Q', 140, 380, 80, 392, 'Q', 40, 380, 36, 330, 'Z'], A.dark, 2.6);
     fp(c, ['M', 262, 304, 'Q', 256, 346, 222, 352, 'Q', 168, 352, 106, 366, 'L', 110, 396, 'Q', 176, 384, 232, 386, 'Q', 270, 376, 268, 330, 'Z'], A.base, 2.6);
-    fp(c, ['M', 106, 366, 'L', 142, 360, 'L', 146, 392, 'L', 110, 396, 'Z'], A.light, 2.2);
+    for (const x of [186, 206, 226]) L(c, [x, 352, x + 2, 384], A.dark, 1.4);
+    bevel(c, ['M', 106, 366, 'L', 142, 360, 'L', 146, 392, 'L', 110, 396, 'Z'], A.light, null, A.base, 2.2);
     fp(c, ['M', 230, 356, 'Q', 252, 346, 258, 322, 'L', 264, 330, 'Q', 260, 356, 236, 366, 'Z'], A.light, 0);
     L(c, [152, 358, 156, 390], A.trim, 2.4);
     for (const x of [114, 122, 130]) L(c, [x, 368, x - 2, 392], A.dark, 1.2);
@@ -310,7 +367,7 @@ function bustFromLook(hl) {
     beard: L0.beard, mark: L0.mark, gear: L0.gear, armor: hl.armor, cape: hl.armor.cape, sigil: hl.armor.sigil };
 }
 function bustSpec(id) {
-  const lyra = { f: true, skin: '#eab592', hair: '#b4502a', eyes: '#2fbf7a', style: 'tail', armor: armorStyle({ base: '#d4dbe6', trim: '#2ab8b0' }), under: '#1a262c', arms: 'crossed', sigil: '#2ab8b0' };
+  const lyra = { f: true, skin: '#eab592', hair: '#b4502a', eyes: '#2fbf7a', style: 'tail', armor: armorStyle({ base: '#d4dbe6', trim: '#2ab8b0', motif: 'filigree', rivet: '#e8c25a' }), under: '#1a262c', arms: 'crossed', sigil: '#2ab8b0' };
   const kol = { f: false, skin: '#d8a17c', hair: '#cfd0d8', eyes: '#e0a83a', style: 'swept', beard: 'full', mark: 'scar', armor: armorStyle(KOL_ARMOR), cape: '#7a1a24', expr: 'grim', sigil: '#e8c25a' };
   switch (id) {
     case 'lyra': return lyra;
@@ -325,12 +382,22 @@ function bustSpec(id) {
   return null;
 }
 // Paints a portrait into a canvas: rune background, then the bust scaled to fit. crop 'face' zooms on the head.
+const BUST_LAYERS = {};
 function paintBust(cv, sp, w, h, t, crop, bg) {
-  const c = hiDpi(cv, w, h);
+  const c = hiDpi(cv, w, h), key = w + 'x' + h;
   runeBg(c, w, h, t, bg || '#d4142e');
-  c.save();
-  if (crop === 'face') { const k = w / 150; c.translate(w / 2 - 152 * k, h / 2 - 124 * k); c.scale(k, k); }
-  else { const tall = crop === 'full' ? 400 : 340, k = Math.min(w / 300, h / tall); c.translate((w - 300 * k) / 2, h - tall * k); c.scale(k, k); }
-  drawBust(c, sp, t);
-  c.restore();
+  if (!BUST_LAYERS[key]) BUST_LAYERS[key] = [document.createElement('canvas'), document.createElement('canvas')];
+  const [lc, tc] = BUST_LAYERS[key], l = hiDpi(lc, w, h), tx = hiDpi(tc, w, h);
+  l.clearRect(0, 0, w, h); l.save();
+  if (crop === 'face') { const k = w / 150; l.translate(w / 2 - 152 * k, h / 2 - 124 * k); l.scale(k, k); }
+  else { const tall = crop === 'full' ? 400 : 340, k = Math.min(w / 300, h / tall); l.translate((w - 300 * k) / 2, h - tall * k); l.scale(k, k); }
+  drawBust(l, sp, t);
+  l.restore();
+  c.drawImage(lc, 0, 0, w, h);
+  // edge light: the sprite's upper-left rim, tinted by the rings behind it
+  const d = Math.max(1.2, w / 120);
+  tx.save(); tx.globalCompositeOperation = 'copy'; tx.drawImage(lc, 0, 0, w, h);
+  tx.globalCompositeOperation = 'source-in'; tx.fillStyle = bg === '#9a3aff' ? '#c88aff' : '#ff4a5e'; tx.fillRect(0, 0, w, h);
+  tx.globalCompositeOperation = 'destination-out'; tx.drawImage(lc, d, d * 0.8, w, h); tx.restore();
+  c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.75; c.drawImage(tc, 0, 0, w, h); c.restore();
 }

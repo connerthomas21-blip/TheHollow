@@ -53,6 +53,10 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Faces are a consistent three-quarter view turned to the viewer's right: ear and larger near eye on the left, far eye by the right contour, nose/mouth/chin on a centre line near x = 166.
 - Lyra uses a plain fitted breastplate (portrait) and a slim feminine sprite build (Appearance option "Slender"): narrow shoulders, cinched waist, flared armour skirt, thinner limbs, smaller feet, longer neck.
 
+## Session A.3 — Structure pass (done)
+- Sprites: bevelled plates everywhere (`plate`), armoured limbs over a padded undersuit (`armLimb`), knee/elbow cops (`cop`), gauntlet knuckles, gorget, breastplate + plackart (broad) or breastplate + laced corset and cloth skirt (slender), belt pouches, hip scabbard for sword users, tabard from the belt (`A.tabard`), cape lining and clasp, segmented sabatons, per-set motifs (`A.motif`: stitch, rivet, ridge, filigree, rune).
+- Portraits: bevelled armour (`bevel`), layered pauldrons and plackart, rivets, per-set chest motif, cape clasp, quilted undersuit; hair back volume and shadow clumps; cheekbone, nose bridge, lip, collarbone and eyelid detail; crimson rim light composited from the rune rings.
+
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
 

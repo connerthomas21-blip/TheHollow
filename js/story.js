@@ -2,9 +2,9 @@
 /* ============================== STORY: cast and cutscene scripts ============================== */
 
 // Order of Sweepers armour: silver plate, teal trim.
-const SWEEPER_ARMOR = { base: '#d4dbe6', trim: '#2ab8b0', pauldron: 'layered', cape: '#1e6a6a', rivet: '#e8c25a', sigil: '#2ab8b0' };
-const KOL_ARMOR = { base: '#8a6a3a', trim: '#e8c25a', pauldron: 'layered', cape: '#7a1a24', rivet: '#e8c25a', sigil: '#e8c25a' };
-const KOL_DARK_ARMOR = { base: '#3a2e2a', trim: '#c46aff', glow: '#c46aff', seams: true, pauldron: 'spiky', cape: '#2a0a24', spike: '#5a4a44', blade: '#2a2236' };
+const SWEEPER_ARMOR = { base: '#d4dbe6', trim: '#2ab8b0', pauldron: 'layered', cape: '#1e6a6a', rivet: '#e8c25a', sigil: '#2ab8b0', motif: 'filigree', tabard: '#1e6a6a', under: '#1c2a30' };
+const KOL_ARMOR = { base: '#8a6a3a', trim: '#e8c25a', pauldron: 'layered', cape: '#7a1a24', rivet: '#e8c25a', sigil: '#e8c25a', motif: 'filigree', tabard: '#7a1a24', under: '#2a1c14' };
+const KOL_DARK_ARMOR = { base: '#3a2e2a', trim: '#c46aff', glow: '#c46aff', seams: true, pauldron: 'spiky', cape: '#2a0a24', spike: '#5a4a44', blade: '#2a2236', tabard: '#2a0a24', under: '#160c14' };
 const KOL_LOOK = { build: 'm', gear: 'none', skin: 1, hair: 'short', hairCol: 4, eyes: 1, beard: 'full', mark: 'scar' };
 const LYRA_LOOK = { build: 'f', gear: 'none', skin: 2, hair: 'tail', hairCol: 2, eyes: 2, beard: 'none', mark: 'none' };
 const GM_LOOK = { build: 'm', gear: 'circlet', skin: 3, hair: 'long', hairCol: 4, eyes: 1, beard: 'full', mark: 'none' };

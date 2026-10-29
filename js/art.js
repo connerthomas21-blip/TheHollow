@@ -437,12 +437,12 @@ const pal = (v, list) => typeof v === 'number' ? list[v % list.length] : v;
 
 // How each armour piece looks on the body. Enemy knights pass their own objects in the same shape.
 const ARMOR_LOOK = {
-  a_vest:  { base: '#8a6a48', trim: '#3a2a1e', pauldron: 'pad', cloth: true, scarf: '#9a3a2a' },
-  a_alloy: { base: '#8a93a3', trim: '#4a505c', pauldron: 'plate', cape: '#7a2a34' },
-  a_cara:  { base: '#4f6a3e', trim: '#c9b46a', pauldron: 'spiky', cape: '#5a4a2a', spike: '#d8cfa8' },
-  a_aegis: { base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'layered', cape: '#2a3a8a', rivet: '#e8c25a' },
-  a_magma: { base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'spiky', cape: '#4a1a12', spike: '#5a4440' },
-  a_void:  { base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'layered', cape: '#1a1030', capeLong: true },
+  a_vest:  { base: '#8a6a48', trim: '#3a2a1e', pauldron: 'pad', cloth: true, scarf: '#9a3a2a', motif: 'stitch' },
+  a_alloy: { base: '#8a93a3', trim: '#4a505c', pauldron: 'plate', cape: '#7a2a34', motif: 'rivet', tabard: '#7a2a34', under: '#3a2e2a' },
+  a_cara:  { base: '#4f6a3e', trim: '#c9b46a', pauldron: 'spiky', cape: '#5a4a2a', spike: '#d8cfa8', motif: 'ridge', tabard: '#4a3a1e', under: '#2a2a1c' },
+  a_aegis: { base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'layered', cape: '#2a3a8a', rivet: '#e8c25a', motif: 'filigree', tabard: '#2a3a8a', under: '#22283a' },
+  a_magma: { base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'spiky', cape: '#4a1a12', spike: '#5a4440', tabard: '#3a120c', under: '#1a1210' },
+  a_void:  { base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'layered', cape: '#1a1030', capeLong: true, motif: 'rune', tabard: '#1a1030', under: '#120c1c' },
 };
 function armorStyle(a) { return { dark: shade(a.base, -38), light: shade(a.base, 42), ...a }; }
 
@@ -612,32 +612,6 @@ function drawHead(c, look, A, acc, t) {
   }
 }
 
-function pauldron(c, x, y, A, back) {
-  const f = back ? A.dark : A.base, li = back ? A.base : A.light;
-  const kind = A.pauldron;
-  if (kind === 'pad') {
-    P(c, [x - 6, y - 3, x + 5, y - 4.5, x + 8.4, y + 3, x + 5, y + 8, x - 5, y + 7, x - 8, y + 2], f);
-    L(c, [x - 5, y + 2, x + 6, y + 1.5], shade(f, -30), 0.7);
-    return;
-  }
-  if (kind === 'layered') {
-    for (let i = 2; i >= 0; i--) {
-      const o = i * 4;
-      P(c, [x - 8, y - 2 + o, x - 2, y - 7 + o, x + 8, y - 6 + o, x + 11, y + 1 + o, x + 7, y + 5 + o, x - 7, y + 4 + o], i ? f : li);
-      L(c, [x - 7, y + 4 + o, x + 7, y + 5 + o, x + 11, y + 1 + o], A.glow || A.trim, 1);
-    }
-    if (A.rivet) { c.fillStyle = A.rivet; c.fillRect(x - 4, y - 3, 1.6, 1.6); c.fillRect(x + 5, y - 3, 1.6, 1.6); }
-    return;
-  }
-  if (kind === 'spiky') {
-    const sp = A.spike || li;
-    P(c, [x - 5, y - 4, x - 4, y - 15, x, y - 5], sp);
-    P(c, [x + 1, y - 6, x + 5, y - 17, x + 6.4, y - 5], sp);
-  }
-  P(c, [x - 8, y - 1, x - 3, y - 6.4, x + 6, y - 6.6, x + 10.4, y + 1, x + 9, y + 9, x - 6, y + 8], f);
-  P(c, [x - 3, y - 5.6, x + 6, y - 5.8, x + 9.4, y + 1, x + 2, y], li, 0);
-  L(c, [x - 6, y + 8, x + 9, y + 9], A.glow || A.trim, 1.2);
-}
 
 // Weapons are drawn around the grip, blade pointing up (-y). The caller rotates.
 function drawWeapon(c, id, A, t) {
@@ -744,11 +718,6 @@ function drawWeapon(c, id, A, t) {
 const WEAPON_GLOW = { w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
 const WEAPON_LEN = { w_rust: 41, w_ion: 54, w_lance: 82, w_grav: 51, w_nova: 55, w_star: 64, sword: 55, axe: 52, staff: 70, gun: 36 };
 
-function foot(c, ax, ay, col, lit, s = 1) {
-  if (s !== 1) { c.save(); c.translate(ax, ay); c.scale(s, s); foot(c, 0, 0, col, lit); c.restore(); return; }
-  P(c, [ax - 4.4, ay - 1.4, ax + 3.6, ay - 1.4, ax + 10.4, ay + 3.6, ax + 10.4, ay + 5, ax - 4.4, ay + 5], col);
-  if (lit) { P(c, [ax - 3, ay - 1, ax + 3, ay - 1, ax + 7, ay + 2, ax - 3, ay + 2], lit, 0); L(c, [ax + 2.6, ay - 1, ax + 3.6, ay + 5], shade(col, -40), 0.7); }
-}
 
 function torsoPath(c, f, br, k = 1) {
   c.beginPath();
@@ -765,6 +734,109 @@ function torsoPath(c, f, br, k = 1) {
   c.closePath();
 }
 
+// A bevelled plate: a lit sliver along its upper-left edge, a shadowed sliver along its lower-right edge, then the ink outline.
+function plate(c, pts, base, lit, dk, lw = 1.3) {
+  const sh = (dx, dy) => pts.map((v, i) => v + (i % 2 ? dy : dx));
+  c.save(); P(c, pts, null, 0); c.clip();
+  P(c, pts, dk || shade(base, -38), 0);
+  P(c, sh(-0.7, -1.2), lit || shade(base, 42), 0);
+  c.save(); P(c, sh(0.55, 0.95), null, 0); c.clip(); P(c, sh(-0.7, -1.2), base, 0); c.restore();
+  c.restore();
+  if (lw) P(c, pts, null, lw);
+}
+const rivet = (c, x, y, col) => { c.fillStyle = INK; c.fillRect(x - 0.9, y - 0.9, 1.8, 1.8); c.fillStyle = col; c.fillRect(x - 0.6, y - 0.75, 1.1, 1.1); };
+
+// An armoured limb: padded undersuit, a bevelled plate over most of its length, and a lame at the top.
+// Cloth armour gets wrapped sleeves instead.
+function armLimb(c, x1, y1, x2, y2, w1, w2, A, front) {
+  const base = front ? A.base : A.dark, lit = front ? A.light : A.base;
+  const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1, nx = -dy / len, ny = dx / len;
+  const at = (k, s) => { const w = (w1 + (w2 - w1) * k) * s; return [x1 + dx * k + nx * w, y1 + dy * k + ny * w, x1 + dx * k - nx * w, y1 + dy * k - ny * w]; };
+  if (A.cloth) {
+    limb(c, x1, y1, x2, y2, w1, w2, base, front ? lit : null);
+    for (const k of [0.3, 0.55, 0.8]) { const p = at(k, 1); L(c, p, shade(base, -34), 0.7); }
+    return;
+  }
+  limb(c, x1, y1, x2, y2, w1 * 0.9, w2 * 0.9, front ? (A.under || '#2c2732') : shade(A.under || '#2c2732', -14));
+  const seg = (k0, k1, s) => { const a = at(k0, s), b = at(k1, s); plate(c, [a[0], a[1], b[0], b[1], b[2], b[3], a[2], a[3]], base, lit); };
+  seg(0.16, 0.9, 1.06);
+  seg(0.02, 0.2, 0.98);
+  const r0 = at(0.24, 0.3), r1 = at(0.84, 0.3);
+  L(c, [r0[0], r0[1], r1[0], r1[1]], front ? shade(lit, 30) : lit, 0.7);
+  if (A.seams && front) { const m = at(0.55, 0); c.save(); glowOn(c, A.glow, 8); L(c, [m[0] - 1, m[1] - 3, m[0] + 1, m[1], m[0] - 0.5, m[1] + 3], A.glow, 1); c.restore(); }
+}
+// Knee or elbow cop: a bevelled diamond with a side wing.
+function cop(c, x, y, s, A, front) {
+  const base = front ? A.light : A.base;
+  plate(c, [x - 3.4 * s, y - 4.4 * s, x + 3.4 * s, y - 3.6 * s, x + 4.4 * s, y + 3.4 * s, x - 2.4 * s, y + 4.4 * s], base, shade(base, 30), shade(base, -40));
+  if (front) P(c, [x - 3.4 * s, y - 1 * s, x - 6.4 * s, y + 1.4 * s, x - 2.6 * s, y + 3 * s], A.base, 0.9);
+  if (A.rivet) rivet(c, x + 0.4 * s, y, A.rivet);
+}
+
+function foot(c, ax, ay, col, lit, s = 1) {
+  if (s !== 1) { c.save(); c.translate(ax, ay); c.scale(s, s); foot(c, 0, 0, col, lit); c.restore(); return; }
+  const pts = [ax - 4.4, ay - 2.4, ax + 3.6, ay - 2.4, ax + 10.6, ay + 3.4, ax + 10.6, ay + 5, ax - 4.4, ay + 5];
+  plate(c, pts, col, lit || shade(col, 36), shade(col, -40));
+  for (const k of [0, 1, 2]) L(c, [ax + 2.6 + k * 2.4, ay - 1.6 + k * 1.4, ax + 3.4 + k * 2.4, ay + 5], shade(col, -46), 0.6);
+  plate(c, [ax - 4.8, ay - 4.6, ax + 2.4, ay - 4.6, ax + 3, ay - 1.4, ax - 4.8, ay - 1.4], shade(col, 12), lit || shade(col, 40), shade(col, -40), 1);
+}
+
+// Shoulder guard. back = the far shoulder, drawn in shadow.
+function pauldron(c, x, y, A, back) {
+  const f = back ? A.dark : A.base, li = back ? A.base : A.light, dk = shade(f, -36);
+  const kind = A.pauldron;
+  if (kind === 'pad') {
+    plate(c, [x - 6, y - 3, x + 5, y - 4.5, x + 8.4, y + 3, x + 5, y + 8, x - 5, y + 7, x - 8, y + 2], f, li, dk);
+    c.save(); c.setLineDash([1.1, 1.1]); L(c, [x - 5, y + 2, x + 6, y + 1.5], shade(f, 40), 0.6); L(c, [x - 4, y + 5, x + 4.6, y + 5], shade(f, 40), 0.6); c.restore();
+    return;
+  }
+  if (kind === 'layered') {
+    for (let i = 2; i >= 0; i--) {
+      const o = i * 4;
+      plate(c, [x - 8, y - 2 + o, x - 2, y - 7 + o, x + 8, y - 6 + o, x + 11, y + 1 + o, x + 7, y + 5 + o, x - 7, y + 4 + o], i ? f : li, i ? li : shade(li, 26), dk);
+      L(c, [x - 7, y + 4 + o, x + 7, y + 5 + o, x + 11, y + 1 + o], A.glow || A.trim, 1);
+    }
+    if (A.rivet) { rivet(c, x - 4, y - 2.2, A.rivet); rivet(c, x + 5, y - 2.2, A.rivet); }
+    return;
+  }
+  if (kind === 'spiky') {
+    const sp = A.spike || li;
+    plate(c, [x - 5, y - 4, x - 4, y - 15, x, y - 5], sp, shade(sp, 30), shade(sp, -40));
+    plate(c, [x + 1, y - 6, x + 5, y - 17, x + 6.4, y - 5], sp, shade(sp, 30), shade(sp, -40));
+  }
+  plate(c, [x - 8, y - 1, x - 3, y - 6.4, x + 6, y - 6.6, x + 10.4, y + 1, x + 9, y + 9, x - 6, y + 8], f, li, dk);
+  plate(c, [x - 6, y + 5.4, x + 9.4, y + 6.4, x + 9, y + 9, x - 6, y + 8], shade(f, -8), li, dk, 1);
+  L(c, [x - 6, y + 8, x + 9, y + 9], A.glow || A.trim, 1.2);
+  if (A.rivet || A.motif === 'rivet') { const rc = A.rivet || shade(f, 50); rivet(c, x - 3, y - 2, rc); rivet(c, x + 5, y - 2.6, rc); }
+  if (A.motif === 'ridge') { c.strokeStyle = shade(f, 34); c.lineWidth = 0.8; c.beginPath(); c.moveTo(x - 5, y); c.quadraticCurveTo(x + 2, y - 4, x + 8, y + 1); c.stroke(); }
+}
+
+// Per-set surface detail on the breastplate.
+function chestMotif(c, A, f, br, t) {
+  const m = A.motif;
+  if (m === 'stitch') {
+    c.save(); c.setLineDash([1.2, 1.1]);
+    for (const yy of [-78, -70, -62]) L(c, [-10, yy + br * 0.5, 12, yy - 1 + br * 0.5], shade(A.base, 34), 0.6);
+    c.restore();
+  }
+  if (m === 'rivet') for (const [x, y] of [[-9, -80], [9, -80.6], [-8, -64], [10, -64.6]]) rivet(c, x * (f ? 0.75 : 1), y + br, shade(A.base, 55));
+  if (m === 'ridge') {
+    c.strokeStyle = shade(A.base, 36); c.lineWidth = 0.9;
+    for (let i = 0; i < 3; i++) { c.beginPath(); c.moveTo(-9 + i, -78 + i * 6 + br); c.quadraticCurveTo(2, -82 + i * 6 + br, 12 - i, -77 + i * 6 + br); c.stroke(); }
+  }
+  if (m === 'filigree') {
+    const sc = f ? 0.7 : 1;
+    L(c, [2 - 8 * sc, -81 + br, 2, -76 + br, 2 + 8 * sc, -81 + br], A.rivet || '#e8c25a', 0.9);
+    P(c, [2, -79 + br, 3.6, -76.6 + br, 2, -74.2 + br, 0.4, -76.6 + br], A.trim, 0.6);
+  }
+  if (m === 'rune') {
+    c.save(); glowOn(c, A.glow, 8); c.strokeStyle = A.glow; c.lineWidth = 0.8;
+    c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 0.004);
+    L(c, [-4, -76 + br, -1, -80 + br, 2, -76 + br, 5, -80 + br], A.glow, 0.8); L(c, [-2, -72 + br, 4, -72 + br], A.glow, 0.8);
+    c.restore();
+  }
+}
+
 // Full knight. Origin at the feet, facing right, about 110 units tall.
 // o: { armor, weapon, look, acc, flip, pose: { arm, lean, crouch, walk, smear, smearT, aura } }
 function drawKnight(c, x, y, s, o, t) {
@@ -777,22 +849,32 @@ function drawKnight(c, x, y, s, o, t) {
   const br = Math.sin(t * 0.004) * 1.1 + (ps.walk != null ? Math.abs(Math.cos(ps.walk)) * -1.6 : 0), wv = Math.sin(t * 0.003) * 3;
   const hipY = -46 + cr * 14, lw = f ? 0.68 : 1;
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, 46); fn(); c.restore(); };
+  const tab = A.tabard || null, sword = !['w_lance', 'staff', 'gun', 'axe'].includes(wpn);
 
   if (ps.aura) {
     const g = c.createRadialGradient(0, -60, 4, 0, -60, 70); g.addColorStop(0, ps.aura); g.addColorStop(1, 'rgba(0,0,0,0)');
     c.save(); c.globalAlpha = 0.45 + 0.15 * Math.sin(t * 0.02); c.fillStyle = g; c.fillRect(-70, -130, 140, 140); c.restore();
   }
 
-  // cape and scarf (move with the upper body)
+  // cape (outer cloth with a darker lining showing at the turn) and scarf
   upper(() => {
     if (A.cape) {
       const end = A.capeLong ? -1 - hipY - 46 : -16 - hipY - 46, flow = -lean * 30 - (ps.walk != null ? 6 : 0);
-      P(c, [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3 + flow * 0.4, end - 2, -18 + wv + flow, end + 3, -24 + wv + flow, end - 2, -30 + wv * 1.2 + flow, end + 2, -28 + wv + flow * 0.6, -40, -19, -70], A.cape);
-      L(c, [-13, -72, -21 + wv * 0.7 + flow, end + 1], shade(A.cape, -28), 1.2);
-      L(c, [-6, -74, -12 + wv * 0.4 + flow * 0.5, end], shade(A.cape, 22), 0.9);
-      P(c, [-10, -82 + br, 6, -83 + br, 1, -77, -8, -76.4], shade(A.cape, -40), 0);
+      const capePts = [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3 + flow * 0.4, end - 2, -18 + wv + flow, end + 3, -24 + wv + flow, end - 2, -30 + wv * 1.2 + flow, end + 2, -28 + wv + flow * 0.6, -40, -19, -70];
+      P(c, capePts, A.cape);
+      c.save(); P(c, capePts, null, 0); c.clip();
+      P(c, [-20, -70, -30 + wv * 1.2 + flow, end + 4, -24 + wv + flow, end + 4, -14, -64], shade(A.cape, -30), 0);
+      P(c, [-6, -80 + br, 4, -82 + br, -4, -60, -10, -66], shade(A.cape, 18), 0);
+      c.restore();
+      L(c, [-13, -72, -21 + wv * 0.7 + flow, end + 1], shade(A.cape, -40), 1.1);
+      L(c, [-7, -74, -13 + wv * 0.4 + flow * 0.5, end], shade(A.cape, 28), 0.8);
+      L(c, [-12 + wv * 0.3 + flow * 0.4, end - 2, -18 + wv + flow, end + 3, -24 + wv + flow, end - 2, -30 + wv * 1.2 + flow, end + 2], A.trim, 0.9);
+      P(c, [-10, -82 + br, 6, -83 + br, 1, -77, -8, -76.4], shade(A.cape, -45), 0);
     }
-    if (A.scarf) P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
+    if (A.scarf) {
+      P(c, [-7, -86 + br, 3, -86 + br, -3, -80 + br, -18 + wv, -72, -21 + wv, -74, -14 + wv * 0.5, -79], A.scarf);
+      L(c, [-6, -83 + br, -17 + wv, -74], shade(A.scarf, -30), 0.8);
+    }
   });
   if (o.acc === 'x_boots') {
     glowOn(c, '#5ad1e6', 10);
@@ -802,82 +884,118 @@ function drawKnight(c, x, y, s, o, t) {
 
   // back arm
   upper(() => {
-    const sw = ps.walk != null ? -wk * 0.5 : 0;
-    const bs = f ? 2 : 0;
-    limb(c, -9 + bs, -77 + br, -15 + bs + sw, -62 + br, 4.2 * lw, 3.6 * lw, A.dark);
-    limb(c, -15 + bs + sw, -62 + br, -11 + bs + sw * 1.4, -50 + br, 3.6 * lw, 3.2 * lw, A.dark);
+    const sw = ps.walk != null ? -wk * 0.5 : 0, bs = f ? 2 : 0;
+    armLimb(c, -9 + bs, -77 + br, -15 + bs + sw, -62 + br, 4.2 * lw, 3.6 * lw, A, false);
+    armLimb(c, -15 + bs + sw, -62 + br, -11 + bs + sw * 1.4, -50 + br, 3.6 * lw, 3.2 * lw, A, false);
+    cop(c, -15 + bs + sw, -62 + br, 0.7 * (f ? 0.8 : 1), A, false);
     c.save(); c.translate(bs, 0); if (f) { c.translate(-11, -50 + br); c.scale(0.75, 0.75); c.translate(11, 50 - br); }
-    P(c, [-14 + sw * 1.4, -53 + br, -8 + sw * 1.4, -53 + br, -7.6 + sw * 1.4, -47 + br, -13 + sw * 1.4, -46.4 + br], shade(A.dark, -10)); c.restore();
+    plate(c, [-14 + sw * 1.4, -53 + br, -8 + sw * 1.4, -53 + br, -7.6 + sw * 1.4, -47 + br, -13 + sw * 1.4, -46.4 + br], shade(A.dark, -10), A.base, shade(A.dark, -40)); c.restore();
     c.save(); if (f) { c.translate(-8, -82 + br); c.scale(0.72, 0.72); c.translate(10, 80 - br); } pauldron(c, -10, -80 + br, A, true); c.restore();
+  });
+
+  // scabbard on the far hip, behind the back leg
+  if (sword) upper(() => {
+    P(c, [-5, -47, -2, -45.4, -20, -21, -23.4, -23.2], '#3a2a22');
+    L(c, [-4.6, -46, -21.6, -22.4], '#5a4434', 0.7);
+    for (const k of [0.2, 0.55]) { const x0 = -5 + (-18) * k, y0 = -46 + 24 * k; P(c, [x0 - 1.6, y0 - 1.4, x0 + 1.8, y0 + 0.6, x0 + 0.8, y0 + 2.2, x0 - 2.6, y0], A.trim, 0.8); }
+    P(c, [-20, -21, -23.4, -23.2, -25, -19.4], '#c9ccd6', 0.9);
   });
 
   // back leg: the foot stays planted while the knee bends
   const bkx = (f ? -9 : -11) - cr * 2 - wk * 0.6, bky = -25 + cr * 17, bfx = (f ? -13.5 : -15) - wk, fs = f ? 0.8 : 1;
-  limb(c, f ? -4.6 : -4, hipY, bkx, bky, 6 * lw, 5 * lw, A.dark);
-  limb(c, bkx, bky, bfx, -5, 5 * lw, 3.8 * lw, A.dark);
-  P(c, [bkx - 3 * fs, bky - 4 * fs, bkx + 2 * fs, bky - 4 * fs, bkx + 3 * fs, bky + 3 * fs, bkx - 2 * fs, bky + 4 * fs], A.base, 1);
-  foot(c, bfx, -5, shade(A.dark, -12), null, fs);
+  armLimb(c, f ? -4.6 : -4, hipY, bkx, bky, 6 * lw, 5 * lw, A, false);
+  armLimb(c, bkx, bky, bfx, -5, 5 * lw, 3.8 * lw, A, false);
+  cop(c, bkx, bky, fs * 0.9, A, false);
+  foot(c, bfx, -5, shade(A.dark, -12), A.base, fs);
 
   // torso
   upper(() => {
-    torsoPath(c, f, br, look.bust ?? 0.5); c.fillStyle = A.base; c.fill();
-    c.save(); torsoPath(c, f, br, look.bust ?? 0.5); c.clip();
+    const k = look.bust ?? 0.5;
+    // padded undersuit at the neck
+    P(c, [-6, -86 + br, 7, -86 + br, 8, -82 + br, -7, -82 + br], A.cloth ? A.base : shade(A.under || '#2c2732', 10), 1);
+    torsoPath(c, f, br, k); c.fillStyle = A.base; c.fill();
+    c.save(); torsoPath(c, f, br, k); c.clip();
     P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
-    if (f) {
+    if (!A.cloth && !f) {
+      // breastplate and an overlapping plackart
+      plate(c, [-13, -84 + br, 14, -85 + br, 18, -71 + br, 15, -62 + br, -13, -62 + br, -15, -69 + br], A.base, A.light, A.dark, 0);
+      P(c, [-14, -86 + br, -2, -86 + br, -3, -60, -14, -60], 'rgba(0,0,0,0.28)', 0);
+      P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -67 + br], A.light, 0);
+      L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.7)', 0.8);
+      plate(c, [-11, -64 + br, 14, -65 + br, 13, -52, -9, -52], shade(A.base, -10), A.light, A.dark);
+      P(c, [-11, -64 + br, -1, -64.4 + br, -2, -52, -9, -52], 'rgba(0,0,0,0.25)', 0);
+      L(c, [-10, -58, 13, -58.6], A.trim, 0.9);
+    } else if (!A.cloth && f) {
+      plate(c, [-9, -84 + br, 9, -85 + br, 13.4, -77 + br, 13, -66 + br, -9.6, -66 + br, -10, -74 + br], A.base, A.light, A.dark, 0);
+      P(c, [-9, -84 + br, -1, -84 + br, -2, -62, -10, -62], 'rgba(0,0,0,0.26)', 0);
       P(c, [4, -82 + br, 11, -83 + br, 13.6, -72 + br, 8.6, -69 + br], A.light, 0);
       L(c, [10.4, -80 + br, 12.4, -74 + br], 'rgba(255,255,255,0.65)', 0.8);
-      P(c, [-6.4, -60, 7, -60, 6.6, -57, -6.4, -57], A.dark, 0);
+      // laced corset section at the waist
+      plate(c, [-7.6, -66 + br, 9.6, -66 + br, 7, -57, 8, -52, -6, -52, -6.6, -58], shade(A.base, -14), A.base, A.dark);
+      for (let i = 0; i < 4; i++) L(c, [-0.4, -64 + i * 3, 2.6, -62.6 + i * 3, -0.4, -61.2 + i * 3], A.trim, 0.6);
     } else {
-      P(c, [5, -82 + br, 13, -83 + br, 16, -71 + br, 9, -66 + br], A.light, 0);
-      L(c, [12, -81 + br, 15, -73 + br], 'rgba(255,255,255,0.6)', 0.8);
+      for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
     }
     c.restore();
-    torsoPath(c, f, br, look.bust ?? 0.5); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
-    if (A.cloth) {
-      for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
-      P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
-    } else {
-      if (f) { c.strokeStyle = A.dark; c.lineWidth = 0.9; c.beginPath(); c.moveTo(2, -83 + br); c.quadraticCurveTo(3.6, -70 + br, 1.4, -57); c.stroke(); }
-      else L(c, [3, -82 + br, 2, -56], A.dark, 1);
-      L(c, f ? [-6.6, -61, 8, -61] : [-10, -58, 12, -58], A.trim, 1.1);
-    }
+    torsoPath(c, f, br, k); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+    if (A.cloth) P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
+    else L(c, f ? [2, -84 + br, 2.6, -66 + br] : [3, -84 + br, 2.4, -64 + br], A.dark, 0.9);
+    chestMotif(c, A, f, br, t);
     if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
-    if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx, sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
-    // the Order's star sits on the chest, or on the belt buckle for the curvy build
-    if (A.sigil) { const pts = [], sy = f ? -55.5 : -71 + br; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(1 + Math.cos(an) * r, sy + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
+    if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx * (f ? 0.75 : 1), sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
+    // the Order's star sits on the chest, or on the belt buckle for the slender build
+    if (A.sigil) { const pts = [], sy = f ? -55.5 : -73 + br; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(1 + Math.cos(an) * r, sy + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
     if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
     if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
 
-    // waist, belt and tassets
+    // waist: mail, belt, buckle, pouches
     const wR = f ? 8.4 : 12, wL = f ? -6 : -9;
-    P(c, [wL, -53, wR, -53, wR - 1, -46, wL + 1, -46], A.dark);
-    for (let mx = wL + 1.4; mx < wR - 1.4; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 28), 0.5);
-    P(c, [wL - 0.6, -48.4, wR + 0.6, -48.4, wR + 0.6, -44.4, wL - 0.6, -44.4], A.trim);
+    P(c, [wL, -53, wR, -53, wR - 1, -46, wL + 1, -46], A.cloth ? shade(A.base, -20) : A.dark);
+    if (!A.cloth) for (let mx = wL + 1.4; mx < wR - 1.4; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 30), 0.5);
+    plate(c, [wL - 0.6, -48.6, wR + 0.6, -48.6, wR + 0.6, -44.2, wL - 0.6, -44.2], A.trim, shade(A.trim, 40), shade(A.trim, -40), 1);
     if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
-    else P(c, [1, -49.2, 5, -49.2, 5, -43.6, 1, -43.6], '#e8c25a', 1);
-    P(c, [wL - 1.6, -47.6, wL + 2.6, -47.6, wL + 2.4, -41.4, wL - 1.4, -41.6], '#4a3424', 1);
-    L(c, [wL - 1.4, -45.4, wL + 2.5, -45.4], '#6a4a30', 0.6);
+    else if (!(A.sigil && f)) { plate(c, [1, -49.4, 5, -49.4, 5, -43.4, 1, -43.4], '#e8c25a', '#fff2b8', '#8a6a2a', 1); P(c, [2.2, -48, 3.8, -48, 3.8, -44.8, 2.2, -44.8], INK, 0); }
+    plate(c, [wL - 1.6, -47.6, wL + 2.6, -47.6, wL + 2.4, -41, wL - 1.4, -41.2], '#5a3e2a', '#7a5a3e', '#2e2016', 1);
+    L(c, [wL - 1.4, -45.2, wL + 2.5, -45.2], '#2e2016', 0.6);
+    plate(c, [wR - 2.6, -47.6, wR + 1, -47.6, wR + 1.2, -42.6, wR - 2.4, -42.4], '#5a3e2a', '#7a5a3e', '#2e2016', 0.9);
+
+    // tassets; the slender build adds a longer cloth skirt underneath
     if (f) {
-      P(c, [-7.4, -44.4, 1, -44.4, 0, -33, -13, -34.6], A.base);
-      P(c, [1.6, -44.4, 9.6, -44.4, 15, -34.6, 2.4, -33], A.cloth ? A.base : A.light);
+      if (tab) P(c, [-11, -44.4, 11, -44.4, 16.6, -30.6 + wv * 0.1, -14.6, -30.6], tab);
+      plate(c, [-7.4, -44.4, 1, -44.4, 0, -33, -13, -34.6], A.base, A.light, A.dark);
+      plate(c, [1.6, -44.4, 9.6, -44.4, 15, -34.6, 2.4, -33], A.cloth ? A.base : A.light, shade(A.light, 26), A.base);
       L(c, [-12.4, -35.4, -0.4, -33.8], A.trim, 0.9); L(c, [2.8, -33.8, 14.4, -35.4], A.trim, 0.9);
     } else {
-      P(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base);
-      P(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light);
+      plate(c, [-9, -44.4, 0.6, -44.4, -0.4, -35, -10.4, -37], A.base, A.light, A.dark);
+      plate(c, [1.6, -44.4, 12.6, -44.4, 14, -36.4, 3, -34.8], A.cloth ? A.base : A.light, shade(A.light, 26), A.base);
+      if (!A.cloth) { L(c, [-9.4, -40, 0.2, -39.6], A.dark, 0.7); L(c, [2.2, -39.6, 13.2, -40.4], A.base, 0.7); }
     }
   });
 
   // front leg
   const fkx = (f ? 9 : 11) + cr * 9 + wk * 0.6, fky = -25 + cr * 8, ffx = (f ? 12 : 13) + wk;
-  limb(c, f ? 5.6 : 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A.base, A.light);
-  limb(c, fkx, fky, ffx, -5, 5.2 * lw, 4 * lw, A.base, A.light);
-  P(c, [fkx - 3.4 * fs, fky - 4.6 * fs, fkx + 3.4 * fs, fky - 3.6 * fs, fkx + 4.4 * fs, fky + 3.4 * fs, fkx - 2.4 * fs, fky + 4.4 * fs], A.light);
-  if (A.seams) { glowOn(c, A.glow, 8); L(c, [(5 + fkx) / 2 - 2, (hipY + fky) / 2 - 4, (5 + fkx) / 2, (hipY + fky) / 2 + 4], A.glow, 1.1); glowOff(c); }
+  armLimb(c, f ? 5.6 : 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A, true);
+  armLimb(c, fkx, fky, ffx, -5, 5.2 * lw, 4 * lw, A, true);
+  cop(c, fkx, fky, fs, A, true);
   foot(c, ffx, -5, A.base, A.light, fs);
 
-  // head, weapon arm, front pauldron
+  // tabard hanging from the belt, over the legs
+  if (tab && !f) upper(() => {
+    const tp = [-2.4, -44.2, 6.4, -44.2, 7.6 + wv * 0.2, -27, 4.6 + wv * 0.2, -24.6, 2 + wv * 0.15, -27, -0.6 + wv * 0.1, -24.6, -3.4 + wv * 0.1, -27];
+    P(c, tp, tab);
+    c.save(); P(c, tp, null, 0); c.clip(); P(c, [-4, -44, 1.4, -44, 0 + wv * 0.1, -22, -4, -22], shade(tab, -26), 0); c.restore();
+    L(c, [7.4 + wv * 0.2, -28, 4.6 + wv * 0.2, -25.6, 2 + wv * 0.15, -28, -0.6 + wv * 0.1, -25.6, -3.2 + wv * 0.1, -28], A.trim, 0.8);
+    const em = A.sigil || A.trim;
+    P(c, [2, -40, 4.2, -37, 2, -34, -0.2, -37], em, 0.8);
+  });
+
+  // head, gorget, weapon arm, front pauldron
   upper(() => {
     c.save(); c.translate(f ? 1.6 : 2, (f ? -98.5 : -96.5) + br); if (f) c.scale(0.94, 0.94); drawHead(c, look, A, o.acc, t); c.restore();
+    if (!A.cloth) {
+      plate(c, [-7, -86.6 + br, 8.4, -87.2 + br, 10.4, -82 + br, -8, -81.4 + br], A.base, A.light, A.dark, 1.1);
+      L(c, [-7.4, -84 + br, 9.4, -84.4 + br], A.dark, 0.6);
+    }
     const gun = wpn === 'gun', base = gun ? Math.PI / 2 : wpn === 'w_lance' ? 0.9 : wpn === 'staff' ? 0.15 : 0.35;
     const sx = f ? 10.6 : 13, sy = -77 + br;
     const rot = (px, py, a) => { const dx = px - sx, dy = py - sy, ca = Math.cos(a), sa = Math.sin(a); return [sx + dx * ca - dy * sa, sy + dx * sa + dy * ca]; };
@@ -893,18 +1011,21 @@ function drawKnight(c, x, y, s, o, t) {
       }
       c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.6 * (ps.smearT ?? 1);
       glowOn(c, WEAPON_GLOW[wpn] || '#ffffff', 14);
-      const col = WEAPON_GLOW[wpn] || '#ffffff';
-      P(c, [...outer, ...inner], col, 0);
+      P(c, [...outer, ...inner], WEAPON_GLOW[wpn] || '#ffffff', 0);
       c.globalAlpha = 0.9 * (ps.smearT ?? 1); L(c, outer, '#ffffff', 2);
       c.restore();
     }
     c.save(); c.translate(hx, hy); c.rotate(base + arm); drawWeapon(c, wpn, A, t); c.restore();
-    limb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A.base, A.light);
-    limb(c, ex, ey, hx, hy, 3.8 * lw, 3.4 * lw, A.base, A.light);
-    P(c, [ex - 2.8, ey - 2.6, ex + 1.2, ey - 4, ex + 3.4, ey + 1, ex - 0.6, ey + 3], A.light, 1);
-    P(c, [hx - 3.6, hy - 3.6, hx + 3.4, hy - 3.8, hx + 4, hy + 3, hx - 3, hy + 3.4], A.light);
-    L(c, [hx + 1.6, hy - 3.4, hx + 2.2, hy + 2.8], A.dark, 0.6); L(c, [hx - 0.6, hy - 3.4, hx - 0.2, hy + 3], A.dark, 0.6);
+    armLimb(c, sx, sy, ex, ey, 4.4 * lw, 3.8 * lw, A, true);
+    armLimb(c, ex, ey, hx, hy, 3.8 * lw, 3.4 * lw, A, true);
+    cop(c, ex, ey, 0.75 * (f ? 0.85 : 1), A, true);
+    // gauntlet with knuckle plates over the grip
+    const gs = f ? 0.85 : 1;
+    plate(c, [hx - 3.6 * gs, hy - 3.6 * gs, hx + 3.4 * gs, hy - 3.8 * gs, hx + 4 * gs, hy + 3 * gs, hx - 3 * gs, hy + 3.4 * gs], A.cloth ? shade(A.base, -20) : A.light, shade(A.light, 30), A.base);
+    for (const k of [-1.6, 0.4, 2.4]) L(c, [hx + k * gs, hy - 3.4 * gs, hx + (k + 0.4) * gs, hy + 3 * gs], A.cloth ? shade(A.base, -50) : A.dark, 0.6);
     c.save(); if (f) { c.translate(9.4, -83 + br); c.scale(0.72, 0.72); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
+    // cape clasp
+    if (A.cape) { const cx = f ? 4.6 : 6, cy = -82.6 + br; P(c, [cx - 2, cy, cx, cy - 2, cx + 2, cy, cx, cy + 2], '#e8c25a', 0.8); c.fillStyle = A.trim; c.fillRect(cx - 0.6, cy - 0.6, 1.2, 1.2); }
     if (o.acc === 'x_lens') {
       const oy = -104 + Math.sin(t * 0.003) * 3;
       glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
