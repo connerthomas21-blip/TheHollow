@@ -437,12 +437,12 @@ const pal = (v, list) => typeof v === 'number' ? list[v % list.length] : v;
 
 // How each armour piece looks on the body. Enemy knights pass their own objects in the same shape.
 const ARMOR_LOOK = {
-  a_vest:  { base: '#8a6a48', trim: '#3a2a1e', pauldron: 'pad', cloth: true, scarf: '#9a3a2a', motif: 'stitch' },
-  a_alloy: { base: '#8a93a3', trim: '#4a505c', pauldron: 'plate', cape: '#7a2a34', motif: 'rivet', tabard: '#7a2a34', under: '#3a2e2a' },
-  a_cara:  { base: '#4f6a3e', trim: '#c9b46a', pauldron: 'spiky', cape: '#5a4a2a', spike: '#d8cfa8', motif: 'ridge', tabard: '#4a3a1e', under: '#2a2a1c' },
-  a_aegis: { base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'layered', cape: '#2a3a8a', rivet: '#e8c25a', motif: 'filigree', tabard: '#2a3a8a', under: '#22283a' },
-  a_magma: { base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'spiky', cape: '#4a1a12', spike: '#5a4440', tabard: '#3a120c', under: '#1a1210' },
-  a_void:  { base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'layered', cape: '#1a1030', capeLong: true, motif: 'rune', tabard: '#1a1030', under: '#120c1c' },
+  a_vest:  { style: 'cloth', base: '#8a6a48', trim: '#3a2a1e', pauldron: 'pad', cloth: true, scarf: '#9a3a2a', motif: 'stitch' },
+  a_alloy: { style: 'munition', base: '#8a93a3', trim: '#4a505c', pauldron: 'round', cape: '#7a2a34', motif: 'rivet', tabard: '#7a2a34', under: '#3a2e2a' },
+  a_cara:  { style: 'chitin', base: '#4f6a3e', trim: '#c9b46a', pauldron: 'elytra', spike: '#d8cfa8', under: '#2a2a1c' },
+  a_aegis: { style: 'paladin', base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'paladin', cape: '#2a3a8a', capeLong: true, rivet: '#e8c25a', motif: 'filigree', tabard: '#2a3a8a', under: '#22283a' },
+  a_magma: { style: 'jugg', base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'massive', spike: '#5a4440', under: '#1a1210' },
+  a_void:  { style: 'void', base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'float', cape: '#1a1030', capeLong: true, motif: 'rune', under: '#120c1c' },
 };
 function armorStyle(a) { return { dark: shade(a.base, -38), light: shade(a.base, 42), ...a }; }
 
@@ -516,6 +516,7 @@ function drawHead(c, look, A, acc, t) {
       for (const k of [0, 1]) L(c, [5.4 + k * 0.6, -14 - k * 3, 8.6 + k * 0.4, -14.4 - k * 3], '#b8aa8c', 0.6);
     }
     if (acc === 'x_scope') { glowOn(c, '#ff4a4a', 6); P(c, [5, -5, 8.6, -5, 8.6, -1.4, 5, -1.4], 'rgba(255,70,70,0.5)', 0.8); glowOff(c); }
+    if (A.style) helmAccent(c, A, true, t);
     return;
   }
 
@@ -602,6 +603,7 @@ function drawHead(c, look, A, acc, t) {
     L(c, [3.2, -2.4, 4.6, 6], A.light, 0.5);
     P(c, [7.6, -4.8, 8.9, -4.8, 9.4, 1.4, 8.3, 1.6], A.light, 0.9);
     c.fillStyle = A.rivet || A.light; c.fillRect(-5.5, -6, 1.4, 1.4); c.fillRect(-5.5, 2, 1.4, 1.4); c.fillRect(3.6, 0, 1, 1);
+    if (A.style) helmAccent(c, A, false, t);
   } else if (g === 'hood') {
     c.save(); headPath(c, fem); c.clip(); c.fillStyle = 'rgba(5,3,12,0.3)'; c.fillRect(-10, -14, 22, 26); c.restore();
     const hc = A.cape || shade(A.base, -8);
@@ -757,10 +759,23 @@ function armLimb(c, x1, y1, x2, y2, w1, w2, A, front) {
     for (const k of [0.3, 0.55, 0.8]) { const p = at(k, 1); L(c, p, shade(base, -34), 0.7); }
     return;
   }
+  if (A.style === 'void') {
+    limb(c, x1, y1, x2, y2, w1 * 0.9, w2 * 0.9, base, front ? shade(base, 26) : null);
+    const m0 = at(0.12, 0.25), m1 = at(0.9, 0.25);
+    c.save(); glowOn(c, A.glow, 6); L(c, [m0[0], m0[1], m1[0], m1[1]], A.glow, 0.7); c.restore();
+    return;
+  }
   limb(c, x1, y1, x2, y2, w1 * 0.9, w2 * 0.9, front ? (A.under || '#2c2732') : shade(A.under || '#2c2732', -14));
   const seg = (k0, k1, s) => { const a = at(k0, s), b = at(k1, s); plate(c, [a[0], a[1], b[0], b[1], b[2], b[3], a[2], a[3]], base, lit); };
-  seg(0.16, 0.9, 1.06);
+  if (A.style === 'chitin') {
+    seg(0.06, 0.52, 1.1); seg(0.44, 0.94, 1.04);
+    if (front) { const m = at(0.5, -1.1), n = at(0.62, -1.1); P(c, [m[2], m[3], n[2] + (n[2] - m[2]) * 0.4 - ny * 4, n[3] + (n[3] - m[3]) * 0.4 + nx * 4, n[2], n[3]], A.spike || lit, 0.8); }
+    return;
+  }
+  seg(0.16, 0.9, A.style === 'jugg' ? 1.14 : 1.06);
   seg(0.02, 0.2, 0.98);
+  if (A.style === 'jugg') seg(0.82, 0.98, 1.1);
+  if (A.style === 'paladin' && front) { const g0 = at(0.2, 1), g1 = at(0.86, 1); L(c, [g0[0], g0[1], g1[0], g1[1]], A.rivet || '#e8c25a', 0.7); }
   const r0 = at(0.24, 0.3), r1 = at(0.84, 0.3);
   L(c, [r0[0], r0[1], r1[0], r1[1]], front ? shade(lit, 30) : lit, 0.7);
   if (A.seams && front) { const m = at(0.55, 0); c.save(); glowOn(c, A.glow, 8); L(c, [m[0] - 1, m[1] - 3, m[0] + 1, m[1], m[0] - 0.5, m[1] + 3], A.glow, 1); c.restore(); }
@@ -783,6 +798,7 @@ function foot(c, ax, ay, col, lit, s = 1) {
 
 // Shoulder guard. back = the far shoulder, drawn in shadow.
 function pauldron(c, x, y, A, back) {
+  if (stylePauldron(c, x, y, A, back, performance.now())) return;
   const f = back ? A.dark : A.base, li = back ? A.base : A.light, dk = shade(f, -36);
   const kind = A.pauldron;
   if (kind === 'pad') {
@@ -847,9 +863,10 @@ function drawKnight(c, x, y, s, o, t) {
   c.save(); c.translate(x, y); c.scale(o.flip ? -s : s, s);
   c.lineJoin = 'round'; c.lineCap = 'round';
   const br = Math.sin(t * 0.004) * 1.1 + (ps.walk != null ? Math.abs(Math.cos(ps.walk)) * -1.6 : 0), wv = Math.sin(t * 0.003) * 3;
-  const hipY = -46 + cr * 14, lw = f ? 0.68 : 1;
+  const hipY = -46 + cr * 14, lw = (f ? 0.68 : 1) * (A.style === 'jugg' ? 1.2 : A.style === 'void' ? 0.88 : 1);
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, 46); fn(); c.restore(); };
   const tab = A.tabard || null, sword = !['w_lance', 'staff', 'gun', 'axe'].includes(wpn);
+  upper(() => styleBack(c, A, br, t));
 
   if (ps.aura) {
     const g = c.createRadialGradient(0, -60, 4, 0, -60, 70); g.addColorStop(0, ps.aura); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -858,7 +875,15 @@ function drawKnight(c, x, y, s, o, t) {
 
   // cape (outer cloth with a darker lining showing at the turn) and scarf
   upper(() => {
-    if (A.cape) {
+    if (A.cape && A.style === 'void') {
+      // a mantle split into ribbons that drift behind
+      const flow = -lean * 30 - (ps.walk != null ? 6 : 0);
+      for (let i = 0; i < 4; i++) {
+        const x0 = -9 + i * 4, sway = Math.sin(t * 0.0025 + i) * 4 + flow, end = -2 - hipY - 46 - (i % 2) * 8;
+        P(c, [x0 - 2, -82 + br, x0 + 2, -82 + br, x0 - 8 + sway * 0.6, -50, x0 - 14 + sway, end, x0 - 18 + sway, end - 3, x0 - 12 + sway * 0.6, -50], i % 2 ? A.cape : shade(A.cape, 14), 1);
+        c.save(); glowOn(c, A.glow, 6); L(c, [x0 + 2, -82 + br, x0 - 8 + sway * 0.6, -50, x0 - 14 + sway, end], A.glow, 0.6); c.restore();
+      }
+    } else if (A.cape) {
       const end = A.capeLong ? -1 - hipY - 46 : -16 - hipY - 46, flow = -lean * 30 - (ps.walk != null ? 6 : 0);
       const capePts = [-10, -82 + br, 6, -83 + br, -3, -60, -12 + wv * 0.3 + flow * 0.4, end - 2, -18 + wv + flow, end + 3, -24 + wv + flow, end - 2, -30 + wv * 1.2 + flow, end + 2, -28 + wv + flow * 0.6, -40, -19, -70];
       P(c, capePts, A.cape);
@@ -910,13 +935,15 @@ function drawKnight(c, x, y, s, o, t) {
 
   // torso
   upper(() => {
-    const k = look.bust ?? 0.5;
+    const k = look.bust ?? 0.5, special = ['chitin', 'void', 'jugg'].includes(A.style);
+    if (A.style === 'jugg') { c.translate(1, 0); c.scale(1.14, 1); c.translate(-1, 0); }
     // padded undersuit at the neck
     P(c, [-6, -86 + br, 7, -86 + br, 8, -82 + br, -7, -82 + br], A.cloth ? A.base : shade(A.under || '#2c2732', 10), 1);
     torsoPath(c, f, br, k); c.fillStyle = A.base; c.fill();
     c.save(); torsoPath(c, f, br, k); c.clip();
     P(c, [-14, -86 + br, -2, -86 + br, -3, -50, -14, -50], A.dark, 0);
-    if (!A.cloth && !f) {
+    if (special) { /* drawn below, outside the clip */ }
+    else if (!A.cloth && !f) {
       // breastplate and an overlapping plackart
       plate(c, [-13, -84 + br, 14, -85 + br, 18, -71 + br, 15, -62 + br, -13, -62 + br, -15, -69 + br], A.base, A.light, A.dark, 0);
       P(c, [-14, -86 + br, -2, -86 + br, -3, -60, -14, -60], 'rgba(0,0,0,0.28)', 0);
@@ -925,7 +952,7 @@ function drawKnight(c, x, y, s, o, t) {
       plate(c, [-11, -64 + br, 14, -65 + br, 13, -52, -9, -52], shade(A.base, -10), A.light, A.dark);
       P(c, [-11, -64 + br, -1, -64.4 + br, -2, -52, -9, -52], 'rgba(0,0,0,0.25)', 0);
       L(c, [-10, -58, 13, -58.6], A.trim, 0.9);
-    } else if (!A.cloth && f) {
+    } else if (!A.cloth && f && A.style !== 'munition') {
       plate(c, [-9, -84 + br, 9, -85 + br, 13.4, -77 + br, 13, -66 + br, -9.6, -66 + br, -10, -74 + br], A.base, A.light, A.dark, 0);
       P(c, [-9, -84 + br, -1, -84 + br, -2, -62, -10, -62], 'rgba(0,0,0,0.26)', 0);
       P(c, [4, -82 + br, 11, -83 + br, 13.6, -72 + br, 8.6, -69 + br], A.light, 0);
@@ -933,13 +960,18 @@ function drawKnight(c, x, y, s, o, t) {
       // laced corset section at the waist
       plate(c, [-7.6, -66 + br, 9.6, -66 + br, 7, -57, 8, -52, -6, -52, -6.6, -58], shade(A.base, -14), A.base, A.dark);
       for (let i = 0; i < 4; i++) L(c, [-0.4, -64 + i * 3, 2.6, -62.6 + i * 3, -0.4, -61.2 + i * 3], A.trim, 0.6);
+    } else if (!A.cloth) {
+      plate(c, [-9, -84 + br, 9, -85 + br, 13.4, -77 + br, 12.4, -60, -9.6, -60, -10, -74 + br], A.base, A.light, A.dark, 0);
+      P(c, [-9, -84 + br, -1, -84 + br, -2, -60, -10, -60], 'rgba(0,0,0,0.26)', 0);
     } else {
       for (const yy of [-76, -68, -60]) L(c, [-12, yy + br * 0.5, 14, yy - 1 + br * 0.5], shade(A.base, -30), 0.7);
+      P(c, [4, -74 + br, 9, -74 + br, 9, -68 + br, 4, -68 + br], shade(A.base, -16), 0.7);
     }
     c.restore();
     torsoPath(c, f, br, k); c.lineWidth = 1.3; c.strokeStyle = INK; c.stroke();
+    if (special) styleTorso(c, A, f, br, t);
     if (A.cloth) P(c, [-12, -80 + br, -8, -82 + br, 15, -57, 11, -54], A.trim, 1);
-    else L(c, f ? [2, -84 + br, 2.6, -66 + br] : [3, -84 + br, 2.4, -64 + br], A.dark, 0.9);
+    else if (!special) L(c, f ? [2, -84 + br, 2.6, -66 + br] : [3, -84 + br, 2.4, -64 + br], A.dark, 0.9);
     chestMotif(c, A, f, br, t);
     if (A.seams) { glowOn(c, A.glow, 10); L(c, [-6, -78 + br, -1, -72 + br, -4, -64, 2, -58], A.glow, 1.4); L(c, [8, -80 + br, 11, -70 + br, 7, -62], A.glow, 1.2); glowOff(c); }
     if (A.stars) { c.fillStyle = A.glow; for (const [sx, sy, ph] of [[-6, -76, 0], [8, -72, 2], [0, -62, 4], [-4, -66, 1]]) { c.globalAlpha = 0.4 + 0.6 * Math.abs(Math.sin(t * 0.002 + ph)); c.fillRect(sx * (f ? 0.75 : 1), sy + br, 1.4, 1.4); } c.globalAlpha = 1; }
@@ -960,7 +992,8 @@ function drawKnight(c, x, y, s, o, t) {
     plate(c, [wR - 2.6, -47.6, wR + 1, -47.6, wR + 1.2, -42.6, wR - 2.4, -42.4], '#5a3e2a', '#7a5a3e', '#2e2016', 0.9);
 
     // tassets; the slender build adds a longer cloth skirt underneath
-    if (f) {
+    if (styleSkirt(c, A, f, wv)) { /* tier-specific skirt */ }
+    else if (f) {
       if (tab) P(c, [-11, -44.4, 11, -44.4, 16.6, -30.6 + wv * 0.1, -14.6, -30.6], tab);
       plate(c, [-7.4, -44.4, 1, -44.4, 0, -33, -13, -34.6], A.base, A.light, A.dark);
       plate(c, [1.6, -44.4, 9.6, -44.4, 15, -34.6, 2.4, -33], A.cloth ? A.base : A.light, shade(A.light, 26), A.base);
@@ -977,14 +1010,16 @@ function drawKnight(c, x, y, s, o, t) {
   armLimb(c, f ? 5.6 : 5, hipY, fkx, fky, 6.4 * lw, 5.2 * lw, A, true);
   armLimb(c, fkx, fky, ffx, -5, 5.2 * lw, 4 * lw, A, true);
   cop(c, fkx, fky, fs, A, true);
-  foot(c, ffx, -5, A.base, A.light, fs);
+  foot(c, ffx, -5, A.base, A.light, fs * (A.style === 'jugg' ? 1.15 : 1));
+  if (A.style === 'chitin') for (const k of [0, 1]) P(c, [ffx + 8 * fs, -2 + k * 3, ffx + 13.6 * fs, k * 3 - 0.4, ffx + 8.4 * fs, 0.6 + k * 3], A.spike || A.light, 0.8);
 
   // tabard hanging from the belt, over the legs
   if (tab && !f) upper(() => {
-    const tp = [-2.4, -44.2, 6.4, -44.2, 7.6 + wv * 0.2, -27, 4.6 + wv * 0.2, -24.6, 2 + wv * 0.15, -27, -0.6 + wv * 0.1, -24.6, -3.4 + wv * 0.1, -27];
+    const tl = A.style === 'paladin' ? 10 : 0;
+    const tp = [-2.4, -44.2, 6.4, -44.2, 7.6 + wv * 0.2, -27 + tl, 4.6 + wv * 0.2, -24.6 + tl, 2 + wv * 0.15, -27 + tl, -0.6 + wv * 0.1, -24.6 + tl, -3.4 + wv * 0.1, -27 + tl];
     P(c, tp, tab);
     c.save(); P(c, tp, null, 0); c.clip(); P(c, [-4, -44, 1.4, -44, 0 + wv * 0.1, -22, -4, -22], shade(tab, -26), 0); c.restore();
-    L(c, [7.4 + wv * 0.2, -28, 4.6 + wv * 0.2, -25.6, 2 + wv * 0.15, -28, -0.6 + wv * 0.1, -25.6, -3.2 + wv * 0.1, -28], A.trim, 0.8);
+    L(c, [7.4 + wv * 0.2, -28 + tl, 4.6 + wv * 0.2, -25.6 + tl, 2 + wv * 0.15, -28 + tl, -0.6 + wv * 0.1, -25.6 + tl, -3.2 + wv * 0.1, -28 + tl], A.rivet || A.trim, 0.8);
     const em = A.sigil || A.trim;
     P(c, [2, -40, 4.2, -37, 2, -34, -0.2, -37], em, 0.8);
   });
@@ -1023,9 +1058,11 @@ function drawKnight(c, x, y, s, o, t) {
     const gs = f ? 0.85 : 1;
     plate(c, [hx - 3.6 * gs, hy - 3.6 * gs, hx + 3.4 * gs, hy - 3.8 * gs, hx + 4 * gs, hy + 3 * gs, hx - 3 * gs, hy + 3.4 * gs], A.cloth ? shade(A.base, -20) : A.light, shade(A.light, 30), A.base);
     for (const k of [-1.6, 0.4, 2.4]) L(c, [hx + k * gs, hy - 3.4 * gs, hx + (k + 0.4) * gs, hy + 3 * gs], A.cloth ? shade(A.base, -50) : A.dark, 0.6);
+    if (A.style === 'jugg') for (const k of [-2, 0.6]) P(c, [hx + 3.6, hy + k - 1, hx + 7.4, hy + k, hx + 3.6, hy + k + 1.2], A.spike || A.light, 0.7);
     c.save(); if (f) { c.translate(9.4, -83 + br); c.scale(0.72, 0.72); c.translate(-12, 80 - br); } pauldron(c, 12, -80 + br, A, false); c.restore();
+    if (A.style === 'void') voidShards(c, A, br, t, true);
     // cape clasp
-    if (A.cape) { const cx = f ? 4.6 : 6, cy = -82.6 + br; P(c, [cx - 2, cy, cx, cy - 2, cx + 2, cy, cx, cy + 2], '#e8c25a', 0.8); c.fillStyle = A.trim; c.fillRect(cx - 0.6, cy - 0.6, 1.2, 1.2); }
+    if (A.cape && A.style !== 'void') { const cx = f ? 4.6 : 6, cy = -82.6 + br; P(c, [cx - 2, cy, cx, cy - 2, cx + 2, cy, cx, cy + 2], '#e8c25a', 0.8); c.fillStyle = A.trim; c.fillRect(cx - 0.6, cy - 0.6, 1.2, 1.2); }
     if (o.acc === 'x_lens') {
       const oy = -104 + Math.sin(t * 0.003) * 3;
       glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
@@ -1033,6 +1070,202 @@ function drawKnight(c, x, y, s, o, t) {
     }
   });
   c.restore();
+}
+
+/* ---------- Armour styles: each armour tier has its own silhouette, not just its own colours ----------
+   cloth: quilted tunic and wraps · munition: soldier's plate over mail · chitin: insect shell
+   paladin: full plate with heraldry · jugg: hulking forged plate · void: bodysuit with floating plates */
+
+// Behind the body: halo and far shards (void), exhaust vents with smoke (jugg).
+function styleBack(c, A, br, t) {
+  const st = A.style;
+  if (st === 'void') {
+    c.save(); glowOn(c, A.glow, 12);
+    c.strokeStyle = A.glow; c.lineWidth = 1.6; c.globalAlpha = 0.85;
+    c.beginPath(); c.ellipse(-2, -104 + br, 15, 5, -0.25, 0, Math.PI * 2); c.stroke();
+    c.lineWidth = 0.7; c.globalAlpha = 0.5; c.beginPath(); c.ellipse(-2, -104 + br, 19, 6.6, -0.25, 0, Math.PI * 2); c.stroke();
+    c.restore();
+    voidShards(c, A, br, t, false);
+  }
+  if (st === 'jugg') {
+    for (const [x0, x1, top] of [[-9, -13, -100], [-3, -6, -103]]) {
+      plate(c, [x0 - 2.4, -82 + br, x0 + 2.4, -82 + br, x1 + 2.2, top + br, x1 - 2.2, top + br], '#2a2220', '#4a3c38', '#120c0a', 1.1);
+      P(c, [x1 - 2.8, top - 1 + br, x1 + 2.8, top - 1 + br, x1 + 2.4, top + 2 + br, x1 - 2.4, top + 2 + br], '#4a3c38', 1);
+      c.save(); glowOn(c, A.glow, 8); c.fillStyle = A.glow; c.fillRect(x1 - 1.6, top - 0.6 + br, 3.2, 1.2); c.restore();
+      for (let i = 0; i < 3; i++) {
+        const k = ((t * 0.0006 + i / 3 + (x0 + 9) * 0.07) % 1), r = 2 + k * 5;
+        c.save(); c.globalAlpha = 0.45 * (1 - k); c.fillStyle = '#6a605c';
+        c.beginPath(); c.arc(x1 - k * 6, top - 3 - k * 22 + br, r, 0, Math.PI * 2); c.fill(); c.restore();
+      }
+    }
+  }
+}
+// Shards orbiting a void-armoured knight; the half of the orbit nearer the viewer is drawn after the body.
+function voidShards(c, A, br, t, front) {
+  for (let i = 0; i < 3; i++) {
+    const a = t * 0.0012 + i * 2.1, near = Math.sin(a) > 0;
+    if (near !== front) continue;
+    const x = Math.cos(a) * 24, y = -66 + br + Math.sin(a * 2) * 6 + i * 6, s = near ? 1 : 0.75;
+    c.save(); glowOn(c, A.glow, 10);
+    P(c, [x, y - 4 * s, x + 2.2 * s, y, x, y + 4 * s, x - 2.2 * s, y], near ? shade(A.base, 50) : A.base, 0.9);
+    c.restore();
+  }
+}
+
+// Torso per style. Called inside the upper-body transform; return false to fall back to the plate torso.
+function styleTorso(c, A, f, br, t) {
+  const st = A.style;
+  if (st === 'chitin') {
+    // overlapping shell segments, lit on their upper edge, with spines down the back
+    for (let i = 0; i < 4; i++) {
+      const y0 = -84 + i * 8 + br * (1 - i * 0.25), y1 = y0 + 10, w0 = f ? 9 : 13 - i * 0.6, w1 = f ? 8 : 12.4 - i * 0.6;
+      plate(c, [-w0 - 1, y0 + 1, -2, y0 - 2, w0 + 3, y0, w1 + 3, y1, -2, y1 + 2, -w1 - 1, y1], i % 2 ? A.base : shade(A.base, -8), A.light, A.dark, 1.1);
+      L(c, [-w0 + 2, y0 + 2, -2, y0 - 0.6, w0, y0 + 1.4], shade(A.light, 30), 0.7);
+    }
+    for (let i = 0; i < 4; i++) P(c, [-12 + i * 0.5, -80 + i * 7 + br, -17 + i * 0.5, -78 + i * 7 + br, -12 + i * 0.5, -75 + i * 7 + br], A.spike || A.light, 0.8);
+    return true;
+  }
+  if (st === 'void') {
+    // a dark bodysuit traced with glowing lines, and a chest plate floating just off the body
+    c.save(); glowOn(c, A.glow, 8);
+    L(c, [-6, -82 + br, -3, -70 + br, -5, -58], A.glow, 0.8); L(c, [8, -82 + br, 6, -66 + br, 7, -56], A.glow, 0.8);
+    c.restore();
+    const fl = Math.sin(t * 0.003) * 0.8, pts = f ? [-6, -82, 8, -83, 11.4, -73, 9, -66, -6, -66] : [-9, -83, 12, -84, 15.4, -72, 12, -63, -9, -63];
+    const pp = pts.map((v, i) => v + (i % 2 ? -1.6 + br + fl : 1.6));
+    c.save(); glowOn(c, A.glow, 10); P(c, pp, null, 0); c.strokeStyle = A.glow; c.lineWidth = 1.4; c.stroke(); c.restore();
+    plate(c, pp, A.light, shade(A.light, 40), A.base);
+    P(c, [pp[0] + 4, pp[1] + 3, pp[2] - 3, pp[3] + 3, pp[4] - 4, pp[5] + 4], shade(A.light, 50), 0);
+    return true;
+  }
+  if (st === 'jugg') {
+    plate(c, [-14, -85 + br, 15, -86 + br, 19, -72 + br, 16, -58, -12, -58, -16, -70 + br], A.base, A.light, A.dark, 1.4);
+    plate(c, [-12, -60, 15, -60, 14, -51, -10, -51], shade(A.base, -10), A.light, A.dark);
+    const pulse = 0.7 + 0.3 * Math.sin(t * 0.005);
+    c.save(); glowOn(c, A.glow, 14 * pulse);
+    P(c, [2, -78 + br, 7, -74 + br, 7, -67 + br, 2, -63 + br, -3, -67 + br, -3, -74 + br], '#2a0e06', 1.2);
+    P(c, [2, -76 + br, 5.4, -73 + br, 5.4, -68 + br, 2, -65 + br, -1.4, -68 + br, -1.4, -73 + br], A.glow, 0);
+    P(c, [2, -74 + br, 3.6, -72 + br, 3.6, -69 + br, 2, -67 + br, 0.4, -69 + br, 0.4, -72 + br], '#fff2c0', 0);
+    c.restore();
+    for (const x of [-9, 12]) for (const y of [-80, -64]) rivet(c, x, y + br, shade(A.base, 50));
+    return true;
+  }
+  return false;
+}
+
+// Below the belt per style. Return false to fall back to plain tassets.
+function styleSkirt(c, A, f, wv) {
+  const st = A.style;
+  if (st === 'cloth') {
+    // a long quilted tunic with a ragged hem
+    const hem = [-11, -44.4, 13, -44.4, 15 + wv * 0.15, -28, 11, -26, 8, -29, 4, -25.6, 0, -29, -4, -26, -8, -29, -12.6 + wv * 0.1, -27];
+    P(c, hem, A.base);
+    c.save(); P(c, hem, null, 0); c.clip(); P(c, [-12, -44, -2, -44, -3, -24, -13, -24], shade(A.base, -26), 0);
+    c.setLineDash([1.2, 1.2]); for (const y of [-40, -34]) L(c, [-11, y, 14, y], shade(A.base, 36), 0.6); c.restore();
+    P(c, [3, -40, 8, -40, 8, -35, 3, -35], shade(A.base, -18), 0.8);
+    return true;
+  }
+  if (st === 'munition') {
+    // a hauberk skirt of mail under two short tassets
+    const mail = [-11, -45, 14, -45, 15.4, -30, -12.6, -30];
+    P(c, mail, '#6c7280');
+    c.save(); P(c, mail, null, 0); c.clip();
+    for (let y = -44; y < -30; y += 1.8) for (let x = -12; x < 16; x += 2) { c.strokeStyle = (Math.round((x + y) / 2) % 2) ? '#9aa0ac' : '#4a505c'; c.lineWidth = 0.6; c.beginPath(); c.arc(x + ((y / 1.8) % 2 ? 1 : 0), y, 0.9, 0, Math.PI); c.stroke(); }
+    c.restore();
+    plate(c, [-8.4, -44.4, 0.4, -44.4, -0.4, -38, -9.4, -39.2], A.base, A.light, A.dark);
+    plate(c, [1.6, -44.4, 11.4, -44.4, 12.4, -39.2, 2.6, -38], A.light, shade(A.light, 26), A.base);
+    return true;
+  }
+  if (st === 'chitin') {
+    for (let row = 0; row < 3; row++) for (let i = 0; i < 3; i++) {
+      const x = -11 + i * 8.6, y = -44 + row * 4.4;
+      plate(c, [x, y, x + 9, y, x + 9.6, y + 4, x + 4.6, y + 7.4, x - 0.4, y + 4], row % 2 ? A.base : shade(A.base, -10), A.light, A.dark, 1);
+    }
+    return true;
+  }
+  if (st === 'jugg') {
+    plate(c, [-12, -44.4, 0.6, -44.4, -0.4, -32, -13.6, -34], A.base, A.light, A.dark, 1.4);
+    plate(c, [1.6, -44.4, 15, -44.4, 16.6, -34, 3, -32], A.light, shade(A.light, 26), A.base, 1.4);
+    for (const x of [-11, -5, 5, 12]) P(c, [x - 1.6, -33.6, x, -28.4, x + 1.6, -33.4], A.spike || A.light, 0.9);
+    c.save(); glowOn(c, A.glow, 8); L(c, [-8, -42, -6, -37, -9, -34], A.glow, 1); L(c, [10, -42, 8, -36], A.glow, 1); c.restore();
+    return true;
+  }
+  if (st === 'void') {
+    // a skirt of long ribbons that trail behind in the drift
+    for (let i = 0; i < 5; i++) {
+      const x = -9 + i * 5, sway = Math.sin(wv * 0.6 + i) * 2 - i * 0.6, len = 20 + (i % 2) * 6;
+      const pts = [x - 2, -44.4, x + 2.4, -44.4, x + 1.8 + sway, -44.4 + len, x - 0.6 + sway * 1.2, -42 + len, x - 2.6 + sway, -44.4 + len];
+      P(c, pts, i % 2 ? A.cape || A.dark : A.dark, 0.9);
+      c.save(); glowOn(c, A.glow, 6); L(c, [x + 2.2, -44, x + 1.8 + sway, -44.4 + len], A.glow, 0.6); c.restore();
+    }
+    return true;
+  }
+  return false;
+}
+
+// New shoulder shapes, one per tier. Returns true when it handled the kind.
+function stylePauldron(c, x, y, A, back, t) {
+  const f = back ? A.dark : A.base, li = back ? A.base : A.light, dk = shade(f, -36), kind = A.pauldron;
+  if (kind === 'round') {
+    plate(c, [x - 7, y + 3, x - 5, y - 4, x + 1, y - 7.4, x + 7, y - 6, x + 10.4, y, x + 10, y + 6, x + 5, y + 8.4, x - 5, y + 7.4], f, li, dk);
+    plate(c, [x - 6, y + 6, x + 10, y + 5, x + 9.6, y + 8.4, x - 5.4, y + 9.4], shade(f, -10), li, dk, 1);
+    rivet(c, x + 2, y - 2, shade(f, 50));
+    return true;
+  }
+  if (kind === 'elytra') {
+    // a beetle's wing case sweeping back past the shoulder
+    const pts = [x + 9, y - 5, x - 1, y - 8.4, x - 12, y - 4, x - 21, y + 7, x - 24, y + 18, x - 14, y + 10, x - 4, y + 8, x + 9, y + 4];
+    plate(c, pts, f, li, dk, 1.3);
+    c.strokeStyle = shade(li, 20); c.lineWidth = 0.8;
+    c.beginPath(); c.moveTo(x + 6, y - 3); c.quadraticCurveTo(x - 10, y - 2, x - 20, y + 12); c.stroke();
+    c.beginPath(); c.moveTo(x + 6, y + 1); c.quadraticCurveTo(x - 8, y + 3, x - 15, y + 10); c.stroke();
+    P(c, [x - 2, y - 8, x - 6, y - 14, x - 7, y - 6.6], A.spike || li, 0.9);
+    return true;
+  }
+  if (kind === 'paladin') {
+    for (let i = 2; i >= 0; i--) {
+      const o = i * 4.4;
+      plate(c, [x - 9, y - 2 + o, x - 3, y - 8 + o, x + 9, y - 7 + o, x + 12.4, y + 1 + o, x + 8, y + 6 + o, x - 8, y + 5 + o], i ? f : li, i ? li : shade(li, 26), dk);
+      L(c, [x - 8, y + 5 + o, x + 8, y + 6 + o, x + 12.4, y + 1 + o], A.rivet || '#e8c25a', 0.9);
+    }
+    // a raised fin along the top
+    plate(c, [x - 5, y - 6.4, x + 1, y - 17, x + 4, y - 16, x + 10, y - 7], f, li, dk, 1);
+    L(c, [x - 3, y - 7, x + 1.6, y - 15.4, x + 8, y - 7.4], A.rivet || '#e8c25a', 0.7);
+    return true;
+  }
+  if (kind === 'massive') {
+    const sp = A.spike || li;
+    x += back ? -2 : 4; y += 5;
+    for (const [a, b, h] of [[-7, -3, 9], [0, 4, 12], [7, 11, 8]]) plate(c, [x + a, y - 9, x + (a + b) / 2 + 1, y - 9 - h, x + b, y - 9], sp, shade(sp, 30), shade(sp, -40), 1);
+    plate(c, [x - 12, y - 1, x - 5, y - 11, x + 9, y - 12, x + 16, y - 2, x + 15, y + 12, x - 9, y + 11], f, li, dk, 1.4);
+    plate(c, [x - 10, y + 7, x + 15, y + 7.6, x + 14.6, y + 12.6, x - 9, y + 12], shade(f, -10), li, dk, 1.1);
+    c.save(); glowOn(c, A.glow, 8); L(c, [x - 6, y - 4, x - 1, y + 1, x + 4, y - 3], A.glow, 1); c.restore();
+    return true;
+  }
+  if (kind === 'float') {
+    // detached plate hovering over the shoulder on a band of light
+    const lift = -5 + Math.sin(t * 0.003 + (back ? 1 : 0)) * 1.4;
+    c.save(); glowOn(c, A.glow, 10); c.strokeStyle = A.glow; c.lineWidth = 1; c.globalAlpha = 0.8;
+    L(c, [x - 6, y + 1, x + 9, y + 0], A.glow, 1); c.restore();
+    plate(c, [x - 9, y - 4 + lift, x, y - 10 + lift, x + 12, y - 6 + lift, x + 13, y + 1 + lift, x + 2, y - 1 + lift, x - 7, y + 1 + lift], f, li, dk, 1.2);
+    c.save(); glowOn(c, A.glow, 8); L(c, [x - 6, y - 2 + lift, x + 1, y - 6 + lift, x + 10, y - 3 + lift], A.glow, 0.8); c.restore();
+    return true;
+  }
+  return false;
+}
+
+// Helmet accents per style, drawn after a helm in head space (head centre at 0,0).
+function helmAccent(c, A, closed, t) {
+  const st = A.style;
+  if (st === 'jugg') {
+    plate(c, [-6, -11, -16, -18, -20, -28, -14, -20, -3, -14], '#2a2220', '#4a3c38', '#120c0a', 1);
+    plate(c, [5, -12, 12, -20, 13, -29, 15, -18, 9, -10], '#2a2220', '#4a3c38', '#120c0a', 1);
+  }
+  if (st === 'paladin') {
+    P(c, [-7, -9, -16, -15, -13, -8, -18, -9, -12, -4, -7, -5], '#eef0f6', 1);
+    L(c, [-8, -8, -15, -13], A.rivet || '#e8c25a', 0.7);
+  }
+  if (st === 'chitin') { P(c, [6, 4, 12, 11, 8, 5.4], A.spike || A.light, 0.9); P(c, [-2, 7, 1, 14, 2, 8], A.spike || A.light, 0.9); }
+  if (st === 'void') { c.save(); glowOn(c, A.glow, 8); L(c, [-8, -6, -2, -13, 6, -12, 10, -6], A.glow, 1); c.restore(); }
 }
 
 /* ---------- Sprite renderer: bold silhouette outline, scene rim light, hit flash, afterimages ---------- */

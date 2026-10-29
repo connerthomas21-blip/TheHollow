@@ -222,7 +222,178 @@ function bustHairFront(c, sp, face) {
   if (st === 'braids') for (let i = 0; i < 8; i++) { const y = 150 + i * 16, x = 214 + Math.sin(i) * 2; fp(c, ['M', x, y - 10, 'L', x + 9, y, 'L', x, y + 10, 'L', x - 9, y, 'Z'], i % 2 ? h : hd, 2); }
 }
 
+// Portrait outfits for the six armour tiers. Each has its own silhouette, matching the sprite styles.
+// Returns false for armour without a tier style (story characters), which use bustOutfit's plate look.
+function bustStyled(c, sp, t) {
+  const A = sp.armor, st = A.style, under = A.under || shade(A.base, -72), g = A.glow || A.trim;
+  if (!st) return false;
+  c.save();
+  if (sp.f) { c.translate(150, 0); c.scale(0.92, 1); c.translate(-150, 0); }
+  const body = ['M', 36, 400, 'Q', 46, 262, 104, 236, 'L', 196, 236, 'Q', 256, 262, 266, 400, 'Z'];
+  if (sp.cape && st !== 'void') fp(c, ['M', 104, 236, 'Q', 36, 250, 14, 400, 'L', 96, 400, 'Z'], sp.cape, 2.6);
+
+  if (st === 'cloth') {
+    const tunic = ['M', 40, 400, 'Q', 50, 266, 106, 234, 'L', 194, 234, 'Q', 252, 266, 262, 400, 'Z'];
+    bevel(c, tunic, A.base, A.light, A.dark, 2.6);
+    c.save(); path(c, tunic); c.clip();
+    fp(c, ['M', 30, 240, 'L', 112, 240, 'Q', 96, 320, 104, 400, 'L', 30, 400, 'Z'], A.dark, 0);
+    c.setLineDash([5, 4]); for (const y of [282, 318, 354]) L(c, [44, y, 262, y - 4], shade(A.base, 36), 1.4); L(c, [150, 250, 152, 400], shade(A.base, 36), 1.4);
+    c.restore();
+    bevel(c, ['M', 170, 330, 'L', 200, 328, 'L', 202, 356, 'L', 172, 358, 'Z'], shade(A.base, -16), null, null, 2);
+    fp(c, ['M', 236, 246, 'L', 250, 258, 'L', 98, 400, 'L', 76, 400, 'Z'], '#5a3e2a', 2.4);
+    bevel(c, ['M', 150, 314, 'L', 168, 314, 'L', 168, 330, 'L', 150, 330, 'Z'], '#c9a24a', null, null, 2);
+    for (const [pts, col] of [[['M', 196, 244, 'Q', 236, 238, 252, 264, 'L', 244, 286, 'Q', 222, 272, 204, 266, 'Z'], '#6a4a30'], [['M', 104, 244, 'Q', 66, 240, 50, 264, 'L', 58, 286, 'Q', 80, 272, 98, 266, 'Z'], '#4a3424']]) bevel(c, pts, col, null, null, 2.4);
+    fp(c, ['M', 110, 222, 'Q', 150, 240, 192, 222, 'L', 206, 250, 'Q', 150, 272, 96, 250, 'Z'], A.scarf, 2.6);
+    fp(c, ['M', 100, 246, 'L', 66, 302, 'L', 84, 310, 'L', 114, 258, 'Z'], shade(A.scarf, -16), 2.4);
+  }
+
+  if (st === 'munition') {
+    fp(c, body, under, 2.6);
+    const chest = ['M', 94, 270, 'Q', 150, 250, 208, 270, 'Q', 224, 334, 208, 400, 'L', 92, 400, 'Q', 78, 334, 94, 270, 'Z'];
+    bevel(c, chest, A.base, A.light, A.dark, 2.8);
+    c.save(); path(c, chest); c.clip(); fp(c, ['M', 80, 250, 'L', 130, 250, 'L', 122, 400, 'L', 80, 400, 'Z'], A.dark, 0); c.restore();
+    L(c, [151, 262, 150, 398], A.dark, 2.2);
+    for (const [x, y] of [[108, 284], [194, 284], [104, 360], [198, 360]]) prv(c, x, y, shade(A.base, 55));
+    const mail = ['M', 98, 226, 'Q', 150, 252, 204, 226, 'L', 228, 266, 'Q', 150, 294, 74, 266, 'Z'];
+    fp(c, mail, '#6c7280', 2.6);
+    c.save(); path(c, mail); c.clip();
+    for (let y = 226; y < 294; y += 6) for (let x = 70; x < 232; x += 7) { c.strokeStyle = ((x + y) / 6 | 0) % 2 ? '#9aa0ac' : '#4a505c'; c.lineWidth = 1.4; c.beginPath(); c.arc(x + ((y / 6) % 2 ? 3.5 : 0), y, 2.8, 0, Math.PI); c.stroke(); }
+    c.restore();
+    for (const [pts, col, lit] of [[['M', 104, 252, 'Q', 64, 240, 42, 270, 'Q', 34, 300, 50, 312, 'Q', 78, 304, 98, 282, 'Z'], A.dark, A.base], [['M', 196, 252, 'Q', 236, 238, 262, 266, 'Q', 270, 296, 252, 310, 'Q', 224, 302, 204, 280, 'Z'], A.base, A.light]]) {
+      bevel(c, pts, col, lit, null, 2.6);
+    }
+    prv(c, 236, 266, shade(A.base, 55));
+    bevel(c, ['M', 206, 286, 'Q', 236, 300, 256, 306, 'L', 252, 320, 'Q', 230, 314, 204, 300, 'Z'], shade(A.base, -10), A.light, A.dark, 2.2);
+  }
+
+  if (st === 'chitin') {
+    fp(c, body, under, 2.6);
+    for (let i = 0; i < 5; i++) {
+      const y0 = 244 + i * 32, w = 6 * i;
+      const seg = ['M', 88 - w * 0.3, y0, 'Q', 150, y0 - 16, 214 + w * 0.3, y0, 'L', 222 + w * 0.3, y0 + 38, 'Q', 150, y0 + 22, 80 - w * 0.3, y0 + 38, 'Z'];
+      bevel(c, seg, i % 2 ? A.base : shade(A.base, -10), A.light, A.dark, 2.4);
+      c.strokeStyle = shade(A.light, 26); c.lineWidth = 1.4; c.beginPath(); c.moveTo(100, y0 + 4); c.quadraticCurveTo(150, y0 - 8, 204, y0 + 4); c.stroke();
+    }
+    for (let i = 0; i < 5; i++) { const x = 108 + i * 21; bevel(c, ['M', x - 6, 236, 'L', x + 2 - (i - 2) * 3, 212 - (i === 2 ? 8 : 0), 'L', x + 7, 236, 'Z'], A.spike || A.light, null, null, 2); }
+    for (const [pts, col, lit] of [
+      [['M', 110, 240, 'Q', 40, 226, 10, 300, 'Q', 38, 288, 60, 300, 'Q', 72, 270, 100, 264, 'Z'], A.dark, A.base],
+      [['M', 190, 240, 'Q', 262, 224, 292, 300, 'Q', 262, 288, 240, 300, 'Q', 228, 270, 200, 264, 'Z'], A.base, A.light]]) {
+      bevel(c, pts, col, lit, null, 2.6);
+    }
+    c.strokeStyle = shade(A.light, 20); c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(200, 248); c.quadraticCurveTo(254, 240, 282, 292); c.stroke();
+    c.beginPath(); c.moveTo(206, 260); c.quadraticCurveTo(246, 256, 262, 290); c.stroke();
+    for (const x of [214, 238, 262]) bevel(c, ['M', x - 6, 244 + (x - 214) * 0.3, 'L', x + 2, 222 + (x - 214) * 0.3, 'L', x + 6, 246 + (x - 214) * 0.3, 'Z'], A.spike || A.light, null, null, 1.8);
+  }
+
+  if (st === 'paladin') {
+    fp(c, body, under, 2.6);
+    const chest = sp.f ? ['M', 92, 256, 'Q', 150, 248, 210, 256, 'L', 216, 400, 'L', 86, 400, 'Z'] : ['M', 96, 250, 'L', 206, 250, 'L', 216, 400, 'L', 86, 400, 'Z'];
+    bevel(c, chest, A.base, A.light, A.dark, 2.8);
+    c.save(); path(c, chest); c.clip(); fp(c, ['M', 80, 240, 'L', 130, 240, 'L', 122, 400, 'L', 80, 400, 'Z'], A.dark, 0); c.restore();
+    bustMotif(c, A, sp.f);
+    const tb = ['M', 120, 330, 'L', 184, 330, 'L', 192, 400, 'L', 112, 400, 'Z'];
+    fp(c, tb, A.tabard, 2.4);
+    L(c, [120, 332, 184, 332], A.rivet || '#e8c25a', 2.4);
+    { const s2 = []; for (let i = 0; i < 16; i++) { const r = i % 2 ? 4 : 11, an = -Math.PI / 2 + i * Math.PI / 8; s2.push(152 + Math.cos(an) * r, 366 + Math.sin(an) * r); } P(c, s2, A.rivet || '#e8c25a', 1.6); }
+    bevel(c, ['M', 102, 212, 'L', 198, 212, 'L', 216, 252, 'Q', 150, 266, 84, 252, 'Z'], A.base, A.light, A.dark, 2.6);
+    L(c, [104, 216, 196, 216], A.rivet || '#e8c25a', 2); L(c, [88, 248, 150, 260, 212, 248], A.rivet || '#e8c25a', 2);
+    for (const side of [-1, 1]) for (let i = 2; i >= 0; i--) {
+      const o = i * 16, X = v => 150 + side * (v - 150);
+      const pts = ['M', X(196), 242 + o, 'Q', X(248), 230 + o, X(272), 268 + o, 'L', X(266), 290 + o, 'Q', X(236), 280 + o, X(206), 266 + o, 'Z'];
+      bevel(c, pts, side > 0 ? (i ? A.base : A.light) : A.dark, side > 0 ? A.light : A.base, null, 2.4);
+      if (side > 0) { c.strokeStyle = A.rivet || '#e8c25a'; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(208), 266 + o); c.quadraticCurveTo(X(240), 278 + o, X(266), 290 + o); c.stroke(); }
+    }
+    bevel(c, ['M', 214, 238, 'L', 236, 196, 'L', 246, 198, 'L', 254, 240, 'Z'], A.light, null, null, 2.2);
+    L(c, [220, 236, 238, 202, 250, 238], A.rivet || '#e8c25a', 1.4);
+  }
+
+  if (st === 'jugg') {
+    for (const [x0, x1] of [[70, 58], [92, 84]]) {
+      bevel(c, ['M', x0 - 8, 250, 'L', x0 + 8, 250, 'L', x1 + 8, 150, 'L', x1 - 8, 150, 'Z'], '#2a2220', '#4a3c38', '#120c0a', 2.2);
+      for (let i = 0; i < 3; i++) { const k = ((t * 0.0004 + i / 3 + x0 * 0.01) % 1); c.save(); c.globalAlpha = 0.5 * (1 - k); c.fillStyle = '#6a605c'; c.beginPath(); c.arc(x1 - k * 20, 140 - k * 90, 8 + k * 16, 0, Math.PI * 2); c.fill(); c.restore(); }
+    }
+    fp(c, ['M', 24, 400, 'Q', 36, 256, 100, 232, 'L', 200, 232, 'Q', 266, 256, 278, 400, 'Z'], under, 2.6);
+    const chest = ['M', 66, 262, 'Q', 150, 238, 234, 262, 'L', 244, 400, 'L', 56, 400, 'Z'];
+    bevel(c, chest, A.base, A.light, A.dark, 3);
+    c.save(); path(c, chest); c.clip(); fp(c, ['M', 50, 240, 'L', 118, 240, 'L', 110, 400, 'L', 50, 400, 'Z'], A.dark, 0); c.restore();
+    bevel(c, ['M', 70, 340, 'Q', 150, 326, 236, 340, 'L', 244, 400, 'L', 56, 400, 'Z'], shade(A.base, -12), A.light, A.dark, 2.6);
+    const pulse = 0.7 + 0.3 * Math.sin(t * 0.005);
+    c.save(); glowOn(c, g, 22 * pulse);
+    fp(c, ['M', 150, 266, 'L', 176, 292, 'L', 150, 320, 'L', 124, 292, 'Z'], '#2a0e06', 2.4);
+    fp(c, ['M', 150, 274, 'L', 168, 292, 'L', 150, 312, 'L', 132, 292, 'Z'], g, 0);
+    fp(c, ['M', 150, 284, 'L', 158, 292, 'L', 150, 302, 'L', 142, 292, 'Z'], '#fff2c0', 0);
+    L(c, [108, 300, 122, 326, 112, 350], g, 2.6); L(c, [194, 300, 182, 330, 196, 360], g, 2.6);
+    c.restore();
+    for (const [x, y] of [[86, 280], [214, 280], [80, 370], [222, 370]]) prv(c, x, y, shade(A.base, 50));
+    bevel(c, ['M', 96, 214, 'L', 204, 214, 'L', 222, 254, 'L', 78, 254, 'Z'], shade(A.base, -10), A.light, A.dark, 2.8);
+    for (const side of [-1, 1]) {
+      const X = v => 150 + side * (v - 150), col = side > 0 ? A.base : A.dark, sp2 = A.spike || A.light;
+      for (const [a, h] of [[206, 56], [234, 70], [262, 50]]) bevel(c, ['M', X(a - 10), 246, 'L', X(a), 246 - h, 'L', X(a + 10), 246, 'Z'], sp2, null, null, 2.2);
+      bevel(c, ['M', X(180), 238, 'Q', X(262), 210, X(298), 262, 'L', X(296), 330, 'Q', X(250), 316, X(204), 290, 'Z'], col, side > 0 ? A.light : A.base, null, 3);
+      bevel(c, ['M', X(204), 292, 'Q', X(250), 316, X(296), 330, 'L', X(292), 348, 'Q', X(246), 334, X(202), 310, 'Z'], shade(col, -10), null, null, 2.4);
+      if (side > 0) { c.save(); glowOn(c, g, 12); L(c, [222, 256, 238, 276, 256, 262], g, 2.2); c.restore(); }
+    }
+  }
+
+  if (st === 'void') {
+    fp(c, body, A.base, 2.6);
+    c.save(); path(c, body); c.clip(); fp(c, ['M', 30, 240, 'L', 112, 240, 'Q', 96, 320, 104, 400, 'L', 30, 400, 'Z'], A.dark, 0); c.restore();
+    c.save(); glowOn(c, g, 12);
+    L(c, [116, 244, 108, 300, 124, 340, 116, 400], g, 2); L(c, [186, 244, 194, 304, 178, 346, 186, 400], g, 2); L(c, [150, 300, 150, 400], g, 1.4);
+    c.restore();
+    const fl = Math.sin(t * 0.003) * 3;
+    const chest = (sp.f ? ['M', 104, 262, 'Q', 150, 254, 198, 262, 'L', 204, 316, 'Q', 150, 330, 98, 316, 'Z'] : ['M', 100, 256, 'L', 202, 256, 'L', 210, 320, 'Q', 150, 334, 92, 320, 'Z']);
+    c.save(); c.translate(0, -10 + fl);
+    c.save(); glowOn(c, g, 16); path(c, chest); c.strokeStyle = g; c.lineWidth = 3; c.stroke(); c.restore();
+    bevel(c, chest, A.light, shade(A.light, 40), A.base, 2.6);
+    fp(c, ['M', 120, 270, 'L', 184, 270, 'L', 176, 290, 'L', 128, 290, 'Z'], shade(A.light, 40), 0);
+    c.restore();
+    for (const side of [-1, 1]) {
+      const X = v => 150 + side * (v - 150), lift = -14 + Math.sin(t * 0.003 + side) * 4;
+      c.save(); glowOn(c, g, 12); L(c, [X(198), 262, X(256), 278], g, 2.2); c.restore();
+      bevel(c, ['M', X(194), 248 + lift, 'Q', X(240), 222 + lift, X(274), 252 + lift, 'L', X(268), 270 + lift, 'Q', X(234), 252 + lift, X(204), 262 + lift, 'Z'], side > 0 ? A.light : A.base, null, null, 2.4);
+    }
+    for (let i = 0; i < 4; i++) {
+      const a = t * 0.001 + i * 1.6, x = 150 + Math.cos(a) * 130, y = 250 + Math.sin(a * 1.3) * 40;
+      c.save(); glowOn(c, g, 12); fp(c, ['M', x, y - 10, 'L', x + 6, y, 'L', x, y + 10, 'L', x - 6, y, 'Z'], shade(A.base, 50), 1.8); c.restore();
+    }
+  }
+  c.restore();
+  return true;
+}
+// Helmet details per armour tier, matching the sprite helmets.
+function bustHelmAccent(c, A, t) {
+  const st = A.style;
+  if (st === 'jugg') {
+    bevel(c, ['M', 98, 64, 'Q', 50, 46, 34, -4, 'Q', 64, 26, 112, 44, 'Z'], '#2a2220', '#4a3c38', '#120c0a', 2.4);
+    bevel(c, ['M', 200, 58, 'Q', 236, 30, 244, -10, 'Q', 254, 40, 210, 76, 'Z'], '#2a2220', '#4a3c38', '#120c0a', 2.4);
+  }
+  if (st === 'paladin') {
+    for (let i = 0; i < 4; i++) bevel(c, ['M', 92, 90 - i * 4, 'Q', 60 - i * 6, 70 - i * 14, 40 - i * 4, 34 - i * 10, 'Q', 70, 56 - i * 8, 100, 78 - i * 4, 'Z'], i % 2 ? '#e6e8f0' : '#ffffff', null, '#9aa0b4', 2);
+    L(c, [96, 88, 50, 48], A.rivet || '#e8c25a', 1.6);
+  }
+  if (st === 'chitin') {
+    bevel(c, ['M', 206, 106, 'L', 222, 112, 'L', 224, 166, 'L', 212, 150, 'Z'], A.spike || A.light, null, null, 2.2);
+    bevel(c, ['M', 98, 140, 'L', 88, 146, 'L', 80, 196, 'L', 96, 172, 'Z'], A.spike || A.light, null, null, 2.2);
+    for (let i = 0; i < 3; i++) bevel(c, ['M', 120 + i * 30, 30 - (i === 1 ? 4 : 0), 'L', 130 + i * 30, 6 - (i === 1 ? 10 : 0), 'L', 138 + i * 30, 32, 'Z'], A.spike || A.light, null, null, 2);
+  }
+  if (st === 'void') {
+    c.save(); glowOn(c, A.glow, 14); L(c, [96, 100, 112, 48, 150, 30, 196, 40, 214, 96], A.glow, 2.4); c.restore();
+  }
+}
+// A glowing halo behind the head for the void tier.
+function bustHalo(c, sp, t) {
+  if (!sp.armor || sp.armor.style !== 'void') return;
+  const g = sp.armor.glow;
+  c.save(); glowOn(c, g, 18); c.strokeStyle = g; c.lineWidth = 4;
+  c.beginPath(); c.ellipse(150, 64, 96, 26, -0.18, 0, Math.PI * 2); c.stroke();
+  c.lineWidth = 1.6; c.globalAlpha = 0.6; c.beginPath(); c.ellipse(150, 64, 112, 32, -0.18, 0, Math.PI * 2); c.stroke();
+  c.restore();
+}
+
 function bustOutfit(c, sp, t) {
+  if (bustStyled(c, sp, t)) return;
   const A = sp.armor, under = sp.under || shade(A.base, -72);
   if (sp.cape) fp(c, ['M', 104, 236, 'Q', 36, 250, 14, 400, 'L', 96, 400, 'Z'], sp.cape, 2.6);
   fp(c, ['M', 36, 400, 'Q', 46, 262, 104, 236, 'L', 196, 236, 'Q', 256, 262, 266, 400, 'Z'], under, 2.6);
@@ -310,6 +481,7 @@ function bustGear(c, sp, face, phase) {
     for (const x of [168, 182, 196]) L(c, [x, 160, x + 2, 190], A.dark, 2.2);
     L(c, [150, 22, 160, 110], A.trim, 2.4);
     if (g === 'horned') fp(c, ['M', 196, 46, 'Q', 236, 20, 250, -16, 'Q', 230, 34, 206, 62, 'Z'], '#e8dcc4', 2.4);
+    if (A.style) bustHelmAccent(c, A, 0);
     return;
   }
   if (g === 'knight' || g === 'crest') {
@@ -318,6 +490,7 @@ function bustGear(c, sp, face, phase) {
     L(c, [108, 104, 150, 92, 198, 100, 218, 104], A.trim, 3);
     fp(c, ['M', 204, 102, 'L', 218, 104, 'L', 212, 172, 'L', 198, 184, 'Z'], A.base, 2.4);
     c.fillStyle = A.rivet || A.light; for (const [x, y] of [[96, 120], [96, 146], [209, 120]]) { c.beginPath(); c.arc(x, y, 2.6, 0, Math.PI * 2); c.fill(); }
+    if (A.style) bustHelmAccent(c, A, 0);
     return;
   }
   if (g === 'circlet') {
@@ -344,6 +517,7 @@ function drawBust(c, sp, t) {
   c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
   if (sp.aura) { const g = c.createRadialGradient(150, 160, 20, 150, 160, 190); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(0.6, sp.aura); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(0, 0, 300, 340); }
   const closed = sp.gear === 'visor' || sp.gear === 'horned';
+  bustHalo(c, sp, t);
   bustGear(c, sp, null, 'back');
   if (!closed && sp.gear !== 'hood') bustHairBack(c, sp, t);
   bustOutfit(c, sp, t);

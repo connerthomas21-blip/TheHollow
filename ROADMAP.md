@@ -57,6 +57,11 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Sprites: bevelled plates everywhere (`plate`), armoured limbs over a padded undersuit (`armLimb`), knee/elbow cops (`cop`), gauntlet knuckles, gorget, breastplate + plackart (broad) or breastplate + laced corset and cloth skirt (slender), belt pouches, hip scabbard for sword users, tabard from the belt (`A.tabard`), cape lining and clasp, segmented sabatons, per-set motifs (`A.motif`: stitch, rivet, ridge, filigree, rune).
 - Portraits: bevelled armour (`bevel`), layered pauldrons and plackart, rivets, per-set chest motif, cape clasp, quilted undersuit; hair back volume and shadow clumps; cheekbone, nose bridge, lip, collarbone and eyelid detail; crimson rim light composited from the rune rings.
 
+## Session A.4 — Armour tiers with their own style (done)
+- Each armour set has `style` and its own silhouette, not just colours: cloth (Padded Vest: ragged quilted tunic, leather pads, scarf), munition (Alloy Plate: round pauldrons, mail skirt/collar), chitin (Skrell Carapace: segmented shell, elytra pauldrons, scale skirt, spines, claws), paladin (Aegis Mail: finned layered pauldrons, tall gorget, knee-length tabard, winged helm), jugg (Magmaforged: bulkier frame, massive spiked pauldrons, molten core, back vents with smoke, horned helm), void (Voidweave: glowing bodysuit, floating plates, halo, orbiting shards, ribbon mantle).
+- Sprite hooks in `js/art.js`: `styleBack`, `styleTorso`, `styleSkirt`, `stylePauldron`, `helmAccent`; portraits in `js/portrait.js`: `bustStyled`, `bustHalo`, `bustHelmAccent`. Armour without `style` (story characters) keeps the plate look.
+- `node test/tiers.js <dir>` renders all six tiers as sprites and portraits for both builds.
+
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
 
