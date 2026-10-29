@@ -323,10 +323,11 @@ function shadow(c, x, rx) {
 }
 
 /* ---------- Combat effects ---------- */
+const huge = e => !!e && (e.kind === 'titan' || e.kind === 'singularity');
 function unitPos(side) {
   const a = (B && B.act && B.act[side]) || { dx: 0, dy: 0, kb: 0 };
   if (side === 'p') return { x: 200 + a.dx + a.kb, y: GROUND - 78 + a.dy };
-  const h = B && B.e.kind === 'titan' ? 160 : 82 * (B && B.e.big ? 1.45 : 1);
+  const h = B && huge(B.e) ? 160 : 82 * (B && B.e.big ? 1.45 : 1);
   return { x: 520 + a.dx + a.kb, y: GROUND - h + a.dy };
 }
 function vfx(type, o) { if (B && B.vfx) B.vfx.push({ type, t: 0, life: 0.4, ...o }); }
@@ -476,6 +477,7 @@ const ARMOR_LOOK = {
   a_cara:  { style: 'chitin', base: '#4f6a3e', trim: '#c9b46a', pauldron: 'elytra', spike: '#d8cfa8', under: '#2a2a1c' },
   a_aegis: { style: 'paladin', base: '#c2ccdc', trim: '#3a6ad0', pauldron: 'paladin', cape: '#2a3a8a', capeLong: true, rivet: '#e8c25a', motif: 'filigree', tabard: '#2a3a8a', under: '#22283a' },
   a_magma: { style: 'jugg', base: '#3a2e2c', trim: '#ff7a2a', glow: '#ff7a2a', seams: true, pauldron: 'massive', spike: '#5a4440', under: '#1a1210' },
+  t_horizon: { style: 'paladin', base: '#2a3050', trim: '#ffd27a', pauldron: 'paladin', cape: '#10183a', capeLong: true, rivet: '#ffd27a', motif: 'rune', glow: '#ffd27a', stars: true, tabard: '#10183a', under: '#141830' },
   a_void:  { style: 'void', base: '#2e2448', trim: '#c46aff', glow: '#c46aff', stars: true, pauldron: 'float', cape: '#1a1030', capeLong: true, motif: 'rune', under: '#120c1c' },
 };
 function armorStyle(a) { return { dark: shade(a.base, -38), light: shade(a.base, 42), ...a }; }
@@ -771,6 +773,39 @@ function drawWeapon(c, id, A, t) {
       c.save(); glowOn(c, '#fff0b0', 14); P(c, st, '#e8c25a', 1); P(c, [0, -74, 2.6, -71, 0, -68, -2.6, -71], '#ffffff', 0); c.restore();
       break;
     }
+    case 't_glaive': { // chitin shaft, twin mandible blades with venom channels
+      plate(c, [-1.3, 24, 1.3, 24, 1.3, -50, -1.3, -50], '#3a4a2e', '#5a6a46', '#1e2616', 1.1);
+      for (const y of [-6, 0, 6, 12]) P(c, [-2, y, 2, y, 1.4, y + 2.6, -1.4, y + 2.6], '#c9b46a', 0.7);
+      plate(c, [-2.6, 24, 2.6, 24, 0, 30], '#d8cfa8', '#fff8e0', '#8a8460', 0.9);
+      plate(c, [-2.6, -50, 2.6, -50, 2, -55, -2, -55], '#c9b46a', '#f2e0a0', '#6a5a2a', 1);
+      plate(c, [-1.8, -54, -9, -62, -12, -76, -7, -90, -4, -76, -2, -64], '#d8cfa8', '#fff8e0', '#8a8460', 1.1);
+      plate(c, [1.8, -54, 8, -60, 10, -70, 6, -82, 4.2, -70, 1.6, -62], '#c9c098', '#f8f0d0', '#7a7450', 1.1);
+      c.save(); glowOn(c, '#b6ff4a', 8); L(c, [-4, -60, -7.6, -72, -6.4, -84], '#b6ff4a', 0.9); L(c, [3.6, -60, 6.4, -70, 5.4, -78], '#b6ff4a', 0.8);
+      c.globalAlpha = 0.6 + 0.4 * Math.sin(t * 0.006); P(c, [0, -57, 1.8, -55, 0, -53, -1.8, -55], '#d8ff8a', 0); c.restore();
+      break;
+    }
+    case 't_maul': { // forged block head with a molten heart
+      plate(c, [-1.6, 20, 1.6, 20, 1.6, -36, -1.6, -36], '#3a2a24', '#5a4438', '#1e1410', 1.1);
+      for (let y = -2; y < 16; y += 2.4) L(c, [-1.6, y, 1.6, y - 1.2], '#8a5a3a', 0.7);
+      plate(c, [-2.4, 20, 2.4, 20, 1.6, 24, -1.6, 24], '#5a4440', '#7a6460', '#2a1e1c', 0.9);
+      plate(c, [-13, -36, 13, -36, 15, -40, 15, -54, 13, -58, -13, -58, -15, -54, -15, -40], '#3a2e2c', '#6a5a56', '#1a1210', 1.3);
+      plate(c, [-15, -40, -19, -42, -19, -52, -15, -54], '#5a4440', '#7a6460', '#2a1e1c', 1);
+      plate(c, [15, -40, 19, -42, 19, -52, 15, -54], '#5a4440', '#7a6460', '#2a1e1c', 1);
+      const pulse = 0.5 + 0.5 * Math.sin(t * 0.005);
+      c.save(); glowOn(c, '#ff7a2a', 10 + 8 * pulse); P(c, [0, -53, 5, -47, 0, -41, -5, -47], '#ff9a3a', 1); P(c, [0, -50, 2.4, -47, 0, -44, -2.4, -47], '#fff0a0', 0);
+      L(c, [-12, -44, -6, -47], '#ff7a2a', 0.9); L(c, [12, -50, 6, -47], '#ff7a2a', 0.9); c.restore();
+      for (const x of [-10, 10]) { rivet(c, x, -55, '#e8c25a'); rivet(c, x, -39, '#e8c25a'); }
+      break;
+    }
+    case 'w_sever': { // Kol's blade: black steel, violet rune channel, hooked tip
+      grip(c, -3, 8, '#1e1a24', '#5a3a6a');
+      P(c, [-2, 8, 2, 8, 0, 11.4], '#c46aff', 0.8);
+      plate(c, [-8, -3, 8, -3, 6, 0, -6, 0], '#2a2236', '#4a3a5a', '#120c18', 1);
+      P(c, [-8, -3, -11.4, -7, -6, -3], '#2a2236', 0.9); P(c, [8, -3, 11.4, -7, 6, -3], '#2a2236', 0.9);
+      plate(c, [-2.8, -3, 2.8, -3, 3.2, -46, 1, -52, 0, -60, -1.6, -50, -3.2, -46], '#2a2236', '#5a4a6a', '#0e0a14', 1.2);
+      c.save(); glowOn(c, '#c46aff', 10); L(c, [0, -6, 0.6, -24, 0, -44], '#c46aff', 1); for (const y of [-14, -28, -40]) P(c, [-1.2, y, 0, y - 2, 1.2, y, 0, y + 2], '#e8c0ff', 0); c.restore();
+      break;
+    }
     default: { // w_rust: chipped and rusted
       plate(c, [-1.6, 5, 1.6, 5, 2.2, 7.6, 0, 9, -2.2, 7.6], '#6a5a3a', '#8a7a5a', '#3a2e1a', 1);
       grip(c, -2, 5, '#4a3424', '#2a1a10');
@@ -785,8 +820,8 @@ function drawWeapon(c, id, A, t) {
 
 
 // Glow colour and blade length per weapon, used for swing smears and effects.
-const WEAPON_GLOW = { w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
-const WEAPON_LEN = { w_rust: 41, w_ion: 54, w_lance: 82, w_grav: 51, w_nova: 55, w_star: 64, sword: 55, axe: 52, staff: 70, gun: 36 };
+const WEAPON_GLOW = { t_glaive: '#b6ff4a', t_maul: '#ff7a2a', w_sever: '#c46aff', w_rust: '#efe6d6', w_ion: '#5ad1e6', w_lance: '#fff27a', w_grav: '#b48cff', w_nova: '#ff9a3a', w_star: '#9ad8ff', sword: '#e8eef8', axe: '#ffb07a', staff: '#fff0b0', gun: '#ffd27a', void: '#c46aff' };
+const WEAPON_LEN = { t_glaive: 88, t_maul: 58, w_sever: 60, w_rust: 41, w_ion: 54, w_lance: 82, w_grav: 51, w_nova: 55, w_star: 64, sword: 55, axe: 52, staff: 70, gun: 36 };
 
 
 function torsoPath(c, f, br, k = 1) {
@@ -933,7 +968,7 @@ function drawKnight(c, x, y, s, o, t) {
   const br = Math.sin(t * 0.004) * 1.1 + (ps.walk != null ? Math.abs(Math.cos(ps.walk)) * -1.6 : 0), wv = Math.sin(t * 0.003) * 3;
   const hipY = -46 + cr * 14, lw = (f ? 0.68 : 1) * (A.style === 'jugg' ? 1.2 : A.style === 'void' ? 0.88 : 1);
   const upper = fn => { c.save(); c.translate(0, hipY); c.rotate(lean); c.translate(0, 46); fn(); c.restore(); };
-  const tab = A.tabard || null, sword = !['w_lance', 'staff', 'gun', 'axe'].includes(wpn);
+  const tab = A.tabard || null, sword = !['w_lance', 'staff', 'gun', 'axe', 't_glaive', 't_maul'].includes(wpn);
   upper(() => styleBack(c, A, br, t));
 
   if (ps.aura) {
@@ -1046,6 +1081,8 @@ function drawKnight(c, x, y, s, o, t) {
     // the Order's star sits on the chest, or on the belt buckle for the slender build
     if (A.sigil) { const pts = [], sy = f ? -55.5 : -73 + br; for (let i = 0; i < 16; i++) { const r = i % 2 ? 1.6 : 4.2, an = -Math.PI / 2 + i * Math.PI / 8; pts.push(1 + Math.cos(an) * r, sy + Math.sin(an) * r); } P(c, pts, A.sigil, 0.7); }
     if (o.acc === 'x_core') { glowOn(c, '#5ad1e6', 12); P(c, [2, -74 + br, 5.4, -72 + br, 5.4, -68 + br, 2, -66 + br, -1.4, -68 + br, -1.4, -72 + br], '#5ad1e6', 1); glowOff(c); }
+    if (o.acc === 't_core') { const cy = -71 + br; glowOn(c, '#4ad0ff', 10); const hx6 = []; for (let i = 0; i < 6; i++) { const an = Math.PI / 6 + i * Math.PI / 3; hx6.push(2 + Math.cos(an) * 4.4, cy + Math.sin(an) * 4.4); } P(c, hx6, '#1e3a5a', 1); P(c, [2, cy - 2.4, 4, cy, 2, cy + 2.4, 0, cy], '#9ae8ff', 0); glowOff(c); }
+    if (o.acc === 'x_seal') { const cy = -73 + br; c.beginPath(); c.arc(-4, cy, 3.4, 0, Math.PI * 2); c.fillStyle = '#e8c25a'; c.fill(); c.strokeStyle = INK; c.lineWidth = 0.9; c.stroke(); c.beginPath(); c.arc(-4, cy, 1.6, 0, Math.PI * 2); c.fillStyle = '#3a6aff'; c.fill(); L(c, [-4, cy - 3.4, -2, -82 + br], '#3a6aff', 0.8); }
     if (o.acc === 'x_sigil') { const pts = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 2 : 4.6, an = -Math.PI / 2 + i * Math.PI / 5; pts.push(2 + Math.cos(an) * r, -70 + br + Math.sin(an) * r); } P(c, pts, '#e8c25a', 0.9); }
 
     // waist: mail, belt, buckle, pouches
@@ -1053,6 +1090,12 @@ function drawKnight(c, x, y, s, o, t) {
     P(c, [wL, -53, wR, -53, wR - 1, -46, wL + 1, -46], A.cloth ? shade(A.base, -20) : A.dark);
     if (!A.cloth) for (let mx = wL + 1.4; mx < wR - 1.4; mx += 2.2) for (const my of [-51.6, -49.6]) L(c, [mx, my, mx + 1.1, my + 1, mx + 2.2, my], shade(A.dark, 30), 0.5);
     plate(c, [wL - 0.6, -48.6, wR + 0.6, -48.6, wR + 0.6, -44.2, wL - 0.6, -44.2], A.trim, shade(A.trim, 40), shade(A.trim, -40), 1);
+    if (o.acc === 't_lantern') {
+      const lx = wL - 3, ly = -37 + Math.sin(t * 0.003) * 0.8;
+      L(c, [wL, -45, lx, ly - 5], '#2a2016', 0.8);
+      plate(c, [lx - 3, ly - 5, lx + 3, ly - 5, lx + 3.6, ly + 3, lx - 3.6, ly + 3], '#4a3a24', '#6a5a3a', '#2a1e12', 0.9);
+      glowOn(c, '#9affee', 10); P(c, [lx, ly - 3.6, lx + 1.8, ly, lx, ly + 2.2, lx - 1.8, ly], '#dafff8', 0); glowOff(c);
+    }
     if (o.acc === 'x_heart') { glowOn(c, '#ff3a5a', 6 + 6 * Math.abs(Math.sin(t * 0.004))); P(c, [3, -50, 6, -46.4, 3, -42.6, 0, -46.4], '#ff3a5a', 1); glowOff(c); }
     else if (!(A.sigil && f)) { plate(c, [1, -49.4, 5, -49.4, 5, -43.4, 1, -43.4], '#e8c25a', '#fff2b8', '#8a6a2a', 1); P(c, [2.2, -48, 3.8, -48, 3.8, -44.8, 2.2, -44.8], INK, 0); }
     plate(c, [wL - 1.6, -47.6, wL + 2.6, -47.6, wL + 2.4, -41, wL - 1.4, -41.2], '#5a3e2a', '#7a5a3e', '#2e2016', 1);
@@ -1131,6 +1174,10 @@ function drawKnight(c, x, y, s, o, t) {
     if (A.style === 'void') voidShards(c, A, br, t, true);
     // cape clasp
     if (A.cape && A.style !== 'void') { const cx = f ? 4.6 : 6, cy = -82.6 + br; P(c, [cx - 2, cy, cx, cy - 2, cx + 2, cy, cx, cy + 2], '#e8c25a', 0.8); c.fillStyle = A.trim; c.fillRect(cx - 0.6, cy - 0.6, 1.2, 1.2); }
+    if (o.acc === 'x_last') {
+      const oy = -106 + Math.sin(t * 0.003) * 3, fl = Math.sin(t * 0.02) * 1.2;
+      glowOn(c, '#7affe8', 14); P(c, [-22, oy - 7 - fl, -18.8, oy, -22, oy + 3, -25.2, oy], '#7affe8', 0); P(c, [-22, oy - 3 - fl * 0.5, -20.6, oy, -22, oy + 1.6, -23.4, oy], '#ffffff', 0); glowOff(c);
+    }
     if (o.acc === 'x_lens') {
       const oy = -104 + Math.sin(t * 0.003) * 3;
       glowOn(c, '#9ad8ff', 12); P(c, [-22, oy - 5, -18.6, oy, -22, oy + 5, -25.4, oy], '#9ad8ff', 1); glowOff(c);
@@ -1841,11 +1888,85 @@ function drawTitan(c, e, t, ps) {
   for (let i = 0; i < 3; i++) P(c, [sx - 14 + i * 12, sy - 16, sx - 12 + i * 12 - 4, sy - 34 - i * 3, sx - 8 + i * 12, sy - 17], plateD, 1);
 }
 
+// A black hole: lensing halo, accretion disk (far half, bent-up far side, horizon, near half), photon ring.
+function blackHole(c, x, y, R, t, tilt = -0.18) {
+  const spin = t * 0.0005;
+  const g = c.createRadialGradient(x, y, R * 0.9, x, y, R * 3.4);
+  g.addColorStop(0, 'rgba(255,190,110,0.5)'); g.addColorStop(0.3, 'rgba(255,110,60,0.18)'); g.addColorStop(0.6, 'rgba(160,70,255,0.12)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.fillStyle = g; c.beginPath(); c.arc(x, y, R * 3.4, 0, Math.PI * 2); c.fill();
+  const ring = front => {
+    c.save(); c.translate(x, y); c.rotate(tilt);
+    for (const [col, k, w] of [['#a04aff', 3.2, 0.16], ['#ff5a3a', 2.6, 0.2], ['#ff9a4a', 2.1, 0.24], ['#ffd27a', 1.6, 0.28], ['#fff6d8', 1.25, 0.3]]) {
+      c.strokeStyle = col; c.lineWidth = R * w * 0.5; c.globalAlpha = 0.85;
+      c.beginPath(); c.ellipse(0, 0, R * k, R * k * 0.24, 0, front ? 0 : Math.PI, front ? Math.PI : Math.PI * 2); c.stroke();
+    }
+    c.fillStyle = '#fff2c8';
+    for (let i = 0; i < 22; i++) { const a = spin * (3 - (i % 3)) + i * 2.1, k = 1.3 + (i % 5) * 0.42, sy = Math.sin(a); if ((sy > 0) !== front) continue; c.globalAlpha = 0.5 + 0.5 * Math.abs(sy); c.fillRect(Math.cos(a) * R * k - R * 0.05, sy * R * k * 0.24 - R * 0.02, R * 0.1, R * 0.04); }
+    c.restore();
+  };
+  ring(false);
+  c.save(); c.globalAlpha = 0.9; c.strokeStyle = '#ffdca0'; c.lineWidth = R * 0.16; glowOn(c, '#ffb46a', R * 0.4); c.beginPath(); c.ellipse(x, y, R * 1.24, R * 1.12, tilt, Math.PI * 1.04, Math.PI * 1.96); c.stroke(); c.restore();
+  c.save(); c.globalAlpha = 0.45; c.strokeStyle = '#ffb46a'; c.lineWidth = R * 0.08; c.beginPath(); c.ellipse(x, y, R * 1.16, R * 1.08, tilt, Math.PI * 0.08, Math.PI * 0.92); c.stroke(); c.restore();
+  c.save(); glowOn(c, '#fff0d0', R * 0.3); c.strokeStyle = '#fff6e6'; c.lineWidth = Math.max(1, R * 0.05); c.beginPath(); c.arc(x, y, R * 1.03, 0, Math.PI * 2); c.stroke(); c.restore();
+  c.fillStyle = '#000000'; c.beginPath(); c.arc(x, y, R, 0, Math.PI * 2); c.fill();
+  ring(true);
+}
+// Phase 3 of the final battle: the titan's remains orbit a black hole that drinks in debris.
+function drawSingularity(c, e, t, ps) {
+  const y = -168, R = 42 * (ps.sx || 1), r = seeded(77);
+  for (let i = 0; i < 36; i++) {
+    const a0 = r() * 6.283, r0 = 90 + r() * 120, sp = 0.4 + r() * 0.8, k = (t * 0.00012 * sp + r()) % 1;
+    const rad = r0 * (1 - k) + R * k, a = a0 + k * 4;
+    c.save(); c.globalAlpha = 0.25 + 0.6 * k; c.fillStyle = i % 3 ? '#ffb46a' : '#c49aff';
+    c.translate(Math.cos(a) * rad, y + Math.sin(a) * rad * 0.45); c.rotate(a + 1.4); c.fillRect(-3 - k * 6, -0.7, 6 + k * 12, 1.4); c.restore();
+  }
+  blackHole(c, 0, y, R, t);
+  // what is left of the titan's crown, circling the drain
+  for (let i = 0; i < 5; i++) {
+    const a = t * 0.0008 + i * 1.26, x = Math.cos(a) * 118, yy = y + Math.sin(a) * 34, k = 0.8 + 0.3 * Math.sin(a);
+    P(c, [x - 6 * k, yy - 8 * k, x + 5 * k, yy - 11 * k, x + 8 * k, yy + 4 * k, x - 4 * k, yy + 7 * k], '#1c1630', 1.2);
+    c.save(); glowOn(c, '#c46aff', 6); L(c, [x - 4 * k, yy - 6 * k, x + 5 * k, yy - 8 * k], '#c46aff', 0.8); c.restore();
+  }
+}
+// The star chart's sector view: five worlds on a route, and the Hollow sized by how far it has spread.
+function drawSector(cv, t) {
+  const w = 720, h = 200, c = hiDpi(cv, w, h), st = S, rot = st.rot || 0;
+  const bg = c.createLinearGradient(0, 0, w, 0); bg.addColorStop(0, '#0a0610'); bg.addColorStop(1, '#14060e'); c.fillStyle = bg; c.fillRect(0, 0, w, h);
+  const r = seeded(5); c.fillStyle = '#ffffff';
+  for (let i = 0; i < 120; i++) { const x = r() * w, y = r() * h, ph = r() * 6, sz = r() * 1.4 + 0.4; c.globalAlpha = 0.15 + 0.5 * Math.abs(Math.sin(t * 0.001 + ph)); c.fillRect(x, y, sz, sz); }
+  c.globalAlpha = 1;
+  nebula(c, 120, 60, 160, 'rgba(212,20,46,0.08)');
+  const sealed = st.done && st.final === 'rim', bound = st.done && !sealed;
+  const R = sealed ? 0 : bound ? 12 : 16 + rot * 0.42, hx = 650, hy = 98;
+  const pos = [[70, 112], [180, 72], [290, 124], [400, 78], [510, 112]];
+  c.save(); c.setLineDash([3, 5]); c.strokeStyle = 'rgba(229,57,74,0.45)'; c.lineWidth = 1.2; c.beginPath(); pos.forEach(([x, y], i) => i ? c.lineTo(x, y) : c.moveTo(x, y)); c.stroke(); c.restore();
+  if (R && !bound) for (const [x, y] of pos) {
+    const k = rot / 100 * (x / hx), gr = c.createLinearGradient(x, y, hx, hy);
+    gr.addColorStop(0, `rgba(255,140,80,${0.04 + 0.35 * k})`); gr.addColorStop(1, 'rgba(255,140,80,0)');
+    c.strokeStyle = gr; c.lineWidth = 2 + 7 * k; c.beginPath(); c.moveTo(x, y); c.quadraticCurveTo((x + hx) / 2, y - 26, hx, hy); c.stroke();
+  }
+  if (R) blackHole(c, hx, hy, R, t);
+  if (bound) { c.save(); glowOn(c, '#e8c25a', 8); c.strokeStyle = '#e8c25a'; c.lineWidth = 1.4; for (let i = 0; i < 3; i++) { c.beginPath(); c.ellipse(hx, hy, R * 2.4, R * 0.9, t * 0.0004 + i * 1.05, 0, Math.PI * 2); c.stroke(); } c.restore(); }
+  if (sealed) { nebula(c, hx, hy, 70, 'rgba(255,240,200,0.16)'); c.save(); glowOn(c, '#fff4d8', 16); P(c, [hx, hy - 10, hx + 2.4, hy - 2.4, hx + 10, hy, hx + 2.4, hy + 2.4, hx, hy + 10, hx - 2.4, hy + 2.4, hx - 10, hy, hx - 2.4, hy - 2.4], '#fff8e8', 0); c.restore(); }
+  c.textAlign = 'center';
+  pos.forEach(([x0, y], i) => {
+    const pw = PLANETS[i], locked = i >= st.unlocked, k = R && !bound ? rot / 100 * (x0 / hx) : 0, x = x0 + k * 10, pr = 19;
+    if (k > 0.05) { c.save(); c.globalAlpha = k; const tr = c.createLinearGradient(x, y, x + 40, y); tr.addColorStop(0, pw.globe[0]); tr.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = tr; c.beginPath(); c.ellipse(x + 16, y, 26, pr * 0.6, 0, 0, Math.PI * 2); c.fill(); c.restore(); }
+    if (i === st.world) { c.save(); glowOn(c, '#e5394a', 10); c.strokeStyle = '#e5394a'; c.lineWidth = 1.6; c.beginPath(); c.arc(x, y, pr + 7 + Math.sin(t * 0.004) * 1.5, 0, Math.PI * 2); c.stroke(); c.restore(); }
+    const gg = c.createRadialGradient(x - pr * 0.35, y - pr * 0.35, 1, x, y, pr); gg.addColorStop(0, locked ? '#2a2430' : pw.globe[0]); gg.addColorStop(1, locked ? '#0c0a10' : pw.globe[1]);
+    c.fillStyle = gg; c.beginPath(); c.arc(x, y, pr, 0, Math.PI * 2); c.fill(); c.strokeStyle = INK; c.lineWidth = 1.6; c.stroke();
+    if (st.bosses[i]) { c.save(); glowOn(c, '#6fdc8c', 6); L(c, [x - 5, y, x - 1, y + 4, x + 6, y - 5], '#6fdc8c', 2); c.restore(); }
+    c.font = '600 11px "Chakra Petch", sans-serif'; c.fillStyle = locked ? '#6a5a62' : '#f1ecef'; c.fillText(locked ? '???' : pw.name, x, y + pr + 16);
+  });
+  c.textAlign = 'right'; c.font = '600 11px "Chakra Petch", sans-serif'; c.fillStyle = sealed ? '#fff0c8' : '#ff9a7a';
+  c.fillText(sealed ? 'THE EDGE · SEALED' : bound ? 'THE HOLLOW · SLEEPING' : 'THE HOLLOW', w - 12, h - 12);
+}
+
 // Enemies face left. ps is the battle pose: { dx, dy, lean, sx, sy, arm, smear, smearT }.
 function drawEnemyPosed(c, e, x, y, s, t, ps = {}) {
   if (e.kind === 'humanoid') { drawKnight(c, x, y, s * 0.98, { armor: armorStyle(e.armor), look: e.look, weapon: e.weapon, flip: true, pose: ps }, t); return; }
   c.save(); c.translate(x, y); c.rotate(-(ps.lean || 0)); c.scale(ps.sx || 1, ps.sy || 1); c.translate(-x, -y);
-  if (e.kind === 'titan') { c.translate(x, y); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round'; drawTitan(c, e, t, ps); }
+  if (huge(e)) { c.translate(x, y); c.scale(s, s); c.lineJoin = 'round'; c.lineCap = 'round'; (e.kind === 'singularity' ? drawSingularity : drawTitan)(c, e, t, ps); }
   else drawEnemy(c, e, x, s, t, 0, y);
   c.restore();
 }
@@ -1863,7 +1984,7 @@ function shieldHex(c, x, y, rad, t) {
 const actorPose = a => ({ arm: a.arm, lean: a.lean, crouch: a.crouch, smear: a.smear, smearT: a.smearT, aura: a.aura, sx: a.sx, sy: a.sy });
 // Offscreen box for each enemy size: w/h of the sprite canvas and where its feet sit.
 function enemyBox(e) {
-  if (e.kind === 'titan') return { w: 640, h: 330, ax: 340, ay: 312, s: 0.95 };
+  if (huge(e)) return { w: 640, h: 330, ax: 340, ay: 312, s: 0.95 };
   if (e.big) return { w: 460, h: 330, ax: 230, ay: 312, s: 1.25 * 1.45 };
   return { w: 360, h: 270, ax: 180, ay: 250, s: 1.25 };
 }
@@ -1876,7 +1997,7 @@ function loop(t) {
   if (B.hitstop > 0) { B.hitstop -= rdt; dt = 0; }
   stepTweens(dt);
   const c = hiDpi(cv, W, H), a = B.anim, pa = B.act.p, ea = B.act.e;
-  for (const act of [pa, ea]) {
+  for (const act of [pa, ea, B.act.l]) {
     act.kb *= Math.pow(0.84, dt / 16);
     if (act.smear != null && !act.swinging) { act.smearT = Math.max(0, act.smearT - dt / 180); if (act.smearT <= 0) act.smear = null; }
     if (dt > 0) { act.trail.unshift(act.dx); act.trail.length = Math.min(act.trail.length, 6); }
@@ -1888,6 +2009,12 @@ function loop(t) {
   if (a.flash > 0 && !RM) c.translate((Math.random() - 0.5) * 9 * a.flash, (Math.random() - 0.5) * 7 * a.flash);
   drawBackdrop(c, B.world, t);
   const rim = SCENE_RIM[B.world];
+  // Lyra, when she fights beside you
+  if (B.ally) {
+    const la = B.act.l; shadow(c, 112 + la.dx, 28);
+    renderSprite(c, (s, ax, ay) => drawKnight(s, ax, ay, 1.22, { ...CAST.lyra(), pose: actorPose(la) }, t), { x: 112 + la.dx, y: GROUND + la.dy, w: 360, h: 260, ax: 150, ay: 240, rim,
+      ghosts: la.ghost ? la.trail.slice(1, 5).map(d => d - la.dx) : null, ghostCol: '#fff27a' });
+  }
   // hero
   const hx = 200 + pa.dx + pa.kb, hy = GROUND + pa.dy;
   shadow(c, 200 + pa.dx, 34 * (1 - Math.min(0.5, -pa.dy / 120)));
@@ -1901,12 +2028,22 @@ function loop(t) {
   // enemy
   const box = enemyBox(B.e), ex = 520 + ea.dx + ea.kb, die = a.eDie > 0 ? (a.eDie = Math.min(1, a.eDie + dt / 800)) : 0;
   const ey = GROUND + ea.dy + die * 18;
-  shadow(c, 520 + ea.dx, (B.e.kind === 'titan' ? 90 : 44 * (B.e.big ? 1.45 : 1)) * (1 - die));
+  if (B.e.charging && die === 0) {
+    // a telegraphed attack: a pulsing red corona behind the enemy
+    const u = unitPos('e'), k = 0.6 + 0.4 * Math.sin(t * 0.012), rr = huge(B.e) ? 170 : 100 * (B.e.big ? 1.4 : 1);
+    const g = c.createRadialGradient(u.x, u.y, 4, u.x, u.y, rr); g.addColorStop(0, 'rgba(255,60,80,0)'); g.addColorStop(0.6, `rgba(255,60,80,${0.28 * k})`); g.addColorStop(1, 'rgba(255,60,80,0)');
+    c.fillStyle = g; c.fillRect(u.x - rr, u.y - rr, rr * 2, rr * 2);
+  }
+  shadow(c, 520 + ea.dx, (huge(B.e) ? 90 : 44 * (B.e.big ? 1.45 : 1)) * (1 - die));
   if (die < 1) renderSprite(c, (s, ax, ay) => drawEnemyPosed(s, B.e, ax, ay, box.s, t, actorPose(ea)), {
     x: ex, y: ey, w: box.w, h: box.h, ax: box.ax, ay: box.ay, alpha: 1 - die,
     rim: B.phase === 2 ? '#ff5aa8' : rim, flash: a.eHit > 0.4 ? (a.eHit - 0.4) / 0.6 : die > 0 ? 0.6 * (1 - die) : 0,
     ghosts: ea.ghost ? ea.trail.slice(1, 5).map(d => d - ea.dx) : null, ghostCol: (B.e.col && B.e.col[1]) || '#ff8a7a' });
-  if (B.e.fx.shield && die === 0) { const u = unitPos('e'); shieldHex(c, u.x, u.y, B.e.kind === 'titan' ? 150 : 96 * (B.e.big ? 1.45 : 1), t); }
+  if (B.e.fx.shield && die === 0) { const u = unitPos('e'); shieldHex(c, u.x, u.y, huge(B.e) ? 150 : 96 * (B.e.big ? 1.45 : 1), t); }
+  if (B.hazard > 0) for (let i = 0; i < 9; i++) {
+    const x = 60 + ((i * 97 + t * 0.03) % 320), y = ((t * 0.22 + i * 61) % (GROUND + 30)) - 20, z = 3 + (i % 3) * 2;
+    P(c, [x - z, y, x, y - z, x + z, y + z * 0.4, x - z * 0.3, y + z], '#2a2236', 1);
+  }
   drawVfx(c, dt);
   drawForeground(c, B.world, t);
   if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.28})`; c.fillRect(-20, -20, W + 40, H + 40); }
@@ -1914,7 +2051,7 @@ function loop(t) {
   c.textAlign = 'center';
   B.fl = B.fl.filter(f => (f.t += dt / 1000) < 1.1);
   for (const f of B.fl) {
-    const u = f.side === 'p' ? 200 + pa.dx : 520 + ea.dx, x = u + f.dx, y = GROUND - (f.side === 'e' && B.e.kind === 'titan' ? 250 : 150) - f.t * 50;
+    const u = f.side === 'p' ? 200 + pa.dx : 520 + ea.dx, x = u + f.dx, y = GROUND - (f.side === 'e' && huge(B.e) ? 250 : 150) - f.t * 50;
     const pop = 1 + 0.7 * Math.max(0, 1 - f.t * 7), big = /CRIT/.test(f.text) ? 1.3 : 1;
     c.font = `700 ${Math.round(22 * pop * big)}px "Chakra Petch", sans-serif`;
     c.globalAlpha = clamp(1.4 - f.t * 1.3, 0, 1);
@@ -1980,6 +2117,10 @@ function ambientLoop() {
   }
   const hall = document.getElementById('hallCanvas');
   if (hall && S) drawHall(hall, t);
-  if ((tc || cc || hc || hall) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  const sec = document.getElementById('sectorCanvas');
+  if (sec && S) drawSector(sec, t);
+  const kp = document.getElementById('keeperPortrait');
+  if (kp) paintBust(kp, bustSpec(kp.dataset.id), 150, 170, t, null, kp.dataset.id === 'keeper' ? '#2ab8b0' : null);
+  if ((tc || cc || hc || hall || sec || kp) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 

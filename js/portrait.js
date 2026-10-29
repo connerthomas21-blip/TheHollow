@@ -551,6 +551,12 @@ function bustSpec(id) {
     case 'kolDark': return { ...kol, eyes: '#c46aff', armor: armorStyle(KOL_DARK_ARMOR), cape: '#2a0a24', angry: true, aura: 'rgba(160,60,255,0.35)', sigil: null };
     case 'gm': return { f: false, skin: '#8a5638', hair: '#e8e8ee', eyes: '#e0a83a', style: 'long', beard: 'full', gear: 'circlet', robe: true, armor: armorStyle({ base: '#ece6d6', trim: '#c9a24a' }) };
     case 'vex': return { f: false, skin: '#f0c8a8', hair: '#e8e8ee', eyes: '#3a7aff', style: 'swept', beard: 'goatee', coat: true, armor: armorStyle({ base: '#e6e6f0', trim: '#2a4ab0' }), expr: 'grim' };
+    case 'maro': return { f: false, skin: '#c98a64', hair: '#d8d8de', eyes: '#e0a83a', style: 'shaved', beard: 'full', mark: 'patch', robe: true, armor: armorStyle({ base: '#6a5038', trim: '#3a2a1e' }), expr: 'grim' };
+    case 'sesk': return { f: true, skin: '#8a5638', hair: '#1c1714', eyes: '#b6e05a', style: 'braids', gear: 'mask', mark: 'paint', armor: armorStyle({ style: 'cloth', base: '#b08a5a', trim: '#5a3a22', scarf: '#9a3a2a', motif: 'stitch' }), cape: '#7a5a3a' };
+    case 'ilo': return { f: true, skin: '#f0d0b8', hair: '#1c1714', eyes: '#5ad1e6', style: 'short', coat: true, armor: armorStyle({ base: '#3a4a6a', trim: '#e8c25a' }) };
+    case 'bram': return { f: false, skin: '#b97a52', hair: '#b8323a', eyes: '#f2b544', style: 'topknot', beard: 'full', mark: 'paint', armor: armorStyle(ARMOR_LOOK.a_magma) };
+    case 'keeper': return { f: false, skin: '#5a8a90', hair: '#cfd0d8', eyes: '#7affe8', style: 'long', gear: 'hood', hoodCol: '#1e2e30', glowEyes: true, robe: true, armor: armorStyle({ base: '#3a4446', trim: '#7affe8' }) };
+    case 'lost': return { f: false, skin: '#5a8a90', hair: '#cfd0d8', eyes: '#7affe8', style: 'long', beard: 'none', armor: armorStyle(LOST_SWEEPER.armor), cape: '#14262a', aura: 'rgba(122,255,232,0.3)', expr: 'grim', sigil: '#7affe8' };
     case 'hero': return bustFromLook(menuHero());
   }
   return null;

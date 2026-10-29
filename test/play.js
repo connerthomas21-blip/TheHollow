@@ -9,13 +9,14 @@ const path = require('path');
   await pg.waitForTimeout(500);
   await pg.screenshot({ path: process.argv[2] + '/title.png' });
   await pg.click('[data-a="new"]'); await pg.click('[data-a="create-done"]'); await pg.click('[data-a="cs-skip"]');
-  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="cs-skip"]');
+  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="cs-skip"]'); await pg.click('[data-a="cs-skip"]');
   await pg.click('[data-a="patrol"]'); await pg.waitForTimeout(700);
   await pg.click('[data-a="attack"]'); await pg.waitForTimeout(1500);
   await pg.screenshot({ path: process.argv[2] + '/battle.png' });
   const report = await pg.evaluate(async () => {
     window.__fast = true;
     const out = [];
+    S.lyra = 'forgive'; S.vex = 'spare'; S.kol = 'mercy';   // exercise the ally, fleet support and Kol's ward
     const spend = () => {
       // Stat plan: STR/VIT/DEF heavy with some TEC. Skills: rank up attacks first.
       const order = ['str', 'vit', 'def', 'str', 'tec', 'agi'];
@@ -63,6 +64,19 @@ const path = require('path');
       out.push(`${PLANETS[w].name}: patrols=${battles} losses=${losses} bossTries=${bossTries} bossTurns=${bossTurns} -> LV ${S.lvl}, cr ${S.cr}, gear ${Object.values(S.equip).join(',')}`);
     }
     out.push('done=' + S.done + ' boss HP left on losses: ' + window.__bl);
+    // post-game: one Rift trial, every echo, then the Lost Sweeper
+    S.world = 0; let tr = 0;
+    for (let n = 1; n <= 3; n++) { spend(); startBattle(false, { mode: 'trial', trial: { n, of: 3 } }); B.trial = { n, of: 3 };
+      let g = 0; while (!B.over && g++ < 200) { if (B.busy) { await new Promise(r => setTimeout(r, 0)); continue; } await playerAction('attack'); }
+      tr = B.over.result; B = null; if (tr !== 'won') break; }
+    out.push('trial 0: ' + tr + ' reward owned=' + S.gear.includes('t_lantern'));
+    for (let w = 0; w < 5; w++) { S.world = w; let tries = 0; while (!S.echo[w] && tries++ < 6) { spend(); shop(); const st = stats(); S.hp = st.maxHp; S.en = st.maxEn; startBattle(true, { mode: 'echo' });
+      let g = 0; while (!B.over && g++ < 300) { if (B.busy) { await new Promise(r => setTimeout(r, 0)); continue; } const id = ['star', 'inferno'].find(id => S.skills[id] && B.p.en >= SKILLS[id].en); await (id ? playerAction('skill', id) : playerAction('attack')); }
+      B = null; } }
+    out.push('echoes: ' + S.echo.join(','));
+    S.world = 4; { const st = stats(); S.hp = st.maxHp; S.en = st.maxEn; } startBattle(true, { mode: 'lost' });
+    { let g = 0; while (!B.over && g++ < 300) { if (B.busy) { await new Promise(r => setTimeout(r, 0)); continue; } await playerAction('skill', 'star'); if (!B.over && B.p.en < 22) await playerAction('defend'); } out.push('lost sweeper: ' + B.over.result + ' mirrored=' + /mirrors/.test(document.body.innerText + B.log.join(''))); B = null; }
+    out.push('diff=' + S.diff + ' rot=' + S.rot + ' med=' + S.med.join(','));
     return out;
   });
   console.log(report.join('\n'));

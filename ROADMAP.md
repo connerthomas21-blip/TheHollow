@@ -68,11 +68,23 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Weapons rebuilt: wrapped grips, bevelled metal, and moving detail (ion saber flicker, lance rings and arcs, cleaver rune pulse and floating fragments, nova embers, Oathkeeper winged guard and rising starlight).
 - `drawForeground`: per-scene foreground silhouettes and a vignette in battles and cutscenes.
 
+## Session B — Story expansion, choices, challenge (done)
+- Story: the prologue now shows the send-off and the empty Krytos relay (crew sent home in advance, a Skrell ambush, Veyra burning on the horizon) and the arrest at dawn. Each world gets an "In your absence" flashback (`w0_past`…`w3_past`) after its intro, and `w4_past` tells the rise of the Hollow Dark.
+- The Hollow Dark is a black hole that has been eating worlds for ten thousand years; the titan is its avatar. The final battle has a third phase, **The Singularity** (`PHASE3`, `drawSingularity`, `blackHole`), which drags at you every turn.
+- Choices with consequences: Lyra forgiven → she fights beside you after Nebulon (`allyTurn`); Vex spared → his fleet fires at each final-battle phase change, executed → the Admiral's Seal and Nebulon's trader shuts her counter; Kol mercy → his ward cancels the singularity's pull, justice → his blade Severance. Both reveal that the Grand Master signed the pact first.
+- Final choice (`S.final`): save the Rim (the Citadel is flown into the Hollow, new hall on Veyra) or save the Order (the Grand Master's secret is kept, the Hollow sleeps). The Hall, its talk and the star chart change to match.
+- Traders (`KEEPERS`): Old Maro, Sesk, Quartermaster Ilo, Bram the Smith and the Lantern Keeper, each with a portrait, a greeting and lore lines that react to your progress and choices.
+- Challenge: a corruption meter (`S.rot`, "the Hollow's pull") shown as a growing black hole on the star chart. Patrols and defeats feed it and bosses and trials push it back; every 25 points makes enemies tougher and better paid. Medbay visits are limited per world (`S.med`) and restocked by that world's boss. Bosses telegraph charged attacks (defending takes a quarter of the damage). Enemies have weaknesses and resistances (blade, tech, fire). Kol and the Lost Sweeper mirror your last skill, and the titan's Worldbreaker leaves falling debris.
+- Difficulty modes chosen at new game (`DIFFICULTY`): Story, Knight, Sweeper's Oath.
+- Rift trials (`TRIALS`): three fights in a row with no items, no medbay and no escape, for special gear with perks: Colonist's Lantern, Mandible Glaive, Sentinel Shield Core, Forgeheart Maul, Horizon Plate.
+- Post-game: an Echo of every boss at full strength (from each world hub). Sweep all five, then follow the Lantern Keeper to the secret boss, The Lost Sweeper (reward: Last Light).
+- `node test/expansion.js <dir>` renders the trader screens, the star chart, the new battles, cutscenes and both Halls. The play test also runs a trial, the echoes and the Lost Sweeper.
+
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
 
 ## Session 2 — Companion & quests
-- Lyra joins as a party member after Nebulon (two-member party, target selection)
+- (Lyra now fights as an AI ally. Still open: controlling her turns, target selection.)
 - Multi-enemy encounters (1–3 foes)
 - Quest board per world (kill X, collect drops) with rewards
 - Enemy drops and materials

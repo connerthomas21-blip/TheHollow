@@ -49,11 +49,20 @@ const COLOUR_NAMES = {
 const LOOK_ROWS = [['build', 'Build'], ['gear', 'Headgear'], ['hair', 'Hair'], ['hairCol', 'Hair colour'], ['skin', 'Skin'], ['eyes', 'Eyes and visor glow'], ['beard', 'Beard'], ['mark', 'Face mark']];
 const lookList = k => k === 'skin' ? SKIN : k === 'hairCol' ? HAIR : k === 'eyes' ? EYES : LOOK_OPTS[k];
 function cycleLook(k, d) {
+  if (k === 'diff') { const ks = Object.keys(DIFFICULTY), i = ks.indexOf(U.diff || 'knight'); U.diff = ks[(i + d + ks.length) % ks.length]; return; }
   if (k === 'outfit') { U.outfit = ((U.outfit || 0) + d + OUTFITS.length) % OUTFITS.length; return; }
   const list = lookList(k), colour = k in COLOUR_NAMES;
   const i = colour ? U.draft[k] : list.findIndex(o => o[0] === U.draft[k]);
   const n = ((i < 0 ? 0 : i) + d + list.length) % list.length;
   U.draft[k] = colour ? n : list[n][0];
+}
+function diffRow() {
+  const dk = U.diff || 'knight', ks = Object.keys(DIFFICULTY), d = DIFFICULTY[dk];
+  return `<div class="cyc"><span class="label">Difficulty</span><div class="cyc-ctl">
+      <button class="btn small arrow" data-a="cyc" data-k="diff" data-d="-1" aria-label="Previous difficulty">\u25C0</button>
+      <span class="cyc-val">${esc(d.name)}<small>${ks.indexOf(dk) + 1}/${ks.length}</small></span>
+      <button class="btn small arrow" data-a="cyc" data-k="diff" data-d="1" aria-label="Next difficulty">\u25B6</button></div></div>
+    <span class="dim note">${esc(d.desc)}</span>`;
 }
 function screenCreate() {
   const d = U.draft, mode = U.editing;
@@ -79,6 +88,7 @@ function screenCreate() {
         <canvas id="createPortrait" class="portrait-big" width="150" height="150" aria-label="Close-up of your knight's head"></canvas>
       </div>
       <div class="opts">
+        ${mode === 'new' ? diffRow() : ''}
         <div class="opt"><label class="label" for="heroName">Name</label><input id="heroName" maxlength="16" autocomplete="off" value="${esc(U.draftName)}"></div>
         ${LOOK_ROWS.map(([k, l]) => row(k, l) + (k === 'hair' && hairNote ? `<span class="dim note">${hairNote}</span>` : '')).join('')}
         <div class="cyc outfit"><span class="label">Preview outfit</span><div class="cyc-ctl">
@@ -95,7 +105,10 @@ function screenCreate() {
 function screenMap() {
   return `${hud()}<div class="panel">
     <div class="row between"><h2>Star chart</h2><div class="row"><button class="btn small" data-a="story-open">Story</button><button class="btn small" data-a="look-open">Appearance</button><button class="btn small" data-a="go-status">Status${S.pts ? ` (${S.pts})` : ''}</button><button class="btn small" data-a="go-skills">Skills${S.sp ? ` (${S.sp})` : ''}</button></div></div>
-    ${S.done ? `<div class="row between"><p style="color:var(--gold)">The Hollow Dark is gone. The Rim is yours to roam.</p><button class="btn small primary" data-a="go-hall">Hall of Heroes</button></div>` : ''}
+    ${S.done ? `<div class="row between"><p style="color:var(--gold)">${S.final === 'order' ? 'The Hollow sleeps, bound by the Order’s secret.' : 'The Hollow is gone. The Rim is yours to roam.'} Echoes of old foes wait in every world.</p><button class="btn small primary" data-a="go-hall">${S.final === 'rim' ? 'The Hall on Veyra' : 'Hall of Heroes'}</button></div>` : ''}
+    <canvas id="sectorCanvas" class="sector" width="720" height="200" aria-label="Map of the sector: your five worlds, and the Hollow at the edge"></canvas>
+    ${S.done ? '' : `<div class="hollow">${bar(`The Hollow’s pull · ${ROT_NAME[ROT_TIER(S.rot || 0)]}`, S.rot || 0, 100, '#a04aff')}
+      <span class="dim note">Patrols and defeats feed the black hole. Bosses and Rift trials push it back. Every 25 points makes enemies tougher, and better paid.</span></div>`}
     <div class="worlds">${PLANETS.map((w, i) => {
       const locked = i >= S.unlocked;
       return `<button class="btn world ${locked ? 'locked' : ''}" data-a="world" data-id="${i}" ${locked ? 'disabled' : ''}>
@@ -111,7 +124,8 @@ function screenMap() {
 function screenHub() {
   const w = PLANETS[S.world], i = S.world, st = stats();
   const ready = S.wins[i] >= WINS_FOR_BOSS, kolNext = i === PLANETS.length - 1 && !S.kolDown, bossName = kolNext ? KOL.name : w.boss.name;
-  const restCost = (S.hp >= st.maxHp && S.en >= st.maxEn) ? 0 : 5 + S.lvl * 3;
+  const restCost = (S.hp >= st.maxHp && S.en >= st.maxEn) ? 0 : 5 + S.lvl * 3, k = KEEPERS[i];
+  const medLeft = S.done ? 99 : diff().med - (S.med[i] || 0), medNote = medLeft <= 0 ? 'No visits left. Beat the boss to restock' : restCost ? `Full repair · ${restCost} cr` : 'Fully repaired';
   return `${hud()}<div class="panel">
     <div class="hub-head"><div class="globe" style="${globeStyle(w)}"></div>
       <div style="min-width:0;display:flex;flex-direction:column;gap:6px"><h2>${esc(w.name)}</h2><span class="dim">${esc(w.sub)} · recommended LV ${w.lv}</span>
@@ -120,11 +134,14 @@ function screenHub() {
     <div class="grid3">
       <button class="btn primary" data-a="patrol" ${S.hp <= 0 ? 'disabled' : ''}>Patrol<span class="sub">Fight a random enemy</span></button>
       <button class="btn" data-a="boss" ${!ready || S.hp <= 0 ? 'disabled' : ''}>${S.bosses[i] ? 'Rematch boss' : 'Boss'}<span class="sub">${ready ? esc(bossName) : `${WINS_FOR_BOSS - S.wins[i]} more patrols`}</span></button>
-      <button class="btn" data-a="rest" ${restCost === 0 || S.cr < restCost ? 'disabled' : ''}>Medbay<span class="sub">${restCost ? `Full repair · ${restCost} cr` : 'Fully repaired'}</span></button>
-      <button class="btn" data-a="go-shop">Trader<span class="sub">Items and gear</span></button>
+      <button class="btn" data-a="rest" ${restCost === 0 || S.cr < restCost || medLeft <= 0 ? 'disabled' : ''}>Medbay${medLeft < 50 ? ` · ${Math.max(0, medLeft)} left` : ''}<span class="sub">${medNote}</span></button>
+      <button class="btn" data-a="go-shop">${esc(k.shop)}<span class="sub">${k.closed && k.closed(S) ? 'Supply kiosk' : `Trade and talk with ${esc(k.name)}`}</span></button>
       <button class="btn" data-a="go-status">Status${S.pts ? ` · ${S.pts} pts` : ''}<span class="sub">Stats and equipment</span></button>
       <button class="btn" data-a="go-skills">Skills${S.sp ? ` · ${S.sp} pts` : ''}<span class="sub">Learn and rank up</span></button>
+      ${S.bosses[i] ? `<button class="btn" data-a="trial" ${S.hp <= 0 ? 'disabled' : ''}>${esc(TRIALS[i].name)}<span class="sub">${S.trials[i] ? 'Cleared · run it again' : `Rift trial · win the ${esc(GEAR[TRIALS[i].reward].name)}`}</span></button>` : ''}
+      ${S.done ? `<button class="btn" data-a="echo" ${S.hp <= 0 ? 'disabled' : ''}>Echo of ${esc(w.boss.name)}<span class="sub">${S.echo[i] ? 'Swept · fight again' : 'Post-game boss at full strength'}</span></button>` : ''}
     </div>
+    ${S.bosses[i] && !S.trials[i] ? `<p class="dim note">${esc(TRIALS[i].text)} Three fights in a row: no items, no medbay, no escape.</p>` : ''}
     <div class="row"><button class="btn small" data-a="go-map">← Star chart</button><button class="btn small" data-a="go-save">Save code</button></div>
   </div>`;
 }
@@ -132,6 +149,7 @@ function screenHub() {
 function screenBattle() {
   const p = B.p, e = B.e, o = B.over;
   const fxl = u => Object.keys(u.fx).map(k => `<span class="fx">${k === 'shield' ? 'SHIELD ' + u.fx.shield.amt : k.toUpperCase()}</span>`).join('');
+  const els = u => (u.weak || []).map(x => `<span class="fx weak">WEAK: ${EL_NAME[x]}</span>`).join('') + (u.resist || []).map(x => `<span class="fx res">RESISTS ${EL_NAME[x]}</span>`).join('');
   let actions;
   if (o) {
     const lines = [];
@@ -141,9 +159,13 @@ function screenBattle() {
       if (o.levels) lines.push(`<p style="color:var(--gold)">Level up! You are now level ${S.lvl}. +${o.levels * 3} stat points, +${o.levels} skill point${o.levels > 1 ? 's' : ''}. HP and EN restored.</p>`);
       const newSk = Object.entries(SKILLS).filter(([id, s]) => !S.skills[id] && s.lv <= S.lvl);
       if (o.levels && newSk.length) lines.push(`<p>New skill available to learn: ${newSk.map(([, s]) => s.name).join(', ')}.</p>`);
-    } else if (o.result === 'lost') lines.push(`<h3>Defeated</h3><p class="dim">The medbay pulled you back. Repair costs took ${-o.cr} cr. You wake with half HP.</p>`);
+      if (o.next) lines.push(`<p>Rift fight ${B.trial.n} of ${B.trial.of} cleared. Your wounds come with you.</p>`);
+      if (o.reward) lines.push(`<p style="color:var(--gold)">Rift trial complete! You won the <b>${GEAR[o.reward].name}</b>: ${gearText(GEAR[o.reward])}. Equip it from Status.</p>`);
+      if (B.mode === 'lost') lines.push(`<p style="color:var(--gold)">You won the <b>Last Light</b>: ${gearText(GEAR.x_last)}.</p>`);
+    } else if (o.result === 'lost') lines.push(`<h3>Defeated</h3><p class="dim">${B.trial ? 'The rift spits you out. ' : ''}The medbay pulled you back. Repair costs took ${-o.cr} cr. You wake with half HP.</p>`);
     else lines.push(`<h3>Escaped</h3>`);
-    actions = `<div class="panel" style="padding:14px">${lines.join('')}<div class="row"><button class="btn primary" data-a="battle-done">Continue</button></div></div>`;
+    if (!S.done && ['patrol', 'boss'].includes(B.mode) || o.result !== 'won' && !S.done) lines.push(`<p class="dim">The Hollow’s pull: ${Math.round(S.rot)}/100 · ${ROT_NAME[ROT_TIER(S.rot)]}</p>`);
+    actions = `<div class="panel" style="padding:14px">${lines.join('')}<div class="row"><button class="btn primary" data-a="battle-done">${o.next ? 'Next fight' : 'Continue'}</button></div></div>`;
   } else if (B.menu === 'skills') {
     const list = Object.keys(S.skills).map(id => { const s = SKILLS[id]; return `<button class="btn" data-a="use-skill" data-id="${id}" ${B.busy || p.en < s.en ? 'disabled' : ''}>${s.name} <span class="num" style="color:var(--en)">${s.en} EN</span><span class="sub">${s.desc}</span></button>`; }).join('');
     actions = `<div class="grid2">${list}<button class="btn" data-a="menu-back">← Back</button></div>`;
@@ -156,23 +178,25 @@ function screenBattle() {
     actions = `<div class="actions">
       <button class="btn primary" data-a="attack" ${dis}>Attack</button>
       <button class="btn" data-a="menu-skills" ${dis}>Skills</button>
-      <button class="btn" data-a="menu-items" ${dis}>Items</button>
-      <button class="btn" data-a="defend" ${dis}>Defend</button>
-      <button class="btn" data-a="flee" ${dis || (B.boss ? 'disabled' : '')}>Flee</button></div>`;
+      <button class="btn" data-a="menu-items" ${dis || (B.trial ? 'disabled title="No items in a Rift trial"' : '')}>Items</button>
+      <button class="btn${e.charging ? ' primary' : ''}" data-a="defend" ${dis}>Defend</button>
+      <button class="btn" data-a="flee" ${dis || (B.boss || B.trial ? 'disabled' : '')}>Flee</button></div>`;
   }
   return `${hud()}<div class="panel" style="gap:10px">
     <div class="combatants">
-      <div class="cbox"><span class="nm">${esc(heroName())}</span>${bar('HP', p.hp, p.maxHp, 'var(--hp)')}<div class="fxrow">${fxl(p)}</div></div>
-      <div class="cbox"><span class="nm" style="text-align:right">${esc(e.name)}${B.boss ? ' · BOSS' : ''}</span>${bar('HP', e.hp, e.maxHp, 'var(--hp)')}<div class="fxrow" style="justify-content:flex-end">${fxl(e)}</div></div>
+      <div class="cbox"><span class="nm">${esc(heroName())}${B.ally ? ' <span class="dim">&amp; Lyra</span>' : ''}</span>${bar('HP', p.hp, p.maxHp, 'var(--hp)')}<div class="fxrow">${fxl(p)}${B.hazard ? `<span class="fx">DEBRIS ${B.hazard}</span>` : ''}</div></div>
+      <div class="cbox"><span class="nm" style="text-align:right">${esc(e.name)}${B.trial ? ` · RIFT ${B.trial.n}/${B.trial.of}` : B.boss ? ' · BOSS' : ''}</span>${bar('HP', e.hp, e.maxHp, 'var(--hp)')}<div class="fxrow" style="justify-content:flex-end">${els(e)}${fxl(e)}</div></div>
     </div>
     <canvas id="battleCanvas" width="${W}" height="${H}" aria-label="Battle scene"></canvas>
     <div class="log" aria-live="polite">${B.log.map(l => `<div>${l}</div>`).join('')}</div>
+    ${e.charging && !o ? `<div class="warn" role="status">\u26A0 <b>${esc(e.name)}</b> is charging <b>${esc(e.charging.n)}</b>. Defend to brace and take a quarter of the damage.</div>` : ''}
     ${actions}
   </div>`;
 }
 
 function screenShop() {
-  const wmax = S.world + 1, tab = U.tab;
+  const wmax = S.world + 1, k = KEEPERS[S.world], closed = k.closed && k.closed(S);
+  const tab = closed ? 'items' : U.tab;
   let body;
   if (tab === 'items') {
     body = Object.entries(ITEMS).filter(([, it]) => it.w <= wmax).map(([id, it]) => `<div class="item">
@@ -183,18 +207,28 @@ function screenShop() {
       const owned = S.gear.includes(id), eq = S.equip[g.slot] === id;
       const sell = Math.floor(g.price / 2);
       return `<div class="item"><div><div class="name">${g.name} <span class="tag">${g.slot === 'acc' ? 'accessory' : g.slot}</span> ${eq ? '<span class="tag on">equipped</span>' : ''}</div>
-        <div class="desc">${bonusText(g.b)}</div></div>
+        <div class="desc">${gearText(g)}</div></div>
         <div class="row">${owned
           ? (eq ? '' : `<button class="btn small" data-a="equip" data-id="${id}">Equip</button>${sell ? `<button class="btn small" data-a="sell" data-id="${id}">Sell · ${sell} cr</button>` : ''}`)
           : `<button class="btn small" data-a="buy-gear" data-id="${id}" ${S.cr < g.price ? 'disabled' : ''}>Buy · ${g.price} cr</button>`}</div></div>`;
     }).join('');
   }
+  const lines = keeperTalk(k, S), line = U.kTalk == null ? keeperLine(k.greet, S) : lines[U.kTalk % lines.length];
+  const lostReady = S.world === PLANETS.length - 1 && S.done && S.echo.every(Boolean) && !S.lostDown;
+  const card = closed
+    ? `<div class="talk"><span>${esc(closed)}</span></div>`
+    : `<div class="keeper"><canvas id="keeperPortrait" class="cs-portrait" width="150" height="170" data-id="${k.id}" aria-hidden="true"></canvas>
+      <div class="keeper-words"><div class="cs-who">${esc(k.name)}</div><p aria-live="polite">${esc(line)}</p>
+        <div class="row"><button class="btn small" data-a="k-talk">${U.kTalk == null ? 'Ask what happened here' : 'Keep talking'}</button>
+        ${lostReady ? '<button class="btn small primary" data-a="lost">Follow the Lantern Keeper</button>' : ''}</div></div></div>`;
   return `${hud()}<div class="panel">
-    <div class="row between"><h2>Trader · ${esc(PLANETS[S.world].name)}</h2><button class="btn small" data-a="go-hub">← Back</button></div>
-    <div class="tabs"><button class="tab" data-a="tab" data-id="items" aria-pressed="${tab === 'items'}">Supplies</button><button class="tab" data-a="tab" data-id="gear" aria-pressed="${tab === 'gear'}">Gear</button></div>
+    <div class="row between"><h2>${esc(closed ? 'Supply kiosk' : k.shop)} · ${esc(PLANETS[S.world].name)}</h2><button class="btn small" data-a="go-hub">← Back</button></div>
+    ${card}
+    <div class="tabs"><button class="tab" data-a="tab" data-id="items" aria-pressed="${tab === 'items'}">Supplies</button>${closed ? '' : `<button class="tab" data-a="tab" data-id="gear" aria-pressed="${tab === 'gear'}">Gear</button>`}</div>
     <div class="list">${body}</div>
   </div>`;
 }
+const gearText = g => bonusText(g.b) + (g.perk ? ` · <i>${esc(g.perk)}</i>` : '');
 const bonusText = b => Object.entries(b).map(([k, v]) => `+${v} ${BONUS_LABEL[k]}`).join(' · ');
 
 function screenStatus() {
@@ -206,7 +240,7 @@ function screenStatus() {
   const slots = ['weapon', 'armor', 'acc'].map(slot => {
     const g = GEAR[S.equip[slot]];
     const others = S.gear.filter(id => GEAR[id].slot === slot && id !== S.equip[slot]);
-    return `<div class="item"><div><div class="label">${slot === 'acc' ? 'Accessory' : slot === 'armor' ? 'Armour' : 'Weapon'}</div><div class="name">${g ? g.name : 'Empty'}</div><div class="desc">${g ? bonusText(g.b) : ''}</div></div>
+    return `<div class="item"><div><div class="label">${slot === 'acc' ? 'Accessory' : slot === 'armor' ? 'Armour' : 'Weapon'}</div><div class="name">${g ? g.name : 'Empty'}</div><div class="desc">${g ? gearText(g) : ''}</div></div>
       <div class="row">${others.map(id => `<button class="btn small" data-a="equip" data-id="${id}">${GEAR[id].name}</button>`).join('')}</div></div>`;
   }).join('');
   return `${hud()}<div class="panel">
@@ -264,7 +298,7 @@ function render() {
   if (sc === 'hall') drawHall.cast = null;
   for (const cv of app.querySelectorAll('canvas[data-portrait]')) drawPortrait(cv, heroLook(), 40);
   if (sc === 'title') ambientLoop.hero = null;
-  if ((sc === 'title' || sc === 'create' || sc === 'hub' || sc === 'hall') && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
+  if (['title', 'create', 'hub', 'hall', 'map', 'shop'].includes(sc) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 
 function toast(msg) {
@@ -278,7 +312,7 @@ function goTo(s) { if (['status', 'skills', 'create', 'storymenu'].includes(s) &
 
 function enterWorld(i) {
   S.world = i; save();
-  if (!S.seen[i]) { S.seen[i] = true; save(); return playCutscene('w' + i + '_in', () => goTo('hub')); }
+  if (!S.seen[i]) { S.seen[i] = true; save(); return playCutscene('w' + i + '_in', () => playCutscene('w' + i + '_past', () => goTo('hub'))); }
   U.screen = 'hub'; render();
 }
 
@@ -290,7 +324,7 @@ app.addEventListener('click', ev => {
   const go = goTo;
   switch (a) {
     case 'new': if (loadSaved() && !U.confirmNew) { U.confirmNew = true; render(); break; } // falls through when no save exists
-    case 'new-yes': { U.confirmNew = false; S = null; const pend = loadPending() || {}; U.draft = { ...DEFAULT_LOOK, ...pend.look }; U.draftName = pend.name || 'Kael'; U.editing = 'new'; U.outfit = 0; go('create'); break; }
+    case 'new-yes': { U.confirmNew = false; S = null; U.diff = 'knight'; const pend = loadPending() || {}; U.draft = { ...DEFAULT_LOOK, ...pend.look }; U.draftName = pend.name || 'Kael'; U.editing = 'new'; U.outfit = 0; go('create'); break; }
     case 'look-open': {
       const sv = S ? null : loadSaved(), src = S || sv || loadPending() || {};
       U.editing = S ? 'game' : sv ? 'saved' : 'pending';
@@ -313,7 +347,7 @@ app.addEventListener('click', ev => {
       else if (U.editing === 'pending') savePending({ look, name });
       if (U.editing !== 'new') { toast('Appearance saved'); go(prevScreen); break; }
       savePending({ look, name });
-      S = fresh(); S.look = look; S.name = name; topUpCaps(); save();
+      S = fresh(); S.look = look; S.name = name; S.diff = U.diff || 'knight'; topUpCaps(); save();
       playCutscene('prologue', () => goTo('map')); break;
     }
     case 'new-no': U.confirmNew = false; render(); break;
@@ -323,7 +357,11 @@ app.addEventListener('click', ev => {
     case 'world': enterWorld(+id); break;
     case 'go-map': go('map'); break;
     case 'go-hub': go('hub'); break;
-    case 'go-shop': go('shop'); break;
+    case 'go-shop': U.kTalk = null; go('shop'); break;
+    case 'k-talk': U.kTalk = U.kTalk == null ? 0 : U.kTalk + 1; render(); break;
+    case 'trial': startBattle(false, { mode: 'trial', trial: { n: 1, of: 3 } }); log('<b>Rift trial.</b> Three fights. No items, no escape.'); render(); break;
+    case 'echo': startBattle(true, { mode: 'echo' }); break;
+    case 'lost': playCutscene('lost_in', () => startBattle(true, { mode: 'lost' })); break;
     case 'go-status': go('status'); break;
     case 'go-skills': go('skills'); break;
     case 'go-save': go('save'); break;
@@ -343,7 +381,7 @@ app.addEventListener('click', ev => {
     case 'story-open': go('storymenu'); break;
     case 'go-hall': U.talk = null; go('hall'); break;
     case 'talk': U.talk = U.talk && U.talk.id === id ? { id, n: U.talk.n + 1 } : { id, n: 0 }; render(); break;
-    case 'rest': { const st = stats(), cost = 5 + S.lvl * 3; if (S.cr >= cost) { S.cr -= cost; S.hp = st.maxHp; S.en = st.maxEn; save(); toast('Fully repaired'); render(); } break; }
+    case 'rest': { const st = stats(), cost = 5 + S.lvl * 3, left = S.done ? 99 : diff().med - (S.med[S.world] || 0); if (S.cr >= cost && left > 0) { S.cr -= cost; S.hp = st.maxHp; S.en = st.maxEn; if (!S.done) S.med[S.world] = (S.med[S.world] || 0) + 1; save(); toast(left - 1 < 50 ? `Fully repaired · ${left - 1} visit${left === 2 ? '' : 's'} left here` : 'Fully repaired'); render(); } break; }
     case 'buy-item': { const it = ITEMS[id]; if (S.cr >= it.price) { S.cr -= it.price; S.inv[id] = (S.inv[id] || 0) + 1; save(); toast(`Bought ${it.name}`); render(); } break; }
     case 'buy-gear': { const g = GEAR[id]; if (S.cr >= g.price && !S.gear.includes(id)) { S.cr -= g.price; S.gear.push(id); S.equip[g.slot] = id; topUpCaps(); save(); toast(`Bought and equipped ${g.name}`); render(); } break; }
     case 'sell': { const g = GEAR[id]; if (S.equip[g.slot] !== id) { S.gear = S.gear.filter(x => x !== id); S.cr += Math.floor(g.price / 2); save(); toast(`Sold ${g.name}`); render(); } break; }
@@ -365,12 +403,14 @@ app.addEventListener('click', ev => {
     case 'use-skill': playerAction('skill', id); break;
     case 'use-item': playerAction('item', id); break;
     case 'battle-done': {
-      const won = B.over.result === 'won', wasBoss = B.boss && won, wasKol = B.kol && won, wi = B.world;
+      const o = B.over, won = o.result === 'won', mode = B.mode, wi = B.world;
+      if (won && o.next) { startBattle(false, { mode: 'trial', trial: { ...B.trial, n: B.trial.n + 1 } }); break; }
       B = null;
       const seen = id => S.cs && S.cs[id];
-      if (wasKol) playCutscene('kol_down', () => goTo('hub'));
-      else if (wasBoss && wi === PLANETS.length - 1) { if (!seen('ending')) playCutscene('ending', () => { U.talk = null; goTo('hall'); }); else go('hub'); }
-      else if (wasBoss && !seen('w' + wi + '_out') && !S.seen['out' + wi]) { S.seen['out' + wi] = true; playCutscene('w' + wi + '_out', () => { toast(`New world unlocked: ${PLANETS[wi + 1].name}`); goTo('map'); }); }
+      if (won && mode === 'kol') playCutscene('kol_down', () => goTo('hub'));
+      else if (won && mode === 'lost') playCutscene('lost_out', () => goTo('hub'));
+      else if (won && mode === 'boss' && wi === PLANETS.length - 1) { if (!seen('ending')) playCutscene('ending', () => { U.talk = null; drawHall.cast = null; goTo('hall'); }); else go('hub'); }
+      else if (won && mode === 'boss' && !seen('w' + wi + '_out') && !S.seen['out' + wi]) { S.seen['out' + wi] = true; playCutscene('w' + wi + '_out', () => { toast(`New world unlocked: ${PLANETS[wi + 1].name}`); goTo('map'); }); }
       else go('hub');
       break;
     }

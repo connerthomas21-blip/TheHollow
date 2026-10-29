@@ -72,7 +72,7 @@ const path = require('path');
   await pg.click('[data-a="cyc"][data-k="mark"][data-d="1"]');
   await pg.fill('#heroName', 'Vessa');
   await pg.click('[data-a="create-done"]'); await pg.click('[data-a="cs-skip"]');
-  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="cs-skip"]');
+  await pg.click('[data-a="world"][data-id="0"]'); await pg.click('[data-a="cs-skip"]'); await pg.click('[data-a="cs-skip"]');
   await pg.evaluate(() => { S.equip = { weapon: 'w_star', armor: 'a_void', acc: 'x_lens' }; PLANETS[0].foes = [PLANETS[2].boss]; });
   await pg.click('[data-a="patrol"]'); await pg.waitForTimeout(700);
   await pg.waitForTimeout(1500);

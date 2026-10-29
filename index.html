@@ -180,6 +180,16 @@ input#heroName:focus-visible { outline: 2px solid var(--gold); outline-offset: 1
 .cs-box.narration .cs-text { font-style: italic; color: #d8d4f4; }
 .cs-actions { align-items: center; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.fx.weak { color: #ffd27a; border-color: #8a6a2a; }
+.fx.res { color: var(--dim); }
+.warn { background: #2a0a10; border: 1px solid var(--gold); border-radius: 8px; padding: 8px 12px; color: #ffd0d4; animation: warnpulse 1s ease-in-out infinite alternate; }
+@keyframes warnpulse { from { box-shadow: 0 0 0 rgba(229,57,74,0); } to { box-shadow: 0 0 14px rgba(229,57,74,0.55); } }
+@media (prefers-reduced-motion: reduce) { .warn { animation: none; } }
+.keeper { display: flex; gap: 14px; align-items: flex-start; background: #0a0709; border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.keeper-words { display: flex; flex-direction: column; gap: 8px; min-width: 0; flex: 1; }
+.keeper-words p { margin: 0; line-height: 1.5; }
+.sector { width: 100%; height: auto; aspect-ratio: 720 / 200; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.hollow .fill { background: linear-gradient(90deg, #a04aff, #ff9a4a) !important; }
 .hall-title { font-family: var(--display); font-size: 1.5rem; font-weight: 700; color: var(--gold); text-align: center; letter-spacing: 0.04em; }
 .talk { background: var(--well); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; min-height: 4.4em; }
 .talk b { font-family: var(--display); color: var(--gold); font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.06em; }
