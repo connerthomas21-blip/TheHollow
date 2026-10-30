@@ -567,7 +567,7 @@ function paintBust(cv, sp, w, h, t, crop, bg) {
   const c = hiDpi(cv, w, h), key = w + 'x' + h;
   runeBg(c, w, h, t, bg || '#d4142e');
   if (!BUST_LAYERS[key]) BUST_LAYERS[key] = [document.createElement('canvas'), document.createElement('canvas')];
-  const [lc, tc] = BUST_LAYERS[key], l = hiDpi(lc, w, h), tx = hiDpi(tc, w, h);
+  const [lc, tc] = BUST_LAYERS[key], l = hiDpi(lc, w, h, cv._k), tx = hiDpi(tc, w, h, cv._k);
   l.clearRect(0, 0, w, h); l.save();
   if (crop === 'face') { const k = w / 150; l.translate(w / 2 - 152 * k, h / 2 - 124 * k); l.scale(k, k); }
   else { const tall = crop === 'full' ? 400 : 340, k = Math.min(w / 300, h / tall); l.translate((w - 300 * k) / 2, h - tall * k); l.scale(k, k); }

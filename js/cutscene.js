@@ -91,7 +91,8 @@ function csLoop(t) {
   csRaf = 0;
   const cv = document.getElementById('csCanvas'), cs = U.cs;
   if (!cv || !cs) return;
-  const c = hiDpi(cv, W, H), now = performance.now();
+  trackFrame(t - (csLoop.last || t)); csLoop.last = t;
+  const c = stageCtx(cv), now = performance.now();
   c.save();
   if (cs.shake && now - cs.shake < 700 && !RM) { const k = 1 - (now - cs.shake) / 700; c.translate((Math.random() - 0.5) * 14 * k, (Math.random() - 0.5) * 9 * k); }
   drawBackdrop(c, cs.bg, t);
@@ -246,7 +247,7 @@ function screenHall() {
   </div>`;
 }
 function drawHall(cv, t) {
-  const c = hiDpi(cv, W, H), now = performance.now(), bg = RIM_END() ? 0 : SCENE_HALL;
+  const c = stageCtx(cv), now = performance.now(), bg = RIM_END() ? 0 : SCENE_HALL;
   drawBackdrop(c, bg, t);
   if (!drawHall.cast) drawHall.cast = [['squire', 120, false, 0.85], ['lyra', 230, false, 1], ['hero', 360, false, 1.05], [hallElder(), 500, true, 1], ['knight', 630, true, 1.1]]
     .map(([who, x, flip, scale]) => ({ who, def: who === 'squire' ? SQUIRE() : CAST[who](), x, from: x, to: x, ms: 0, flip, scale, alpha: 1, pose: POSES.stand }));

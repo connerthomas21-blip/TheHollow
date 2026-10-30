@@ -291,6 +291,7 @@ function render() {
   const view = { cutscene: screenCutscene, storymenu: screenStoryMenu, hall: screenHall, create: screenCreate, title: screenTitle, map: screenMap, hub: screenHub, battle: screenBattle, shop: screenShop, status: screenStatus, skills: screenSkills, save: screenSave }[sc];
   // Keep live canvases alive across re-renders so animation never blinks.
   const cid = sc === 'battle' ? 'battleCanvas' : sc === 'cutscene' ? 'csCanvas' : null, keep = cid && document.getElementById(cid);
+  app.classList.toggle('wide', ['battle', 'cutscene', 'hall'].includes(sc));
   app.innerHTML = view();
   if (keep) document.getElementById(cid).replaceWith(keep);
   if (sc === 'battle' && !raf) raf = requestAnimationFrame(loop);

@@ -4,11 +4,29 @@
 const W = 720, H = 320, GROUND = 262;
 const DPR = Math.min(2, window.devicePixelRatio || 1);
 function seeded(seed) { let s = seed; return () => (s = (s * 16807) % 2147483647) / 2147483647; }
-// Sizes a canvas's backing store for sharp drawing on high-density screens; returns a context in CSS-pixel units.
-function hiDpi(cv, w, h) {
-  const bw = Math.round(w * DPR), bh = Math.round(h * DPR);
+// Sizes a canvas's backing store to how big it is on screen (times the pixel ratio), so art drawn in logical units
+// stays sharp when the stage is shown large. Returns a context in logical units. k overrides the scale.
+let MAX_K = 2.5;   // lowered automatically if frames run slow (see frameBudget)
+let stageK = DPR;   // scale of the battle/cutscene stage; offscreen scene and sprite layers match it
+function hiDpi(cv, w, h, k) {
+  if (k == null) k = cv.isConnected && cv.clientWidth ? Math.max(DPR, Math.min(MAX_K, Math.ceil(DPR * cv.clientWidth / w * 4) / 4)) : DPR;
+  const bw = Math.round(w * k), bh = Math.round(h * k);
   if (cv.width !== bw || cv.height !== bh) { cv.width = bw; cv.height = bh; }
-  const c = cv.getContext('2d'); c.setTransform(DPR, 0, 0, DPR, 0, 0); return c;
+  cv._k = k;
+  const c = cv.getContext('2d'); c.setTransform(k, 0, 0, k, 0, 0); return c;
+}
+// Tracks frame times; if the stage keeps missing ~30 fps, render it at a lower resolution.
+const frameBudget = { avg: 16, n: 0 };
+function trackFrame(ms) {
+  if (!ms || document.hidden) return;
+  frameBudget.avg += (Math.min(ms, 200) - frameBudget.avg) * 0.05;
+  if (++frameBudget.n > 90 && frameBudget.avg > 34 && MAX_K > 1) { MAX_K = Math.max(1, MAX_K - 0.25); frameBudget.n = 0; frameBudget.avg = 20; }
+}
+// Call with a stage canvas each frame: when its scale changes, cached scene layers are rebuilt at the new scale.
+function stageCtx(cv) {
+  const c = hiDpi(cv, W, H);
+  if (cv._k !== stageK) { stageK = cv._k; for (const k in bgCache) delete bgCache[k]; }
+  return c;
 }
 
 /* ---------- Battle scenes: a cached back layer (sky), live stars, a cached front layer, then live effects ---------- */
@@ -17,7 +35,7 @@ const SCENE_HALL = 5, SCENE_FIRE = 6;
 // Light colour each scene casts on the edges of sprites.
 const SCENE_RIM = ['#ffb48a', '#ffe2a8', '#9ad8ff', '#ff8a4a', '#d49aff', '#fff0c8', '#ff9a4a'];
 const bgCache = {};
-function layer() { const cv = document.createElement('canvas'); const c = hiDpi(cv, W, H); c.lineJoin = 'round'; return [cv, c]; }
+function layer() { const cv = document.createElement('canvas'); const c = hiDpi(cv, W, H, stageK); c.lineJoin = 'round'; return [cv, c]; }
 function skyGrad(c, stops) { const g = c.createLinearGradient(0, 0, 0, GROUND); stops.forEach((s, i) => g.addColorStop(i / (stops.length - 1), s)); c.fillStyle = g; c.fillRect(0, 0, W, H); }
 function nebula(c, x, y, r, col) { const g = c.createRadialGradient(x, y, 0, x, y, r); g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)'); c.fillStyle = g; c.fillRect(x - r, y - r, r * 2, r * 2); }
 function haze(c, y0, y1, col) { const g = c.createLinearGradient(0, y0, 0, y1); g.addColorStop(0, 'rgba(0,0,0,0)'); g.addColorStop(1, col); c.fillStyle = g; c.fillRect(0, y0, W, y1 - y0); }
@@ -1385,7 +1403,7 @@ function helmAccent(c, A, closed, t) {
 
 /* ---------- Sprite renderer: bold silhouette outline, scene rim light, hit flash, afterimages ---------- */
 const SPR = {};
-function sprLayer(k, w, h) { if (!SPR[k]) SPR[k] = document.createElement('canvas'); return hiDpi(SPR[k], w, h); }
+function sprLayer(k, w, h) { if (!SPR[k]) SPR[k] = document.createElement('canvas'); return hiDpi(SPR[k], w, h, stageK); }
 // draw(ctx, ax, ay) paints the sprite with its feet at (ax, ay) on an offscreen canvas; o.x/o.y place those feet on c.
 function renderSprite(c, draw, o) {
   const w = o.w || 300, h = o.h || 250, ax = o.ax ?? w / 2, ay = o.ay ?? h - 20;
@@ -1992,11 +2010,12 @@ function loop(t) {
   raf = 0;
   const cv = document.getElementById('battleCanvas');
   if (!cv || !B) return;
+  trackFrame(t - (last || t));
   const rdt = Math.min(50, t - (last || t)); last = t;
   let dt = rdt;
   if (B.hitstop > 0) { B.hitstop -= rdt; dt = 0; }
   stepTweens(dt);
-  const c = hiDpi(cv, W, H), a = B.anim, pa = B.act.p, ea = B.act.e;
+  const c = stageCtx(cv), a = B.anim, pa = B.act.p, ea = B.act.e;
   for (const act of [pa, ea, B.act.l]) {
     act.kb *= Math.pow(0.84, dt / 16);
     if (act.smear != null && !act.swinging) { act.smearT = Math.max(0, act.smearT - dt / 180); if (act.smearT <= 0) act.smear = null; }
