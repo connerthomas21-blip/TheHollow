@@ -2173,14 +2173,13 @@ function ambientLoop() {
   if (tc) {
     const w = 720, h = 360, c = hiDpi(tc, w, h);
     runeBg(c, w, h, t);
-    c.save(); c.translate(424, 0); c.scale(0.9, 0.9); drawBust(c, { ...bustSpec('lyra'), blink: blinkAt(t, 4) }, t); c.restore();
-    const fade = c.createLinearGradient(380, 0, 470, 0); fade.addColorStop(0, 'rgba(5,3,5,0.7)'); fade.addColorStop(1, 'rgba(5,3,5,0)');
-    c.save(); c.textAlign = 'left';
-    const tg = c.createLinearGradient(0, 120, 0, 186); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.45, '#c9cdd8'); tg.addColorStop(0.55, '#7d8294'); tg.addColorStop(1, '#eef0f6');
-    c.font = '700 64px "Chakra Petch", sans-serif'; c.lineWidth = 6; c.strokeStyle = '#2a0008'; c.strokeText('STARBREAKER', 36, 180);
-    c.fillStyle = tg; c.fillText('STARBREAKER', 36, 180);
-    glowOn(c, '#d4142e', 12); c.fillStyle = '#d4142e'; c.fillRect(40, 192, 360, 3); P(c, [400, 190, 418, 193.5, 400, 197], '#d4142e', 0); glowOff(c);
-    c.font = '600 18px "Chakra Petch", sans-serif'; c.fillStyle = '#ff4a5e'; c.fillText('S  A  G  A', 42, 222);
+    // the logo, centred over the rune rings
+    c.save(); c.textAlign = 'center';
+    const cx = w / 2, tg = c.createLinearGradient(0, 140, 0, 206); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.45, '#c9cdd8'); tg.addColorStop(0.55, '#7d8294'); tg.addColorStop(1, '#eef0f6');
+    c.font = '700 72px "Chakra Petch", sans-serif'; c.lineWidth = 6; c.strokeStyle = '#2a0008'; c.strokeText('STARBREAKER', cx, 196);
+    c.fillStyle = tg; c.fillText('STARBREAKER', cx, 196);
+    glowOn(c, '#d4142e', 12); c.fillStyle = '#d4142e'; c.fillRect(cx - 210, 210, 420, 3); P(c, [cx - 228, 211.5, cx - 210, 208, cx - 210, 215], '#d4142e', 0); P(c, [cx + 228, 211.5, cx + 210, 208, cx + 210, 215], '#d4142e', 0); glowOff(c);
+    c.font = '600 18px "Chakra Petch", sans-serif'; c.fillStyle = '#ff4a5e'; c.fillText('S  A  G  A', cx, 242);
     c.restore();
   }
   const cc = document.getElementById('createCanvas');
