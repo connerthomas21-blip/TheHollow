@@ -108,6 +108,7 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Achievements and a bestiary
 
 ## Notes for the next session
+- When releasing, bump the `?v=` number on the script tags in `index.html` so browsers fetch the new files instead of cached ones.
 - All tuning numbers are in `PLANETS`, `GEAR`, `ITEMS`, `SKILLS` near the top of the script.
 - `window.__fast = true` makes battles run instantly (used by the balance test in `test/`).
 - Balance check: `node test/play.js <screenshot-dir>` plays the whole game with a simple bot.
