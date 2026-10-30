@@ -99,7 +99,9 @@ function csLoop(t) {
   const rim = SCENE_RIM[cs.bg];
   for (const a of Object.values(cs.cast)) drawActor(c, a, t, now, rim);
   drawForeground(c, cs.bg, t);
+  grade(c, cs.bg, t);
   c.restore();
+  bloom(c, cv, 0.45);
   if (cs.fade && now - cs.fade < 700) { c.fillStyle = `rgba(0,0,0,${1 - (now - cs.fade) / 700})`; c.fillRect(0, 0, W, H); }
   if (cs.flash && now - cs.flash < 500) { c.fillStyle = `rgba(255,255,255,${0.85 * (1 - (now - cs.flash) / 500)})`; c.fillRect(0, 0, W, H); }
   // letterbox
@@ -256,5 +258,7 @@ function drawHall(cv, t) {
     drawActor(c, a, t, now, SCENE_RIM[bg]);
   }
   drawForeground(c, bg, t);
+  grade(c, bg, t);
+  bloom(c, cv, 0.4);
 }
 const SQUIRE = () => ({ armor: armorStyle({ base: '#9aa4b4', trim: '#2ab8b0', pauldron: 'pad', cape: '#1e6a6a' }), look: { build: 'f', gear: 'none', skin: 4, hair: 'braids', hairCol: 0, eyes: 1, beard: 'none', mark: 'none' }, weapon: 'w_rust' });

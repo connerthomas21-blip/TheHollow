@@ -334,6 +334,70 @@ function drawForeground(c, i, t) {
   c.fillStyle = vg; c.fillRect(0, 0, W, H);
 }
 
+/* ---------- Lighting: a colour grade per scene, additive light sources, and bloom on bright areas ---------- */
+// [top, bottom] tints, blended with soft-light: warm dusk, desert gold, cold station blue, forge red, void violet, hall candlelight, firelight.
+const GRADE = [['#ffb07a', '#3a0a40'], ['#ffe08a', '#5a2a0a'], ['#8ac8ff', '#0a0a40'], ['#ff6a3a', '#3a0000'], ['#c08aff', '#0a0020'], ['#fff0c8', '#1a1030'], ['#ff8a3a', '#2a0004']];
+// Fixed light sources in each scene (x, y, radius, colour, strength).
+const SCENE_LIGHTS = [
+  [[590, 76, 160, '#ffd8b0', 0.1]],
+  [[600, 60, 220, '#fff0b0', 0.12]],
+  [[656, 292, 70, '#5ad1e6', 0.18], [360, 40, 260, '#6a8aff', 0.06]],
+  [[360, GROUND + 30, 340, '#ff5a1a', 0.16], [620, 120, 140, '#ff8a3a', 0.1]],
+  [[520, 100, 200, '#c46aff', 0.12]],
+  [[360, 90, 220, '#fff0c8', 0.14]],
+  [[360, GROUND, 360, '#ff6a1a', 0.2]],
+];
+function light(c, x, y, r, col, a, flat = 1) {
+  c.save(); c.globalCompositeOperation = 'lighter'; c.translate(x, y); c.scale(1, flat);
+  const g = c.createRadialGradient(0, 0, 0, 0, 0, r);
+  g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
+  c.globalAlpha = clamp(a, 0, 1); c.fillStyle = g; c.fillRect(-r, -r, r * 2, r * 2); c.restore();
+}
+function grade(c, i, t) {
+  const [top, bot] = GRADE[i] || GRADE[0];
+  c.save(); c.globalCompositeOperation = 'soft-light'; c.globalAlpha = 0.34;
+  const g = c.createLinearGradient(0, 0, 0, H); g.addColorStop(0, top); g.addColorStop(1, bot);
+  c.fillStyle = g; c.fillRect(0, 0, W, H); c.restore();
+  for (const [x, y, r, col, a] of SCENE_LIGHTS[i] || []) light(c, x, y, r, col, a * (0.85 + 0.15 * Math.sin(t * 0.002 + x)));
+}
+// Bloom: shrink the frame, keep mostly its bright parts (multiplying it by itself), blur by shrinking again, add back.
+const BLOOM = {};
+function bloom(c, cv, amt = 0.5) {
+  if (window.__fast || !cv.width) return;
+  if (!BLOOM.a) for (const [k, w] of [['a', 180], ['b', 180], ['c', 90]]) { BLOOM[k] = document.createElement('canvas'); BLOOM[k].width = w; BLOOM[k].height = w * H / W; }
+  const A = BLOOM.a.getContext('2d'), Bc = BLOOM.b.getContext('2d'), C = BLOOM.c.getContext('2d'), aw = BLOOM.a.width, ah = BLOOM.a.height;
+  A.globalCompositeOperation = 'copy'; A.drawImage(cv, 0, 0, aw, ah);
+  Bc.globalCompositeOperation = 'copy'; Bc.drawImage(BLOOM.a, 0, 0);
+  A.globalCompositeOperation = 'multiply'; A.drawImage(BLOOM.b, 0, 0); A.drawImage(BLOOM.b, 0, 0);
+  C.globalCompositeOperation = 'copy'; C.drawImage(BLOOM.a, 0, 0, BLOOM.c.width, BLOOM.c.height);
+  c.save(); c.globalCompositeOperation = 'lighter'; c.imageSmoothingEnabled = true;
+  c.globalAlpha = amt; c.drawImage(BLOOM.c, 0, 0, W, H);
+  c.globalAlpha = amt * 0.6; c.drawImage(BLOOM.a, 0, 0, W, H);
+  c.restore();
+}
+// Lights cast by the fighters and the effects in a battle.
+function battleLights(c, t) {
+  const pa = B.act.p, wg = WEAPON_GLOW[S.equip.weapon], glowy = !['w_rust', 'sword', 'axe', 'gun'].includes(S.equip.weapon);
+  const hx = 200 + pa.dx + pa.kb;
+  if (glowy && B.p.hp > 0) {
+    const pulse = 0.85 + 0.15 * Math.sin(t * 0.006);
+    light(c, hx + 26, GROUND - 76 + pa.dy, 90, wg, 0.16 * pulse);
+    light(c, hx + 10, GROUND + 2, 70, wg, 0.22 * pulse, 0.28);
+  }
+  if (pa.aura) light(c, hx, GROUND - 60, 110, pa.aura, 0.25);
+  const e = B.e, glow = e.col && e.col[1], u = unitPos('e'), big = huge(e) ? 1.8 : e.big ? 1.4 : 1;
+  if (glow && B.anim.eDie < 1) {
+    light(c, u.x, u.y, 90 * big, glow, 0.1);
+    light(c, u.x, GROUND + 2, 80 * big, glow, 0.16, 0.28);
+  }
+  if (e.charging) light(c, u.x, u.y, 140 * big, '#ff3a4a', 0.2 + 0.1 * Math.sin(t * 0.012));
+  for (const v of B.vfx) {
+    const k = 1 - v.t / v.life, col = v.col || '#ffffff';
+    if (v.type === 'bolt') { const a = unitPos(v.from), b = unitPos(v.to), m = v.t / v.life; light(c, a.x + (b.x - a.x) * m, a.y + (b.y - a.y) * m, 90, col, 0.3); }
+    else if (v.x != null && v.y != null && v.type !== 'dissolve') light(c, v.x, v.y, v.type === 'nova' || v.type === 'ring' ? 220 : 120, col, 0.3 * k);
+  }
+}
+
 function shadow(c, x, rx) {
   const g = c.createRadialGradient(x, GROUND + 3, 1, x, GROUND + 3, rx);
   g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -2065,6 +2129,10 @@ function loop(t) {
   }
   drawVfx(c, dt);
   drawForeground(c, B.world, t);
+  grade(c, B.world, t);
+  battleLights(c, t);
+  c.restore(); c.save();
+  bloom(c, cv, [0.42, 0.36, 0.28, 0.55, 0.55][B.world] ?? 0.42);
   if (a.flash > 0) { c.fillStyle = `rgba(255,255,255,${a.flash * 0.28})`; c.fillRect(-20, -20, W + 40, H + 40); }
   // floating numbers pop in, then rise and fade
   c.textAlign = 'center';
