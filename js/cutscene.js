@@ -20,6 +20,8 @@ function curPose(a, now = performance.now()) {
 function csApply(b) {
   const cs = U.cs, now = performance.now();
   if (b.bg != null && b.bg !== cs.bg) { cs.bg = b.bg; cs.fade = now; }
+  if (b.bg != null && b.cg === undefined) cs.cg = null;
+  if (b.cg !== undefined && b.cg !== cs.cg) { cs.cg = b.cg; cs.cgT = now; cs.fade = now; }
   if (b.cast === null) cs.cast = {};
   else if (b.cast) for (const [k, v] of Object.entries(b.cast)) {
     if (v === null) { delete cs.cast[k]; continue; }
@@ -95,11 +97,14 @@ function csLoop(t) {
   const c = stageCtx(cv), now = performance.now();
   c.save();
   if (cs.shake && now - cs.shake < 700 && !RM) { const k = 1 - (now - cs.shake) / 700; c.translate((Math.random() - 0.5) * 14 * k, (Math.random() - 0.5) * 9 * k); }
-  drawBackdrop(c, cs.bg, t);
-  const rim = SCENE_RIM[cs.bg];
-  for (const a of Object.values(cs.cast)) drawActor(c, a, t, now, rim);
-  drawForeground(c, cs.bg, t);
-  grade(c, cs.bg, t);
+  if (cs.cg) drawStill(c, cs.cg, t, now - cs.cgT);
+  else {
+    drawBackdrop(c, cs.bg, t);
+    const rim = SCENE_RIM[cs.bg];
+    for (const a of Object.values(cs.cast)) drawActor(c, a, t, now, rim);
+    drawForeground(c, cs.bg, t);
+    grade(c, cs.bg, t);
+  }
   c.restore();
   bloom(c, cv, 0.45);
   if (cs.fade && now - cs.fade < 700) { c.fillStyle = `rgba(0,0,0,${1 - (now - cs.fade) / 700})`; c.fillRect(0, 0, W, H); }

@@ -7,7 +7,7 @@ beating a boss on each world before facing a final dark power.
 
 Names, story and art are original. Only the gameplay style is borrowed.
 
-Files: `index.html` (styles + markup) and `js/` — data, art, story, cutscene, game, ui (loaded in that order, no build step). Published as a claude.ai Artifact.
+Files: `index.html` (styles + markup) and `js/` — data, art, story, portrait, stills, cutscene, game, ui (loaded in that order, no build step). Hosted on GitHub (connerthomas21-blip/TheHollow) and published as a claude.ai Artifact. `index.html` is a full document, so GitHub Pages can serve the repository root as-is.
 Save data lives in the browser (localStorage), and there's an export/import save code.
 
 ## Core loop (Session 1, done)
@@ -79,6 +79,13 @@ Save data lives in the browser (localStorage), and there's an export/import save
 - Rift trials (`TRIALS`): three fights in a row with no items, no medbay and no escape, for special gear with perks: Colonist's Lantern, Mandible Glaive, Sentinel Shield Core, Forgeheart Maul, Horizon Plate.
 - Post-game: an Echo of every boss at full strength (from each world hub). Sweep all five, then follow the Lantern Keeper to the secret boss, The Lost Sweeper (reward: Last Light).
 - `node test/expansion.js <dir>` renders the trader screens, the star chart, the new battles, cutscenes and both Halls. The play test also runs a trial, the echoes and the Lost Sweeper.
+
+## Session C — Art upgrade (done)
+- Wider stage: battles, cutscenes and the Hall widen to fit the screen (up to 1180px) and render at their on-screen size (`hiDpi` measures the canvas; `stageCtx` rebuilds cached scene layers when the scale changes). `trackFrame` lowers the render resolution if frames run slow.
+- Lighting: a soft-light colour grade per scene (`GRADE`), fixed scene lights (`SCENE_LIGHTS`), light cast by glowing weapons, glowing enemies, charging attacks and effects (`battleLights`), and bloom on bright areas (`bloom`).
+- Expressive portraits: moods (neutral, smile, sad, angry, shock, grim) change eyes, lids, brows and mouth (`bustMouth`, `eyeBrow`); characters blink (`blinkAt`) and their mouths move with the typewriter text (`talkAt`). Key lines carry a mood (`LINE_MOODS`), other lines follow their punctuation, and a beat can set one as `say[2]`. Traders talk and blink too.
+- Story stills (`js/stills.js`): full-screen illustrations with a slow push-in, shown by a beat's `cg`: Veyra burning through the relay window, Kol kneeling at your blade, the Citadel falling into the black hole, the Lost Sweeper's reveal.
+- Tests: `node test/moods.js <dir>` (expression sheet), `node test/stills.js <dir>` (every still).
 
 ## Open questions for the user
 - "Scale it up": more content, a bigger screen, or deeper systems?
