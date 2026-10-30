@@ -8,8 +8,7 @@ module.exports = () => new Promise(res => {
     fs.readFile(f, (err, data) => {
       if (err) { rsp.writeHead(404); return rsp.end(); }
       let body = data;
-      // The published page is wrapped in a document skeleton; add one locally.
-      if (f.endsWith('index.html')) body = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width">' + data;
+      // index.html is a full document, so GitHub Pages and the artifact serve it the same way.
       rsp.writeHead(200, { 'content-type': types[path.extname(f)] || 'application/octet-stream' }); rsp.end(body);
     });
   }).listen(0, () => res({ url: `http://127.0.0.1:${srv.address().port}/`, close: () => srv.close() }));
