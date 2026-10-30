@@ -258,6 +258,33 @@ const CUTSCENES = {
     { fx: 'flash', cast: { keeper: null }, pose: { hero: 'raise' }, say: [null, 'The lantern flame settles in your hand, cool as starlight. You have the Last Light.'] },
   ] },
 };
+// The speaker's expression for key lines (matched by a snippet of the line). Other lines follow their punctuation.
+const LINE_MOODS = [
+  ['Youngest squire I ever took in', 'smile'], ['Everything I am, I learned from you', 'smile'], ['Some burdens are safer', 'grim'],
+  ['There’s no one to save here', 'grim'], ['That’s… Veyra. That’s my watch.', 'shock'], ['The guardian of Veyra abandoned', 'grim'],
+  ['By the Sweeper Code, I strip', 'grim'], ['So it is spoken', 'grim'], ['Someone wants me here', 'grim'],
+  ['I swore I would never set foot', 'sad'], ['One of us was here', 'grim'], ['The Order’s own admiral', 'angry'],
+  ['I only followed the Master’s orders', 'sad'], ['You’re lying. Kol raised me.', 'angry'], ['I saw him that night', 'sad'],
+  ['I said nothing at the tribunal', 'sad'], ['You’re here now. That counts', 'smile'], ['Then I’ll stand with you', 'smile'],
+  ['Three years, Lyra.', 'grim'], ['I don’t expect forgiveness. I’ll earn it', 'sad'], ['He’s yours to judge', 'grim'],
+  ['I stopped caring which', 'sad'], ['The Order will judge you. Not me.', 'grim'], ['Why, Master?', 'sad'],
+  ['Then I’ll survive you too.', 'angry'], ['Not alone, Master. Never again.', 'angry'], ['Finish it, then.', 'sad'],
+  ['whatever you choose, I’m with you', 'sad'], ['You don’t get to make me into you', 'angry'], ['hear the last thing I owe you', 'sad'],
+  ['The Grand Master… knew.', 'shock'], ['Together, or not at all', 'angry'], ['Well done, Sweeper', 'smile'],
+  ['You let them break me for it', 'angry'], ['I let one world burn', 'grim'], ['There’s another way', 'grim'],
+  ['And the Order with it!', 'angry'], ['Homeless, broke, and in charge', 'smile'], ['Sounds better than', 'smile'],
+  ['Today it kneels to you', 'smile'], ['Your crest, your rank', 'smile'], ['You kept his secret. I kept one once', 'sad'],
+  ['The Order’s ships came at noon', 'sad'], ['Forty-one', 'sad'], ['They’re very tired of rations', 'smile'],
+  ['I’ll make you something better', 'smile'], ['Oaths wear thin', 'grim'], ['The first of you', 'sad'],
+  ['Show me with your blade', 'grim'], ['Then let’s sweep.', 'smile'], ['Good. Good.', 'smile'], ['Keep it lit', 'smile'],
+];
+function lineMood(who, text) {
+  const hit = LINE_MOODS.find(([k]) => text.includes(k));
+  if (hit) return hit[1];
+  if (/!/.test(text)) return ['kolDark', 'vex', 'gm'].includes(who) ? 'angry' : 'shock';
+  if (/^(…|\.\.\.)/.test(text)) return 'sad';
+  return null;
+}
 // Replay list for the Story menu, in order, with the progress that unlocks each scene.
 const STORY_ORDER = ['prologue', 'w0_in', 'w0_past', 'w0_out', 'w1_in', 'w1_past', 'w1_out', 'w2_in', 'w2_past', 'w2_out', 'w3_in', 'w3_past', 'w3_out', 'w4_in', 'w4_past', 'kol_in', 'kol_down', 'ending', 'lost_in', 'lost_out'];
 function storyUnlocked(id, s) {

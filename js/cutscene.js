@@ -116,13 +116,13 @@ function csLoop(t) {
       c.restore();
     }
   }
+  // typewriter text, and the speaker's face: their mood for this line, blinking, mouth moving while it types
+  const el = document.getElementById('csText'), full = cs.say ? fmt(cs.say[1]) : '', n = Math.min(full.length, Math.max(0, Math.floor((now - cs.t0) * 0.045)));
+  if (el && cs.say && +el.dataset.n !== n) { el.textContent = full.slice(0, n); el.dataset.n = n; }
   const pc = document.getElementById('csPortrait');
-  if (pc) { const id = pc.dataset.id; paintBust(pc, bustSpec(id), 150, 170, t, null, id === 'kolDark' ? '#9a3aff' : id === 'keeper' || id === 'lost' ? '#2ab8b0' : null); }
-  // typewriter text
-  const el = document.getElementById('csText');
-  if (el && cs.say) {
-    const full = fmt(cs.say[1]), n = Math.min(full.length, Math.max(0, Math.floor((now - cs.t0) * 0.045)));
-    if (+el.dataset.n !== n) { el.textContent = full.slice(0, n); el.dataset.n = n; }
+  if (pc) {
+    const id = pc.dataset.id, base = bustSpec(id), mood = cs.say[2] || lineMood(id, full);
+    paintBust(pc, { ...base, ...(mood ? { mood } : {}), blink: blinkAt(t, id.length), talk: talkAt(full, n, t) }, 150, 170, t, null, id === 'kolDark' ? '#9a3aff' : id === 'keeper' || id === 'lost' ? '#2ab8b0' : null);
   }
   csRaf = requestAnimationFrame(csLoop);
 }

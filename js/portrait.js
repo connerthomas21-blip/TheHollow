@@ -98,20 +98,53 @@ function bustFace(c, sp) {
   L(c, [156, 196, 168, 196], shade(skin, -22), 1.6);
   L(c, [120, 238, 138, 233], shade(skin, -40), 1.4); L(c, [168, 233, 186, 238], shade(skin, -40), 1.4);
   if (!f) L(c, [149, 220, 151, 230], shade(skin, -40), 1.4);
-  if (f) { L(c, [154, 183, 171, 181], shade(skin, -82), 2.2); L(c, [157, 189, 167, 189], shade(skin, -34), 1.4); }
-  else L(c, sp.expr === 'grim' ? [150, 187, 176, 186] : [151, 186, 176, 183], shade(skin, -82), 2.4);
+  bustMouth(c, sp);
   return face;
+}
+
+// Expression: sp.mood is neutral, smile, sad, angry, shock or grim (sp.angry / sp.expr 'grim' are older spellings).
+// sp.talk (0–1) opens the mouth while a line is being typed; sp.blink closes the eyes.
+const moodOf = sp => sp.mood || (sp.angry ? 'angry' : sp.expr === 'grim' ? 'grim' : 'neutral');
+function bustMouth(c, sp) {
+  const skin = sp.skin, f = sp.f, m = moodOf(sp), ink = shade(skin, -82), o = clamp(sp.talk || 0, 0, 1);
+  const y = f ? 182 : 185, x0 = f ? 154 : 151, x1 = f ? 171 : 176, cx = (x0 + x1) / 2;
+  const lift = m === 'smile' ? -3 : m === 'sad' || m === 'grim' || m === 'angry' ? 2.4 : 0;   // where the corners sit
+  const open = m === 'shock' ? Math.max(o, 0.7) : o;
+  if (open > 0.08) {
+    const h = 2 + open * (f ? 8 : 9), w0 = m === 'shock' ? cx - 4.5 : x0 + 1, w1 = m === 'shock' ? cx + 4.5 : x1 - 1;
+    const mouth = ['M', w0, y + lift, 'Q', cx, y - 1.5, w1, y + lift - 0.5, 'Q', w1 - 1, y + h * 0.9, cx, y + h, 'Q', w0 + 1, y + h * 0.9, w0, y + lift, 'Z'];
+    fp(c, mouth, '#3a1218', 2);
+    c.save(); path(c, mouth); c.clip();
+    fp(c, ['M', w0, y + h + 2, 'Q', cx, y + h * 0.45, w1, y + h + 2, 'Z'], '#c4545e', 0);
+    if (m !== 'shock') { c.fillStyle = '#fbf8f4'; c.fillRect(w0, y - 2, w1 - w0, 2.6); }
+    c.restore();
+    return;
+  }
+  if (m === 'smile') { fp(c, ['M', x0 - 1, y - 2, 'Q', cx, y + 6, x1 + 1, y - 3, 'Q', cx, y + 3, x0 - 1, y - 2, 'Z'], ink, 0); L(c, [x0 - 1, y - 2, cx, y + 3.4, x1 + 1, y - 3], ink, f ? 2 : 2.2); }
+  else if (m === 'sad' || m === 'grim' || m === 'angry') {
+    c.strokeStyle = ink; c.lineWidth = f ? 2.2 : 2.4; c.beginPath(); c.moveTo(x0, y + lift); c.quadraticCurveTo(cx, y - (m === 'angry' ? 1 : 2.4), x1, y + lift - (f ? 0 : 1)); c.stroke();
+  }
+  else L(c, f ? [x0, y + 1, x1, y - 1] : [x0, y + 1, x1, y - 2], ink, f ? 2.2 : 2.4);
+  if (f) L(c, [157, y + 7, 167, y + 7], shade(skin, -34), 1.4);
 }
 
 // One anime eye centred at (cx, cy). The outer corner is on the right unless `mirror` is set;
 // both irises look toward the viewer's right and the gloss always sits upper-left.
 function animeEye(c, cx, cy, w, h, col, sp, far, mirror) {
-  const f = sp.f, look = mirror ? -1 : 1;
+  const f = sp.f, look = mirror ? -1 : 1, m = moodOf(sp);
   c.save(); c.translate(cx, cy); if (mirror) c.scale(-1, 1);
+  if (sp.blink || (m === 'smile' && sp.joy)) {
+    // closed: the lash line, curved down (blink) or up (a happy squint)
+    const up = !sp.blink;
+    fp(c, ['M', -w / 2 - 1, up ? 2 : -2, 'Q', 0, up ? -h * 0.42 : h * 0.3, w / 2 + 3, up ? 0 : -3, 'L', w / 2 + (f ? 8 : 4), up ? -3 : -6, 'Q', 0, up ? -h * 0.62 : h * 0.12, -w / 2 - 1, up ? -1 : -5, 'Z'], INK, 0);
+    eyeBrow(c, w, h, sp, m);
+    c.restore();
+    return;
+  }
   const scl = ['M', -w / 2, 0, 'Q', -w * 0.1, -h * 0.62, w / 2, -h * 0.28, 'Q', w * 0.42, h * 0.38, w * 0.05, h * 0.46, 'Q', -w * 0.36, h * 0.4, -w / 2, 0, 'Z'];
   fp(c, scl, '#fbf8f4', 0);
   c.save(); path(c, scl); c.clip();
-  const ix = w * 0.1 * look, iy = h * 0.06, rx = w * 0.3, ry = h * 0.46;
+  const shock = m === 'shock', ix = w * 0.1 * look, iy = h * 0.06, rx = w * (shock ? 0.22 : 0.3), ry = h * (shock ? 0.34 : 0.46);
   const g = c.createLinearGradient(0, iy - ry, 0, iy + ry); g.addColorStop(0, shade(col, -95)); g.addColorStop(0.55, col); g.addColorStop(1, shade(col, 70));
   c.fillStyle = g; c.beginPath(); c.ellipse(ix, iy, rx, ry, 0, 0, Math.PI * 2); c.fill();
   c.lineWidth = 1.4; c.strokeStyle = shade(col, -110); c.stroke();
@@ -127,11 +160,21 @@ function animeEye(c, cx, cy, w, h, col, sp, far, mirror) {
   L(c, [w * 0.42, h * 0.3, w * 0.05, h * 0.46], INK, 1.3);
   c.strokeStyle = 'rgba(90,40,30,0.55)'; c.lineWidth = 1.1; c.beginPath(); c.moveTo(-w * 0.36, -h * 0.6); c.quadraticCurveTo(0, -h * 0.92, w * 0.46, -h * 0.5); c.stroke();
   c.strokeStyle = 'rgba(120,60,50,0.3)'; c.lineWidth = 1.8; c.beginPath(); c.moveTo(-w * 0.3, h * 0.5); c.quadraticCurveTo(0, h * 0.62, w * 0.36, h * 0.4); c.stroke();
-  // brow: inner end (toward the nose) is at -x
-  const by = -h * (sp.angry ? 0.66 : 0.8), bc = shade(sp.hair, -60);
-  if (sp.angry) fp(c, ['M', -w * 0.5, by + 6, 'L', w * 0.58, by - 6, 'L', w * 0.54, by - 2, 'L', -w * 0.5, by + 10, 'Z'], bc, 1);
-  else fp(c, ['M', -w * 0.45, by + 2, 'Q', 0, by - (f ? 7 : 4), w * 0.55, by + 1, 'L', w * 0.5, by + (f ? 3.5 : 6), 'Q', 0, by - (f ? 3 : 0), -w * 0.45, by + (f ? 5 : 7), 'Z'], bc, 1);
+  // mood lids: angry and grim press the upper lid down, sad droops its outer end, a smile lifts the lower lid
+  if (m === 'angry' || m === 'grim') fp(c, ['M', -w / 2 - 1, -h * (m === 'angry' ? 0.14 : 0.26), 'L', w / 2 + 3, -h * 0.4, 'L', w / 2 + 3, -h * 0.75, 'L', -w / 2 - 1, -h * 0.75, 'Z'], sp.skin, 0);
+  if (m === 'sad') fp(c, ['M', -w / 2 - 1, -h * 0.5, 'L', w * 0.1, -h * 0.5, 'L', w / 2 + 3, -h * 0.05, 'L', w / 2 + 3, -h * 0.75, 'L', -w / 2 - 1, -h * 0.75, 'Z'], sp.skin, 0);
+  if (m === 'smile') { fp(c, ['M', -w / 2, h * 0.5, 'Q', 0, -h * 0.04, w / 2 + 2, h * 0.14, 'L', w / 2 + 2, h * 0.6, 'L', -w / 2, h * 0.6, 'Z'], sp.skin, 0); c.strokeStyle = INK; c.lineWidth = 1.4; c.beginPath(); c.moveTo(-w * 0.34, h * 0.36); c.quadraticCurveTo(0, -h * 0.02, w * 0.42, h * 0.14); c.stroke(); }
+  if (m === 'angry' || m === 'grim' || m === 'sad') L(c, m === 'sad' ? [-w / 2, -h * 0.48, w * 0.1, -h * 0.5, w / 2 + 3, -h * 0.06] : [-w / 2 - 1, -h * (m === 'angry' ? 0.14 : 0.26), w / 2 + 3, -h * 0.4], INK, 2);
+  eyeBrow(c, w, h, sp, m);
   c.restore();
+}
+// Brow: its inner end (toward the nose) is at -x.
+function eyeBrow(c, w, h, sp, m) {
+  const f = sp.f, bc = shade(sp.hair, -60);
+  if (m === 'angry') { const by = -h * 0.66; fp(c, ['M', -w * 0.5, by + 6, 'L', w * 0.58, by - 6, 'L', w * 0.54, by - 2, 'L', -w * 0.5, by + 10, 'Z'], bc, 1); return; }
+  if (m === 'sad') { const by = -h * 0.82; fp(c, ['M', -w * 0.5, by - 5, 'Q', 0, by - 3, w * 0.55, by + 6, 'L', w * 0.5, by + 9, 'Q', 0, by + 1, -w * 0.46, by - 1, 'Z'], bc, 1); return; }
+  const by = -h * (m === 'shock' ? 0.98 : m === 'grim' ? 0.7 : 0.8), arch = m === 'shock' ? 4 : 0;
+  fp(c, ['M', -w * 0.45, by + 2, 'Q', 0, by - (f ? 7 : 4) - arch, w * 0.55, by + 1, 'L', w * 0.5, by + (f ? 3.5 : 6), 'Q', 0, by - (f ? 3 : 0) - arch, -w * 0.45, by + (f ? 5 : 7), 'Z'], bc, 1);
 }
 
 function bustEyes(c, sp) {
@@ -580,4 +623,13 @@ function paintBust(cv, sp, w, h, t, crop, bg) {
   tx.globalCompositeOperation = 'source-in'; tx.fillStyle = bg === '#9a3aff' ? '#c88aff' : '#ff4a5e'; tx.fillRect(0, 0, w, h);
   tx.globalCompositeOperation = 'destination-out'; tx.drawImage(lc, d, d * 0.8, w, h); tx.restore();
   c.save(); c.globalCompositeOperation = 'lighter'; c.globalAlpha = 0.75; c.drawImage(tc, 0, 0, w, h); c.restore();
+}
+
+// Blinks every few seconds (each character on its own rhythm); returns true while the eyes are shut.
+const blinkAt = (t, seed = 0) => (t + seed * 977) % 3600 < 120;
+// Mouth opening while a line types out: follows the letters, shut on spaces and punctuation.
+function talkAt(text, n, t) {
+  if (n >= text.length) return 0;
+  const ch = text[n] || ' ';
+  return /[\s.,!?…—-]/.test(ch) ? 0.1 : 0.35 + 0.65 * Math.abs(Math.sin(t * 0.025));
 }

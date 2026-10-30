@@ -2173,7 +2173,7 @@ function ambientLoop() {
   if (tc) {
     const w = 720, h = 360, c = hiDpi(tc, w, h);
     runeBg(c, w, h, t);
-    c.save(); c.translate(424, 0); c.scale(0.9, 0.9); drawBust(c, bustSpec('lyra'), t); c.restore();
+    c.save(); c.translate(424, 0); c.scale(0.9, 0.9); drawBust(c, { ...bustSpec('lyra'), blink: blinkAt(t, 4) }, t); c.restore();
     const fade = c.createLinearGradient(380, 0, 470, 0); fade.addColorStop(0, 'rgba(5,3,5,0.7)'); fade.addColorStop(1, 'rgba(5,3,5,0)');
     c.save(); c.textAlign = 'left';
     const tg = c.createLinearGradient(0, 120, 0, 186); tg.addColorStop(0, '#ffffff'); tg.addColorStop(0.45, '#c9cdd8'); tg.addColorStop(0.55, '#7d8294'); tg.addColorStop(1, '#eef0f6');
@@ -2207,7 +2207,11 @@ function ambientLoop() {
   const sec = document.getElementById('sectorCanvas');
   if (sec && S) drawSector(sec, t);
   const kp = document.getElementById('keeperPortrait');
-  if (kp) paintBust(kp, bustSpec(kp.dataset.id), 150, 170, t, null, kp.dataset.id === 'keeper' ? '#2ab8b0' : null);
+  if (kp) {
+    // the trader talks while their newest line is fresh, and blinks
+    const id = kp.dataset.id, since = t - (U.kSaid || 0), line = U.kLine || '', n = Math.floor(since * 0.045);
+    paintBust(kp, { ...bustSpec(id), blink: blinkAt(t, id.length), talk: talkAt(line, n, t), mood: lineMood(id, line) || undefined }, 150, 170, t, null, id === 'keeper' ? '#2ab8b0' : null);
+  }
   if ((tc || cc || hc || hall || sec || kp) && !ambient) { ambient = true; requestAnimationFrame(ambientLoop); }
 }
 

@@ -214,6 +214,7 @@ function screenShop() {
     }).join('');
   }
   const lines = keeperTalk(k, S), line = U.kTalk == null ? keeperLine(k.greet, S) : lines[U.kTalk % lines.length];
+  if (U.kLine !== line) { U.kLine = line; U.kSaid = performance.now(); }
   const lostReady = S.world === PLANETS.length - 1 && S.done && S.echo.every(Boolean) && !S.lostDown;
   const card = closed
     ? `<div class="talk"><span>${esc(closed)}</span></div>`
